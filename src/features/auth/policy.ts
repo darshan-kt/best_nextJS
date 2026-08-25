@@ -29,10 +29,40 @@ export interface Actor {
   roles: readonly RoleName[];
 }
 
-/** Minimal shape of a course for ownership decisions. */
+/**
+ * Minimal shape of a course for access decisions.
+ *
+ * `status` and `visibility` are optional because ownership-only actions
+ * (`course:update`, `course:delete`) do not need them. Callers that omit
+ * them for a read decision get a denial, not an accidental grant — the
+ * absence of evidence is never treated as permission.
+ */
 export interface CourseSubject {
   instructorId: string;
   status?: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  visibility?: "PUBLIC" | "PRIVATE";
+}
+
+/**
+ * Whether a course is part of the public catalogue (§14).
+ *
+ * Both conditions are required: an unpublished course is not public
+ * regardless of visibility, and a PRIVATE course is not public regardless
+ * of status.
+ *
+ * PRIVATE currently means "not publicly listed", readable only by its
+ * author, moderators and admins. When the Organization domain arrives it
+ * gains an ORGANIZATION visibility (or an organization-scoped grant on
+ * PRIVATE), which *widens* access from this deny-by-default position. That
+ * direction matters: a rule that starts closed and opens up is a feature,
+ * whereas one that starts open and has to be narrowed is a leak.
+ *
+ * Lives here rather than in the courses feature so that `can()` depends on
+ * nothing outside the policy layer. `features/courses` imports this; it is
+ * never the other way round.
+ */
+export function isPubliclyVisible(course: CourseSubject): boolean {
+  return course.status === "PUBLISHED" && course.visibility === "PUBLIC";
 }
 
 /** Minimal shape of any record owned by a single user. */
@@ -62,8 +92,19 @@ function hasRole(actor: Actor, ...roles: readonly RoleName[]): boolean {
  * remembered to allow should be blocked, never open by default.
  */
 export function can(actor: Actor | null, action: PolicyAction): boolean {
-  // Unauthenticated users can do nothing that reaches this layer. Public
-  // read paths (the course catalogue) are not routed through `can()`.
+  // The public catalogue is the one read that does not require an actor:
+  // a published, PUBLIC course is browsable by anyone, signed in or not.
+  // Evaluated before the null-actor guard so anonymous discovery is an
+  // explicit, auditable grant expressed *through* the policy layer rather
+  // than a path that quietly bypasses it (§12).
+  //
+  // This is the only anonymous grant. Adding a second one should be a
+  // deliberate decision, not a convenience.
+  if (action.type === "course:view" && isPubliclyVisible(action.course)) {
+    return true;
+  }
+
+  // Every other action denies without an authenticated actor.
   if (!actor) {
     return false;
   }
@@ -79,13 +120,16 @@ export function can(actor: Actor | null, action: PolicyAction): boolean {
       return hasRole(actor, "INSTRUCTOR");
 
     case "course:view":
-      // Published courses are readable by any signed-in user; unpublished
-      // ones only by their author. Enrollment-based restrictions arrive
-      // with the Enrollment model in Milestone 5.
+      // Publicly visible courses were already granted above, so anything
+      // reaching here is unpublished, PRIVATE, or both: readable only by
+      // its author and moderators. Note that a PUBLISHED but PRIVATE
+      // course is therefore *not* readable by an arbitrary signed-in user
+      // — publication and audience are separate questions (§14).
+      //
+      // Enrollment-based access arrives with the Enrollment model in
+      // Milestone 5 and belongs in this branch.
       return (
-        action.course.status === "PUBLISHED" ||
-        action.course.instructorId === actor.id ||
-        hasRole(actor, "MODERATOR")
+        action.course.instructorId === actor.id || hasRole(actor, "MODERATOR")
       );
 
     case "course:update":

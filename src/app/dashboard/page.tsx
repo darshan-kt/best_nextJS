@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { Library, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,16 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">{user.email}</p>
         </div>
 
-        <SignOutButton />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/courses">
+              <Library className="size-4" aria-hidden="true" />
+              Browse courses
+            </Link>
+          </Button>
+
+          <SignOutButton />
+        </div>
       </header>
 
       <Card>
