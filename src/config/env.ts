@@ -25,6 +25,23 @@ const envSchema = z.object({
         value.startsWith("postgresql://") || value.startsWith("postgres://"),
       "DATABASE_URL must be a PostgreSQL connection string"
     ),
+
+  /**
+   * Secret used to sign and encrypt session tokens. Generate with
+   * `openssl rand -base64 32`. A short secret materially weakens every
+   * session in the system, so the length floor is enforced here rather
+   * than trusted to convention.
+   */
+  AUTH_SECRET: z
+    .string()
+    .min(32, "AUTH_SECRET must be at least 32 characters"),
+
+  /**
+   * Canonical origin of the deployment, used to build callback URLs.
+   * Auth.js infers this correctly on Vercel and in local development, so
+   * it is optional; set it explicitly behind a proxy or custom domain.
+   */
+  AUTH_URL: z.url("AUTH_URL must be a valid URL").optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -45,6 +45,39 @@ All environment variables are declared and validated in
 reading `process.env` directly — a missing or malformed value then fails at
 startup instead of surfacing later as `undefined`.
 
+## Authentication
+
+Auth.js (NextAuth v5) with a Credentials provider — email and password,
+hashed with Node's built-in scrypt. Sessions are stateless JWTs, which is
+what Auth.js requires when using credentials.
+
+The Account / Session / VerificationToken tables exist but are unused by
+the credentials flow. They are there so that adding an OAuth or magic-link
+provider later is a configuration change, not a migration.
+
+Authorization goes through a single policy function,
+[`src/features/auth/policy.ts`](./src/features/auth/policy.ts). Features
+must call `can()` rather than inspecting roles themselves, so that a rule
+never ends up implemented in two places that can disagree. Routes enforce
+it via the guards in
+[`src/features/auth/guards.ts`](./src/features/auth/guards.ts):
+
+```ts
+// In a protected Server Component or Server Action:
+const actor = await requireUser("/dashboard");        // authentication
+await requirePermission({ type: "course:update", course }); // authorization
+```
+
+Enforcement lives in the Server Components and Actions that touch data —
+deliberately not in middleware, which is a bypassable place to put an
+authorization boundary.
+
+Self-service sign-up always creates a `STUDENT`. Elevated roles are
+granted administratively; there is no UI for that yet.
+
+> Roles are copied into the session token at sign-in, so a role change
+> only takes effect the next time that user signs in.
+
 ## Project structure
 
 ```text
@@ -54,7 +87,8 @@ prisma/
 
 src/
 ├── app/               # Routes (App Router)
-├── features/          # Feature-oriented business logic (auth, courses, ...)
+├── features/
+│   └── auth/           # Auth.js config, policy layer, guards, actions
 ├── components/
 │   ├── ui/             # shadcn/ui primitives
 │   └── shared/          # Composite shared components (EmptyState, ErrorState)

@@ -104,9 +104,20 @@ model User {
   name  String?
   image String?
 
+  /// Set by Auth.js when an email-based provider confirms ownership.
+  /// Null for credentials sign-ups, which do not prove the address.
+  emailVerified DateTime?
+
+  /// scrypt hash of the account password (see features/auth/password.ts).
+  /// Null for users who only ever sign in through an OAuth provider, so
+  /// adding social login later requires no migration.
+  passwordHash String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  accounts            Account[]
+  sessions            Session[]
   roles               UserRole[]
   instructedCourses   Course[]             @relation("CourseInstructor")
   quizAttempts        QuizAttempt[]
@@ -114,6 +125,63 @@ model User {
   reviewedEvaluations ExerciseEvaluation[] @relation("EvaluationReviewer")
 
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Auth.js adapter tables
+// ---------------------------------------------------------------------------
+//
+// Shape is dictated by @auth/prisma-adapter, including the snake_case
+// column names, which mirror the OAuth token response fields verbatim.
+// Do not rename them.
+//
+// The current Credentials provider uses none of these: it issues stateless
+// JWT sessions. They exist now so that adding an OAuth or magic-link
+// provider later is a configuration change rather than a migration.
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 /// Roles are a join table rather than a single column on User so that one

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BookOpen, GraduationCap, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,15 @@ export default function Home() {
           component primitives are wired up correctly. It is a token
           showcase, not the final marketing page.
         </p>
+
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/sign-in">Sign in</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/sign-up">Create account</Link>
+          </Button>
+        </div>
       </header>
 
       {/* Typography */}
