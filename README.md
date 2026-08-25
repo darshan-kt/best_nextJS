@@ -78,6 +78,33 @@ granted administratively; there is no UI for that yet.
 > Roles are copied into the session token at sign-in, so a role change
 > only takes effect the next time that user signs in.
 
+### Sign-in rate limiting
+
+Failed sign-ins are throttled on two independent counters — per account and
+per client IP — over a rolling window (defaults: 5 per account, 20 per IP,
+15 minutes). Only failures count, and a success clears both. Thresholds are
+configurable; see [`.env.example`](./.env.example).
+
+The check runs *before* the password is verified, so a throttled request
+never triggers a scrypt hash — otherwise the defence would itself be a CPU
+exhaustion vector.
+
+Two caveats worth knowing:
+
+- **The per-IP limit is defence in depth, not a guarantee.** The client
+  address comes from `x-forwarded-for`, which is forgeable unless a proxy
+  you control overwrites it; Next.js exposes no remote-address API to
+  Server Actions. The per-account limit is the one that actually stops a
+  brute-force attack, and it cannot be evaded this way.
+- **The default limiter stores state in process memory**, so it is correct
+  only for a single instance. On multiple instances or serverless, each
+  process keeps its own counters and the effective limit is multiplied by
+  the instance count. Implement `RateLimiter`
+  ([`src/server/rate-limit/types.ts`](./src/server/rate-limit/types.ts))
+  against Redis and swap it in
+  [`src/server/rate-limit/index.ts`](./src/server/rate-limit/index.ts) —
+  no auth code changes.
+
 ## Project structure
 
 ```text
@@ -93,7 +120,8 @@ src/
 │   ├── ui/             # shadcn/ui primitives
 │   └── shared/          # Composite shared components (EmptyState, ErrorState)
 ├── lib/               # Cross-cutting utilities
-├── server/            # Server-only logic
+├── server/
+│   └── rate-limit/     # Swappable rate limiting (memory now, Redis later)
 ├── db/
 │   ├── client.ts       # Shared Prisma Client instance
 │   └── generated/      # Generated Prisma Client (git-ignored)

@@ -7,6 +7,12 @@ import { z } from "zod";
 import { prisma } from "@/db/client";
 import { signIn, signOut } from "./index";
 import {
+  checkSignInAllowed,
+  clearSignInAttempts,
+  formatRetryAfter,
+  recordSignInFailure,
+} from "./rate-limit";
+import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   hashPassword,
@@ -179,18 +185,34 @@ export async function signInAction(
   }
 
   const callbackUrl = safeCallbackUrl(formData.get("callbackUrl"));
+  const email = parsed.data.email.toLowerCase();
 
-  const signedIn = await attemptSignIn(
-    parsed.data.email.toLowerCase(),
-    parsed.data.password
-  );
+  // Checked before the password is verified, so a throttled request never
+  // reaches scrypt. Note this blocks even a *correct* password: the whole
+  // point is that an attacker who eventually guesses right still cannot
+  // use it during the cooldown.
+  const throttle = await checkSignInAllowed(email);
+
+  if (throttle.blocked) {
+    return {
+      error: `Too many sign-in attempts. Try again in ${formatRetryAfter(
+        throttle.retryAfterMs
+      )}.`,
+    };
+  }
+
+  const signedIn = await attemptSignIn(email, parsed.data.password);
 
   if (!signedIn) {
+    await recordSignInFailure(email);
+
     // Deliberately identical for "no such user" and "wrong password":
     // distinguishing them would let an attacker enumerate registered
     // addresses.
     return { error: "Invalid email or password" };
   }
+
+  await clearSignInAttempts(email);
 
   redirect(callbackUrl);
 }

@@ -42,6 +42,29 @@ const envSchema = z.object({
    * it is optional; set it explicitly behind a proxy or custom domain.
    */
   AUTH_URL: z.url("AUTH_URL must be a valid URL").optional(),
+
+  /**
+   * Sign-in throttling (§29). Exposed as configuration because the right
+   * thresholds differ by environment — a shared corporate egress IP needs
+   * a far higher per-IP allowance than a consumer deployment.
+   *
+   * `coerce` because environment variables are always strings.
+   */
+  AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(900),
+
+  /** Failed attempts per account before that account is throttled. */
+  AUTH_RATE_LIMIT_MAX_PER_ACCOUNT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(5),
+
+  /** Failed attempts per client IP before that address is throttled. */
+  AUTH_RATE_LIMIT_MAX_PER_IP: z.coerce.number().int().positive().default(20),
 });
 
 export type Env = z.infer<typeof envSchema>;

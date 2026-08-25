@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { signInAction } from "@/features/auth/actions";
 import { AuthForm } from "@/features/auth/components/auth-form";
-import { getCurrentActor } from "@/features/auth/session";
+import { getCurrentUser } from "@/features/auth/session";
 
 export const metadata: Metadata = {
   title: "Sign in · LMS Platform",
@@ -21,7 +21,7 @@ export default async function SignInPage({
   searchParams,
 }: PageProps<"/sign-in">) {
   // Someone already signed in has no reason to see a login form.
-  if (await getCurrentActor()) {
+  if (await getCurrentUser()) {
     redirect("/dashboard");
   }
 
