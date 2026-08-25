@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { signUpAction } from "@/features/auth/actions";
 import { AuthForm } from "@/features/auth/components/auth-form";
 import { PASSWORD_MIN_LENGTH } from "@/features/auth/password";
-import { getCurrentActor } from "@/features/auth/session";
+import { getCurrentUser } from "@/features/auth/session";
 
 export const metadata: Metadata = {
   title: "Create account · LMS Platform",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default async function SignUpPage({
   searchParams,
 }: PageProps<"/sign-up">) {
-  if (await getCurrentActor()) {
+  if (await getCurrentUser()) {
     redirect("/dashboard");
   }
 
