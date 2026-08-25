@@ -1,0 +1,27 @@
+# Local development database for the LMS platform.
+#
+# Deliberately runs on port 5433 (not the default 5432) so it cannot
+# collide with any other PostgreSQL instance already running on this
+# machine. Credentials here are local-development-only; real secrets
+# are supplied through environment variables (see .env.example).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lms
+      POSTGRES_PASSWORD: lms
+      POSTGRES_DB: lms
+    ports:
+      - "5433:5432"
+    volumes:
+      - lms-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms -d lms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  lms-postgres-data:

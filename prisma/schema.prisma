@@ -1,0 +1,410 @@
+// LMS core domain schema.
+//
+// Governing rules: §10 (Database), §11 (LMS Domain), §12/§13 (Roles),
+// §14 (Enterprise Readiness), §18 (Quiz), §19 (Exercises), §41 (Migrations).
+//
+// Structural notes:
+//   * The learning hierarchy is Course → Section → Lesson → ContentBlock.
+//     Child entities are meaningless without their parent, so they cascade
+//     on delete and inherit scope through the ownership chain rather than
+//     duplicating ownership columns (§14).
+//   * Course is the designated future organization-scope entity. No
+//     `organizationId` exists yet — there is no Organization table to
+//     reference — but nothing here prevents adding one as a nullable FK
+//     later, which is a purely additive migration.
+//   * PostgreSQL does not index foreign keys automatically, so every FK
+//     that participates in a lookup carries an explicit index (§10).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/db/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// §13. A user may hold several of these simultaneously (see UserRole).
+enum RoleName {
+  STUDENT
+  INSTRUCTOR
+  TUTOR
+  MODERATOR
+  ADMIN
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// §14. `ORGANIZATION` is deliberately absent until the Organization
+/// domain exists. Adding an enum value later is additive in PostgreSQL
+/// (`ALTER TYPE ... ADD VALUE`) and does not rewrite the table.
+enum CourseVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+/// §11. New content types are expected; adding a value here plus a
+/// renderer is the intended extension path.
+enum ContentBlockType {
+  TEXT
+  IMAGE
+  VIDEO
+  QUIZ
+  EXERCISE
+  CODE
+  CALLOUT
+  FILE
+  EMBED
+}
+
+/// §18. CODE / MATCHING / ORDERING / DRAG_DROP / SIMULATION are future
+/// additions; question payloads are stored as JSON precisely so that new
+/// types do not require a schema migration.
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+/// §19.
+enum EvaluationMethod {
+  AUTOMATED
+  AI_ASSISTED
+  HUMAN_REVIEWED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  EVALUATED
+}
+
+// ---------------------------------------------------------------------------
+// Identity & roles (§12, §13)
+// ---------------------------------------------------------------------------
+
+model User {
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+  image String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles               UserRole[]
+  instructedCourses   Course[]             @relation("CourseInstructor")
+  quizAttempts        QuizAttempt[]
+  exerciseSubmissions ExerciseSubmission[]
+  reviewedEvaluations ExerciseEvaluation[] @relation("EvaluationReviewer")
+
+  @@index([createdAt])
+}
+
+/// Roles are a join table rather than a single column on User so that one
+/// person can be e.g. both an instructor and a moderator without a
+/// redesign (§13).
+model UserRole {
+  id     String   @id @default(cuid())
+  userId String
+  role   RoleName
+
+  grantedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Learning hierarchy (§11)
+// ---------------------------------------------------------------------------
+
+model Course {
+  id          String  @id @default(cuid())
+  /// Globally unique: courses are addressed as /courses/<slug> in the
+  /// public catalogue. If organization-private catalogues later need
+  /// per-organization slugs, this becomes a composite unique index — an
+  /// index swap, not a data-destroying change.
+  slug        String  @unique
+  title       String
+  subtitle    String?
+  description String?
+
+  status     CourseStatus     @default(DRAFT)
+  visibility CourseVisibility @default(PUBLIC)
+
+  /// Restrict rather than cascade: deleting a user must never silently
+  /// destroy published course content and its learner history.
+  instructorId String
+  instructor   User   @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: Restrict)
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sections Section[]
+
+  @@index([instructorId])
+  // Catalogue listings filter on status + visibility and sort by recency.
+  @@index([status, visibility, publishedAt])
+}
+
+model Section {
+  id       String  @id @default(cuid())
+  courseId String
+  title    String
+  summary  String?
+
+  /// Ordering is intentionally not a unique constraint: drag-and-drop
+  /// reordering would otherwise collide mid-transaction. Uniqueness is
+  /// enforced by the application layer when persisting a new order.
+  position Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@index([courseId, position])
+}
+
+model Lesson {
+  id        String  @id @default(cuid())
+  sectionId String
+  slug      String
+  title     String
+  summary   String?
+  position  Int
+
+  isPublished     Boolean @default(false)
+  durationMinutes Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section       Section              @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  contentBlocks LessonContentBlock[]
+
+  @@unique([sectionId, slug])
+  @@index([sectionId, position])
+}
+
+/// §11. A lesson is an ordered list of content blocks, never a single
+/// content type.
+///
+/// Lightweight block types (TEXT, IMAGE, VIDEO, CODE, CALLOUT, FILE,
+/// EMBED) keep their payload in `data`, so new such types need no
+/// migration. QUIZ and EXERCISE blocks instead point at real relational
+/// models, because they own attempts, submissions and grading history
+/// that must be queryable.
+model LessonContentBlock {
+  id       String           @id @default(cuid())
+  lessonId String
+  type     ContentBlockType
+  position Int
+
+  data Json?
+
+  quizId     String? @unique
+  exerciseId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lesson   Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  quiz     Quiz?     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  exercise Exercise? @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId, position])
+  @@index([type])
+}
+
+// ---------------------------------------------------------------------------
+// Quizzes (§18)
+// ---------------------------------------------------------------------------
+
+model Quiz {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+
+  /// Percentage (0-100) required to pass.
+  passingScore     Int     @default(70)
+  /// Null means unlimited attempts.
+  maxAttempts      Int?
+  shuffleQuestions Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contentBlock LessonContentBlock?
+  questions    QuizQuestion[]
+  attempts     QuizAttempt[]
+}
+
+model QuizQuestion {
+  id       String       @id @default(cuid())
+  quizId   String
+  type     QuestionType
+  position Int
+
+  prompt      String
+  explanation String?
+  points      Int     @default(1)
+
+  /// Type-specific payload: choice options, correct answers, matching
+  /// pairs, and so on. Keeps new question types additive (§18).
+  data Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@index([quizId, position])
+}
+
+model QuizAttempt {
+  id     String @id @default(cuid())
+  quizId String
+  userId String
+
+  attemptNumber Int
+  status        AttemptStatus @default(IN_PROGRESS)
+  /// Percentage (0-100), populated once graded.
+  score         Float?
+  passed        Boolean?
+
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  // The composite unique below already indexes the (quizId, userId)
+  // prefix, so "attempts by this learner on this quiz" needs no separate
+  // index. Only the reverse lookup (all attempts by a learner) does.
+  @@unique([quizId, userId, attemptNumber])
+  @@index([userId])
+}
+
+model QuizAnswer {
+  id         String @id @default(cuid())
+  attemptId  String
+  questionId String
+
+  /// The learner's response; shape depends on the question type.
+  response Json
+
+  isCorrect     Boolean?
+  pointsAwarded Float?
+  feedback      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempt  QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([questionId])
+}
+
+// ---------------------------------------------------------------------------
+// Practical exercises (§19)
+// ---------------------------------------------------------------------------
+
+model Exercise {
+  id           String  @id @default(cuid())
+  title        String
+  instructions String?
+
+  evaluationMethod EvaluationMethod @default(AUTOMATED)
+  maxScore         Float            @default(100)
+
+  /// Method-specific configuration: automated test cases, review rubric,
+  /// AI grading guidance. Lets evaluation strategies evolve without a
+  /// migration (§19).
+  config Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contentBlock LessonContentBlock?
+  submissions  ExerciseSubmission[]
+}
+
+model ExerciseSubmission {
+  id         String @id @default(cuid())
+  exerciseId String
+  userId     String
+
+  attemptNumber Int
+  status        SubmissionStatus @default(DRAFT)
+
+  /// Submitted work: code, prose, or references to stored media assets.
+  /// Media itself lives behind the storage abstraction, not in the
+  /// database (§32).
+  content Json
+
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  exercise   Exercise            @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evaluation ExerciseEvaluation?
+
+  // As with QuizAttempt, the composite unique covers the
+  // (exerciseId, userId) prefix.
+  @@unique([exerciseId, userId, attemptNumber])
+  @@index([userId])
+}
+
+/// §19: Exercise → Submission → Evaluation → Feedback. Modelled as a
+/// separate entity (rather than columns on the submission) so that
+/// automated, AI-assisted and human review all record their outcome the
+/// same way.
+model ExerciseEvaluation {
+  id           String @id @default(cuid())
+  submissionId String @unique
+
+  method   EvaluationMethod
+  score    Float?
+  passed   Boolean?
+  feedback String?
+
+  /// Structured detail: test results, rubric breakdown, model rationale.
+  details Json?
+
+  /// Set for HUMAN_REVIEWED evaluations. Nulled rather than cascaded if
+  /// the reviewer's account is removed, so learners keep their feedback.
+  reviewerId String?
+
+  evaluatedAt DateTime @default(now())
+
+  submission ExerciseSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  reviewer   User?              @relation("EvaluationReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([reviewerId])
+}
