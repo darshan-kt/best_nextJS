@@ -398,6 +398,144 @@ const CURRICULA: Record<string, SeedSection[]> = {
       ],
     },
   ],
+
+  /// ROS 2 Fundamentals — real course content, not a demo fixture like the
+  /// courses above (see the COURSES entry for this slug). Module 0 only;
+  /// modules 1-15 land module-by-module per ROS2_COURSE_KICKOFF_PROMPTS.md's
+  /// own sequencing, each carrying its own quality review before
+  /// implementation.
+  "ros2-fundamentals": [
+    {
+      title: "Course Onboarding and Roadmap",
+      summary:
+        "Set expectations and confirm you're ready to start, before any technical content.",
+      lessons: [
+        {
+          slug: "welcome-and-what-youll-build",
+          title: "Welcome & What You'll Build",
+          durationMinutes: 15,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "This course takes you from \"I've heard of ROS 2\" to building and debugging a real multi-node robotic system. You won't be memorizing commands — every concept starts with a real robotics problem, then builds up the ROS 2 answer to it.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-0-capstone-preview.png",
+                alt: "A six-stage pipeline diagram: Robot Controller, Topics, Robot Simulation, Sensor Data, Sensor Processing Node, Robot Behavior.",
+                caption: "The final capstone project — this is where the course is headed.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You won't understand every box in that diagram yet — that's the point. By the time you reach the capstone module, you'll have built, run, and debugged every piece of it yourself.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "Nothing on this page needs to be memorized — just get a feel for the shape of what's coming.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "course-roadmap-and-how-this-course-works",
+          title: "Course Roadmap & How This Course Works",
+          durationMinutes: 15,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Every important concept in this course follows a deliberate pattern: why the concept exists, what it is, how it works, seeing it run, building it yourself, breaking it on purpose, fixing it, reflecting on it, and connecting it to what comes next.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-0-learning-philosophy.png",
+                alt: "A nine-step flow: WHY, WHAT, HOW, SEE IT, DO IT, BREAK IT, FIX IT, REFLECT, RECAP.",
+                caption: "The pattern behind every major lesson in this course.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Practical work comes in three flavors. A GUIDED exercise is a recipe — follow the steps. An INDEPENDENT exercise is \"make dinner with these ingredients\" — a goal, with fewer instructions. A DEBUGGING exercise is \"the dish came out wrong\" — you're given a broken system and have to work out why, with hints available if you get stuck.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "Quizzes in this course explain why an answer is right or wrong, not just mark it — getting something wrong is part of learning here, not a penalty.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "16 modules in total, each ending in a short quiz, with one mid-course check after the actions module and one final check before the capstone project.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "environment-and-readiness-checklist",
+          title: "Environment & Readiness Checklist",
+          durationMinutes: 15,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Before installing anything, let's make sure you're set up to succeed. None of this is ROS 2-specific yet — that starts in the next module.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Hardware & OS",
+                body: "A 64-bit machine with 8GB+ RAM (16GB recommended if running Ubuntu inside a VM), 25GB+ free disk space, and a GPU capable of basic OpenGL 3.3+ — integrated graphics from the last ~8 years is generally fine; this matters for Gazebo later, not for anything before it. Ubuntu 24.04 LTS is required — native, dual-boot, VM, or WSL2 are all valid, with trade-offs covered honestly in the next module.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "This course teaches Python as the main path throughout. C++ shows up occasionally to prove the concepts transfer between languages — it's never a second full track you need to follow in parallel.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Readiness checklist: comfortable using a terminal (running commands, navigating directories); basic programming literacy in at least one language; willingness to troubleshoot — this course treats debugging as a real skill, not an afterthought.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "Missing one of these is okay — the next module teaches ROS 2-specific terminal use from scratch. General comfort is enough; ROS experience isn't required.",
+              },
+            },
+            {
+              type: "FILE",
+              data: {
+                href: "/courses/ros2-fundamentals/environment-checklist.pdf",
+                label: "Environment Checklist (PDF)",
+                description: "A one-page reference to revisit before starting Module 3.",
+                sizeLabel: "1 page",
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 interface SeedCourse {
@@ -476,6 +614,32 @@ const COURSES: SeedCourse[] = [
     status: "PUBLISHED",
     visibility: "PUBLIC",
     publishedDaysAgo: 44,
+  },
+
+  // --- Real course content, not a demo fixture ----------------------------
+  //
+  // Everything above is throwaway dev/demo data for exercising the catalog
+  // and player. This one is the actual ROS 2 Fundamentals course being
+  // built module-by-module (ROS2_COURSE_DESIGN.md,
+  // ROS2_COURSE_KICKOFF_PROMPTS.md) — currently just Module 0. DRAFT until
+  // enough modules exist that listing it wouldn't misrepresent an
+  // incomplete course as a finished one; see `isPubliclyVisible` in
+  // features/auth/policy.ts for why DRAFT already keeps it out of the
+  // catalog and out of self-service enrollment without any extra code.
+  //
+  // Real content living in the same file/mechanism as the demo fixtures
+  // above is a deliberate, temporary choice — worth revisiting once a real
+  // deployment target exists (see the AWS deployment-planning session).
+  // Not solved here.
+  {
+    slug: "ros2-fundamentals",
+    title: "ROS 2 Fundamentals: From First Principles to Building Your First Robotic System",
+    subtitle:
+      "From \"I've heard of ROS 2\" to building, running, and debugging a real multi-node robotic system.",
+    description:
+      "A beginner-to-intermediate ROS 2 course pinned to Jazzy Jalisco on Ubuntu 24.04, teaching nodes, topics, services, actions, and simulation through real robotics problems, hands-on practice, and deliberate debugging exercises — not a command-reference tutorial.",
+    status: "DRAFT",
+    visibility: "PUBLIC",
   },
 
   // --- Must never appear in the public catalogue -------------------------

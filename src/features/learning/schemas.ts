@@ -23,18 +23,43 @@ export const textBlockSchema = z.object({
 });
 export type TextBlockData = z.infer<typeof textBlockSchema>;
 
+/**
+ * A media/download source: either a fully-qualified external URL, or a
+ * root-relative path to an asset this app serves itself from `public/`.
+ * The latter exists because this codebase has no external media storage
+ * (§32 — no S3 or equivalent provider is wired up yet), and real,
+ * self-authored course assets (diagrams, downloadable references) need
+ * somewhere to live that isn't a fabricated external link. `next/image`
+ * and a plain `<a href>` both already resolve a root-relative path
+ * correctly with no renderer changes.
+ *
+ * A protocol-relative string ("//host/path") is deliberately rejected —
+ * a browser resolves that against an *arbitrary* host, not this one,
+ * which is exactly the kind of open-redirect-shaped value "just accept
+ * anything that isn't a full URL" would otherwise let through.
+ */
+export const mediaSrcSchema = z
+  .string()
+  .min(1)
+  .refine(
+    (value) =>
+      /^https?:\/\//.test(value) ||
+      (value.startsWith("/") && !value.startsWith("//")),
+    "Must be an absolute URL or a root-relative path (e.g. /images/foo.png)"
+  );
+
 export const imageBlockSchema = z.object({
-  src: z.url(),
+  src: mediaSrcSchema,
   alt: z.string().min(1),
   caption: z.string().optional(),
 });
 export type ImageBlockData = z.infer<typeof imageBlockSchema>;
 
 export const videoBlockSchema = z.object({
-  src: z.url(),
+  src: mediaSrcSchema,
   title: z.string().min(1),
   /** Optional poster frame; native `<video>` shows a blank box without it. */
-  posterSrc: z.url().optional(),
+  posterSrc: mediaSrcSchema.optional(),
 });
 export type VideoBlockData = z.infer<typeof videoBlockSchema>;
 
@@ -90,13 +115,13 @@ export type CalloutBlockData = z.infer<typeof calloutBlockSchema>;
 
 /**
  * A downloadable reference (cheat sheets, source code, exercise files —
- * §17 of the design doc). External URL only: this codebase has no file
- * storage/upload feature yet (no S3 or equivalent provider is wired up
- * anywhere), so there is nothing to upload *to* — building that is a
- * separate, considerably larger feature than closing a content-block gap.
+ * §17 of the design doc). `href` accepts the same absolute-or-root-relative
+ * shape as `mediaSrcSchema` above — this codebase has no file upload
+ * feature (no S3 or equivalent provider), so a real downloadable asset is
+ * either genuinely external or served from this app's own `public/`.
  */
 export const fileBlockSchema = z.object({
-  href: z.url(),
+  href: mediaSrcSchema,
   label: z.string().min(1),
   description: z.string().optional(),
   /** Display label only, e.g. "240 KB" — instructor-authored, not derived

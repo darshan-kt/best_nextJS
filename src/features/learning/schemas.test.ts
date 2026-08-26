@@ -6,6 +6,7 @@ import {
   embedBlockSchema,
   fileBlockSchema,
   imageBlockSchema,
+  mediaSrcSchema,
   textBlockSchema,
   videoBlockSchema,
 } from "./schemas";
@@ -37,6 +38,35 @@ describe("textBlockSchema", () => {
   });
 });
 
+describe("mediaSrcSchema", () => {
+  it("accepts an absolute https URL", () => {
+    expect(mediaSrcSchema.safeParse("https://example.com/x.png").success).toBe(
+      true
+    );
+  });
+
+  it("accepts a root-relative path to a self-hosted asset", () => {
+    expect(
+      mediaSrcSchema.safeParse("/courses/ros2-fundamentals/diagram.png")
+        .success
+    ).toBe(true);
+  });
+
+  it("rejects a protocol-relative path — resolves against an arbitrary host", () => {
+    expect(mediaSrcSchema.safeParse("//evil.example.com/x.png").success).toBe(
+      false
+    );
+  });
+
+  it("rejects a bare filename with no leading slash", () => {
+    expect(mediaSrcSchema.safeParse("diagram.png").success).toBe(false);
+  });
+
+  it("rejects an empty string", () => {
+    expect(mediaSrcSchema.safeParse("").success).toBe(false);
+  });
+});
+
 describe("imageBlockSchema", () => {
   it("accepts a valid image with an optional caption", () => {
     const result = imageBlockSchema.safeParse({
@@ -60,6 +90,15 @@ describe("imageBlockSchema", () => {
     expect(
       imageBlockSchema.safeParse({ src: "not-a-url", alt: "A photo" }).success
     ).toBe(false);
+  });
+
+  it("accepts a root-relative src for a self-hosted asset", () => {
+    expect(
+      imageBlockSchema.safeParse({
+        src: "/courses/ros2-fundamentals/diagram.png",
+        alt: "A diagram",
+      }).success
+    ).toBe(true);
   });
 
   it("rejects a missing alt", () => {
@@ -201,6 +240,15 @@ describe("fileBlockSchema", () => {
       fileBlockSchema.safeParse({ href: "not-a-url", label: "Cheat sheet" })
         .success
     ).toBe(false);
+  });
+
+  it("accepts a root-relative href for a self-hosted download", () => {
+    expect(
+      fileBlockSchema.safeParse({
+        href: "/courses/ros2-fundamentals/environment-checklist.pdf",
+        label: "Environment Checklist",
+      }).success
+    ).toBe(true);
   });
 
   it("rejects a missing label", () => {
