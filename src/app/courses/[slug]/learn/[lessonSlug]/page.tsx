@@ -42,9 +42,11 @@ import { getCompletedLessonIds } from "@/features/progress/queries";
  * its own `quiz:attempt` check without re-querying enrollment itself.
  *
  * Milestone 10 adds the course assistant entry point (`ChatEntry`) beside
- * the back-to-course button — reachable from anywhere in the player, not
- * tied to a specific block, since it answers questions about the whole
- * course as well as the current lesson.
+ * the back-to-course button — part of this lesson page's persistent chrome,
+ * not tied to a specific content block, since it answers questions about
+ * the whole course as well as the current lesson. It is not yet wired into
+ * the `/learn` curriculum overview or the course detail page; only reachable
+ * from within an active lesson.
  *
  * What is explicitly *not* here: no real exercise submission — EXERCISE
  * blocks still render as a labeled placeholder (Milestone 9). No
