@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Library, ShieldCheck } from "lucide-react";
+import { GraduationCap, Library, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,15 +11,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader, PageShell } from "@/components/shared/page-shell";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { can } from "@/features/auth/policy";
 import { requireUserRecord } from "@/features/auth/session";
+import { CourseProgressCard } from "@/features/dashboard/components/course-progress-card";
+import { getStudentDashboard } from "@/features/dashboard/queries";
 
 export const metadata: Metadata = {
   title: "Dashboard · LMS Platform",
 };
 
+/**
+ * §44, Milestone 9. Extends the Milestone 3 placeholder in place — the
+ * auth/role-badge/admin-link section below is unchanged — rather than a
+ * separate route, so the already-correct `requireUserRecord()` and
+ * `admin:access` gating isn't duplicated (§4).
+ *
+ * Widened from `narrow` to `wide`: the tri-width shell from Milestone 1
+ * names `wide` for exactly this case, "multi-column content" (the course
+ * card grid below), where `narrow` was right for a single account card.
+ */
 export default async function DashboardPage() {
   // Authentication is enforced here, in the component that renders the
   // protected data — not in middleware, and never by hiding links (§12).
@@ -33,8 +46,14 @@ export default async function DashboardPage() {
   // not protection.
   const showAdminLink = can(actor, { type: "admin:access" });
 
+  // Structurally scoped to this actor — `getStudentDashboard(actor)` can
+  // only ever return the signed-in user's own enrollments, the same
+  // reasoning `getEnrollment(actor.id, ...)` already relies on, so there is
+  // nothing here for `can()` to additionally gate (§12).
+  const courses = await getStudentDashboard(actor);
+
   return (
-    <PageShell width="narrow">
+    <PageShell width="wide">
       <PageHeader
         title={`Welcome${user.name ? `, ${user.name}` : ""}`}
         description={user.email}
@@ -51,6 +70,34 @@ export default async function DashboardPage() {
           </>
         }
       />
+
+      <div className="flex flex-col gap-4">
+        <h2 className="font-heading text-title-sm font-semibold text-foreground">
+          Your courses
+        </h2>
+
+        {courses.length === 0 ? (
+          <EmptyState
+            icon={<GraduationCap className="size-6" aria-hidden="true" />}
+            title="You haven't enrolled in a course yet"
+            description="Browse the catalogue and enroll in a course to start learning."
+            action={
+              <Button asChild>
+                <Link href="/courses">
+                  <Library aria-hidden="true" />
+                  Browse courses
+                </Link>
+              </Button>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {courses.map((course) => (
+              <CourseProgressCard key={course.enrollmentId} course={course} />
+            ))}
+          </div>
+        )}
+      </div>
 
       <Card>
         <CardHeader>

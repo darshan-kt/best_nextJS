@@ -233,6 +233,60 @@ export async function getCourseWithCurriculum(
   };
 }
 
+export interface CourseLessonRef {
+  id: string;
+  slug: string;
+}
+
+/**
+ * Published lessons for several courses at once, in curriculum order, keyed
+ * by course id. Built for the dashboard (§44, Milestone 9): a student's
+ * enrollments span many courses, and computing "next incomplete lesson" for
+ * each one must not cost one query per course (§26, §42) — this is one
+ * query regardless of how many course ids are passed.
+ *
+ * A course id with no published lessons still gets a `[]` entry rather than
+ * a missing map key, matching `getCompletedLessonIdsByEnrollments`'s same
+ * choice for the same reason.
+ */
+export async function getPublishedLessonsForCourses(
+  courseIds: readonly string[]
+): Promise<Map<string, CourseLessonRef[]>> {
+  const result = new Map<string, CourseLessonRef[]>(
+    courseIds.map((id) => [id, []])
+  );
+
+  if (courseIds.length === 0) {
+    return result;
+  }
+
+  const courses = await prisma.course.findMany({
+    where: { id: { in: courseIds as string[] } },
+    select: {
+      id: true,
+      sections: {
+        orderBy: { position: "asc" },
+        select: {
+          lessons: {
+            where: { isPublished: true },
+            orderBy: { position: "asc" },
+            select: { id: true, slug: true },
+          },
+        },
+      },
+    },
+  });
+
+  for (const course of courses) {
+    result.set(
+      course.id,
+      course.sections.flatMap((section) => section.lessons)
+    );
+  }
+
+  return result;
+}
+
 /**
  * Case-insensitive substring search across the fields a learner would
  * recognise a course by.

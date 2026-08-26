@@ -45,3 +45,44 @@ export async function getEnrollment(
     },
   });
 }
+
+export interface EnrolledCourseSummary {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+}
+
+export interface EnrollmentWithCourse extends EnrollmentRecord {
+  course: EnrolledCourseSummary;
+}
+
+/**
+ * All of one user's enrollments, across every course, in one query (§44,
+ * Milestone 9). The dashboard's whole reason for existing is showing many
+ * courses at once, so this is the query that must not become N+1 as a
+ * student's enrollment count grows (§26, §42) — one `findMany` regardless
+ * of how many courses they're in, not one `getEnrollment` call per course.
+ *
+ * Every status is included; the dashboard decides how ACTIVE, COMPLETED
+ * and CANCELLED each render, rather than this query pre-filtering a status
+ * out and silently deciding that for every future caller.
+ */
+export async function getEnrollmentsForUser(
+  userId: string
+): Promise<EnrollmentWithCourse[]> {
+  return prisma.enrollment.findMany({
+    where: { userId },
+    orderBy: { enrolledAt: "desc" },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      enrolledAt: true,
+      completedAt: true,
+      course: {
+        select: { id: true, slug: true, title: true, subtitle: true },
+      },
+    },
+  });
+}
