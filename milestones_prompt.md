@@ -99,3 +99,64 @@ Use Playwright to verify and screenshot: the detail page for a logged-out visito
 Since you already have the one authorization test from Milestone 4, extend it (don't create a second parallel test setup) to cover: an enrolled user can access enrollment-gated content, a non-enrolled user cannot, per §11.
 
 Wait for my go-ahead on the plan before implementing.
+
+
+Step 6
+Milestone 5 is committed. Start Milestone 6 (Learning Player & Content Renderer) from §44.
+
+Follow §36 — plan first (Objective / Files to Change / Architecture Decisions / Potential Risks / Validation Plan).
+
+Scope for this milestone:
+
+Build the actual lesson player behind the /learn gate from Milestone 5 — this replaces the stub, not the gate itself, which stays as-is.
+Render the content-block model from §10/§11: an ordered array of typed blocks (TEXT, IMAGE, VIDEO, QUIZ, EXERCISE, CODE, CALLOUT, FILE, EMBED). Build a renderer per block type — start with TEXT, IMAGE, VIDEO, and CODE as the working set; QUIZ and EXERCISE get real implementations in Milestones 7-8, so for now render them as a recognizable placeholder rather than skipping them entirely.
+Lesson navigation: move between lessons within a section/course, respecting the curriculum order from §11.
+Enforce authorization per §11/§12 at the server level for every lesson fetch — enrollment must be re-verified per lesson request, not just once at the /learn gate.
+If you have Figma reference for this screen, pull design context via the Figma MCP before implementing; otherwise follow §21 tokens and component patterns already established in the UI enhancement pass.
+Cover §26 states: loading, lesson not found, no access (defense in depth even though the gate should already prevent this).
+Use Playwright to screenshot: the player mid-lesson with a TEXT block, a VIDEO block, and the navigation between two lessons.
+
+Note: Progress tracking (marking a lesson complete) is explicitly Milestone 7 — don't build persistence for completion state here, just the player and navigation. Flag clearly in your plan which parts you're deferring so we don't blur the boundary the way M5/M6 was already correctly kept separate.
+
+Wait for my go-ahead on the plan before implementing.
+
+
+Step 7
+Start Milestone 7 (Progress Tracking) from §44.
+
+Follow §36 — plan first (Objective / Files to Change / Architecture Decisions / Potential Risks / Validation Plan).
+
+Scope for this milestone:
+
+Model progress tracking hanging off the Enrollment row, as anticipated in the Milestone 5 schema comments — confirm that shape still holds now that the lesson player and content-block structure from Milestone 6 are real, and adjust if reality diverged from the original plan.
+Track lesson-level completion at minimum; decide in your plan whether block-level progress (e.g. partial completion within a lesson) is in scope for this milestone or deferred, and justify the call against §35 (don't overbuild ahead of real need).
+Wire completion into the lesson player from Milestone 6: a way to mark a lesson complete (manual button, or auto-complete on scroll/view — pick one and justify it in the plan) and visually reflect completion state in lesson navigation.
+Application-layer use case per §5: "Mark lesson complete" / "Get course progress" as discrete, testable operations.
+Enforce authorization per §11/§12: only the enrolled student can mark or view their own progress — verify this isn't just implied by UI state.
+Surface a course-level progress indicator (e.g. "3 of 12 lessons complete") somewhere sensible — course detail page and/or the lesson player itself.
+Cover §26 states: no progress yet, partial progress, fully complete.
+Use Playwright to screenshot: a course with 0% progress, partial progress, and 100% complete.
+
+Wait for my go-ahead on the plan before implementing.
+
+
+Step 8
+Start Milestone 8 (Quiz Engine) from §44.
+
+Follow §36 — plan first (Objective / Files to Change / Architecture Decisions / Potential Risks / Validation Plan).
+
+Scope for this milestone:
+
+Replace the QUIZ placeholder block from Milestone 6 with a real implementation, using the Quiz domain model from §18/§19 that was structurally scaffolded in Milestone 2.
+Support multiple question types structurally (even if only 1-2 are fully implemented now) per §18 — tell me in your plan which types you're implementing this milestone vs. leaving structurally supported but unimplemented, and why.
+Quiz-taking flow: present questions, collect answers, submit, score, show results. Decide and justify: is scoring synchronous (client submits, gets immediate result) or does it need server-side evaluation for certain question types? This affects the architecture.
+Application-layer use case per §5: "Submit quiz attempt" / "Get quiz results" as discrete, testable operations — not scoring logic embedded in a route handler or component.
+Enforce authorization per §11/§12: only enrolled students can attempt a quiz; verify server-side that submitted answers can't be tampered with client-side to fake a score.
+Decide on quiz attempts: single attempt, multiple attempts, or retake policy — this is a product decision, state your assumption in the plan and flag it clearly so I can correct it if wrong.
+Connect quiz completion to progress tracking from Milestone 7 — does passing a quiz count toward lesson/course completion? Make this explicit rather than implicit.
+Cover §26 states: not started, in progress, submitted/scored, and a review state if you're supporting reviewing past answers.
+Use Playwright to screenshot: quiz question screen, submission, and results screen.
+
+§24 (Accessibility) applies here too — keyboard navigation through questions and clear focus states matter for a graded flow, don't let this one slip the way captions did in Milestone 6.
+
+Wait for my go-ahead on the plan before implementing — especially the attempt-policy and client/server scoring split, since both are product decisions with real implications, not just implementation details.
