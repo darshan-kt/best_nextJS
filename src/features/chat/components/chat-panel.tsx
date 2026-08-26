@@ -171,10 +171,20 @@ export function ChatPanel({
                   )}
                 >
                   {isStreamingReply ? (
-                    <Loader2
-                      className="size-4 animate-spin"
-                      aria-hidden="true"
-                    />
+                    <span role="status" className="flex items-center gap-2">
+                      {/* `data-motion="essential"` exempts it from the
+                          global reduced-motion freeze — a frozen spinner
+                          would stop reporting progress (§25, matches
+                          `Button`'s loading spinner). */}
+                      <Loader2
+                        className="size-4 animate-spin"
+                        data-motion="essential"
+                        aria-hidden="true"
+                      />
+                      <span className="sr-only">
+                        Assistant is composing a reply…
+                      </span>
+                    </span>
                   ) : (
                     m.content
                   )}
@@ -185,7 +195,11 @@ export function ChatPanel({
         </div>
 
         {error ? (
-          <p role="alert" className="px-4 pb-2 text-body-sm text-destructive">
+          <p
+            id="chat-panel-error"
+            role="alert"
+            className="px-4 pb-2 text-body-sm text-destructive"
+          >
             {error}
           </p>
         ) : null}
@@ -200,6 +214,8 @@ export function ChatPanel({
             placeholder="Ask a question…"
             disabled={isSending}
             aria-label="Message the course assistant"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "chat-panel-error" : undefined}
           />
           <Button
             type="submit"

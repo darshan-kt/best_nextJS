@@ -36,7 +36,7 @@ export function CourseProgress({
           {completed} of {total} {total === 1 ? "lesson" : "lessons"}
         </span>
       </div>
-      <Progress value={percent} />
+      <Progress value={percent} aria-label="Course progress" />
     </div>
   );
 }

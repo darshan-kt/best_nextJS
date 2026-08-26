@@ -40,6 +40,9 @@ yarn-error.log*
 # playwright
 /.playwright-mcp/
 /homepage.png
+/test-results/
+/playwright-report/
+/blob-report/
 
 # typescript
 *.tsbuildinfo

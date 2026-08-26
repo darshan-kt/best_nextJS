@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { forbidden, notFound } from "next/navigation";
@@ -56,7 +57,12 @@ import { getCompletedLessonIds } from "@/features/progress/queries";
  * `submit-quiz-attempt.ts`).
  */
 
-const loadLesson = async (slug: string, lessonSlug: string) => {
+/**
+ * `generateMetadata` and the page component both need this, and Next.js
+ * calls them separately. `cache()` collapses that into one query chain per
+ * request (mirrors the same fix on `/courses/[slug]/page.tsx`'s `loadPage`).
+ */
+const loadLesson = cache(async (slug: string, lessonSlug: string) => {
   const actor = await requireUser(`/courses/${slug}/learn/${lessonSlug}`);
   const course = await getCourseWithCurriculum(slug, actor);
 
@@ -71,6 +77,13 @@ const loadLesson = async (slug: string, lessonSlug: string) => {
     return { notFound: true as const };
   }
 
+  // Kicked off alongside the enrollment/authorization check rather than
+  // after it: content-block content is only ever *used* once `canLearn` is
+  // confirmed below, so starting the fetch early costs nothing on the
+  // forbidden path (the promise is simply discarded) and saves a round
+  // trip on the common, authorized path.
+  const blocksPromise = getLessonContentBlocks(navigation.current.id);
+
   const enrollment = await getEnrollment(actor.id, course.id);
   const canLearn = can(actor, {
     type: "course:learn",
@@ -82,7 +95,7 @@ const loadLesson = async (slug: string, lessonSlug: string) => {
     return { forbidden: true as const };
   }
 
-  const blocks = await getLessonContentBlocks(navigation.current.id);
+  const blocks = await blocksPromise;
 
   const canViewProgress = can(actor, { type: "progress:view", enrollment });
   const isCompleted = canViewProgress
@@ -100,7 +113,7 @@ const loadLesson = async (slug: string, lessonSlug: string) => {
     canViewProgress,
     isCompleted,
   };
-};
+});
 
 export async function generateMetadata({
   params,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, ClipboardList, RotateCcw } from "lucide-react";
 
@@ -91,6 +91,23 @@ export function QuizRunner({
   const [responses, setResponses] = useState<Record<string, unknown>>({});
   const [state, setState] = useState<SubmitQuizAttemptFormState>({});
 
+  // Each phase swaps its whole subtree for another (§24) — without this,
+  // focus silently drops to `<body>` on every transition and a screen
+  // reader user gets no indication that submitting just finished grading.
+  // Skipped on the very first render (initial mount into "summary") since
+  // stealing focus on page load, rather than in response to a user action,
+  // is its own accessibility anti-pattern.
+  const phaseHeadingRef = useRef<HTMLHeadingElement>(null);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    phaseHeadingRef.current?.focus();
+  }, [phase]);
+
   // A plain async client function, not `useActionState` — passing one
   // directly to `<form action>` is itself a React 19 transition, so
   // `useFormStatus` below still works, but control returns here right
@@ -121,8 +138,12 @@ export function QuizRunner({
     return (
       <Card>
         <CardContent className="flex flex-col gap-5">
-          <h3 className="font-heading text-body font-medium text-foreground">
-            {quiz.title}
+          <h3
+            ref={phaseHeadingRef}
+            tabIndex={-1}
+            className="font-heading text-body font-medium text-foreground outline-none"
+          >
+            {quiz.title} — results
           </h3>
           <QuizResults result={state.result} questions={sortedQuestions} />
           {canAttempt ? (
@@ -147,6 +168,13 @@ export function QuizRunner({
         className="flex flex-col gap-4"
         aria-label={`${quiz.title} — quiz`}
       >
+        <h3
+          ref={phaseHeadingRef}
+          tabIndex={-1}
+          className="font-heading text-body font-medium text-foreground outline-none"
+        >
+          {quiz.title}
+        </h3>
         <input type="hidden" name="quizId" value={quiz.id} />
         <input type="hidden" name="courseSlug" value={courseSlug} />
         <input type="hidden" name="lessonSlug" value={lessonSlug} />

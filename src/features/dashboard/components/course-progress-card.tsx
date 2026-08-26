@@ -83,7 +83,7 @@ export function CourseProgressCard({
               </span>
               <span className="tabular-nums">{percent}%</span>
             </div>
-            <Progress value={percent} />
+            <Progress value={percent} aria-label={`${courseTitle} progress`} />
           </div>
         ) : null}
 
