@@ -112,6 +112,14 @@ export class RedisRateLimiter implements RateLimiter {
       // until the initial connection completes — only a real outage after
       // that point hits this ceiling.
       maxRetriesPerRequest: 1,
+      // Without this, ioredis opens the socket the moment this class is
+      // constructed — before any caller has actually issued a command.
+      // `./index.ts` already defers *constructing* this class until first
+      // use; this defers the network connection itself the same way, so
+      // constructing one (e.g. as part of `next build` evaluating a
+      // route's module graph while collecting page data, which doesn't
+      // call any rate-limiter method) never touches the network at all.
+      lazyConnect: true,
     });
 
     this.client.defineCommand("rateLimitCheck", {
