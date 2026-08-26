@@ -9,6 +9,7 @@ import { can } from "@/features/auth/policy";
 import { requireUser } from "@/features/auth/session";
 import { getCourseWithCurriculum } from "@/features/courses/queries";
 import { getEnrollment } from "@/features/enrollment/queries";
+import { ChatEntry } from "@/features/chat/components/chat-entry";
 import { BlockRenderer } from "@/features/learning/components/block-renderer";
 import { LessonNav } from "@/features/learning/components/lesson-nav";
 import { findLessonNavigation, flattenLessons } from "@/features/learning/navigation";
@@ -39,6 +40,11 @@ import { getCompletedLessonIds } from "@/features/progress/queries";
  * Milestone 8 adds real quiz-taking — the same resolved `enrollment` is
  * passed to `BlockRenderer` as `quizContext` so each `QUIZ` block can run
  * its own `quiz:attempt` check without re-querying enrollment itself.
+ *
+ * Milestone 10 adds the course assistant entry point (`ChatEntry`) beside
+ * the back-to-course button — reachable from anywhere in the player, not
+ * tied to a specific block, since it answers questions about the whole
+ * course as well as the current lesson.
  *
  * What is explicitly *not* here: no real exercise submission — EXERCISE
  * blocks still render as a labeled placeholder (Milestone 9). No
@@ -138,12 +144,22 @@ export default async function LessonPlayerPage({
   return (
     <PageShell width="narrow" className="gap-8">
       <div className="flex flex-col gap-3">
-        <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-          <Link href={`/courses/${slug}/learn`}>
-            <ArrowLeft aria-hidden="true" />
-            {course.title}
-          </Link>
-        </Button>
+        <div className="flex items-center justify-between gap-3">
+          <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+            <Link href={`/courses/${slug}/learn`}>
+              <ArrowLeft aria-hidden="true" />
+              {course.title}
+            </Link>
+          </Button>
+
+          <ChatEntry
+            actor={actor}
+            enrollment={enrollment}
+            courseId={course.id}
+            courseSlug={slug}
+            lessonSlug={lessonSlug}
+          />
+        </div>
 
         <div className="flex flex-col gap-2">
           <span className="text-caption text-muted-foreground">

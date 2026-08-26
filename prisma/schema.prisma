@@ -107,6 +107,15 @@ enum SubmissionStatus {
   EVALUATED
 }
 
+/// §17. STUDENT and ASSISTANT cover this milestone's chat. TUTOR is
+/// deliberately absent, not omitted by oversight: adding it later, when
+/// human tutor escalation is actually built, is an additive enum value
+/// (`ALTER TYPE ... ADD VALUE`), not a redesign of `Message`.
+enum MessageSender {
+  STUDENT
+  ASSISTANT
+}
+
 // ---------------------------------------------------------------------------
 // Identity & roles (§12, §13)
 // ---------------------------------------------------------------------------
@@ -137,6 +146,7 @@ model User {
   quizAttempts        QuizAttempt[]
   exerciseSubmissions ExerciseSubmission[]
   reviewedEvaluations ExerciseEvaluation[] @relation("EvaluationReviewer")
+  conversations       Conversation[]
 
   @@index([createdAt])
 }
@@ -241,8 +251,9 @@ model Course {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  sections    Section[]
-  enrollments Enrollment[]
+  sections      Section[]
+  enrollments   Enrollment[]
+  conversations Conversation[]
 
   @@index([instructorId])
   // Catalogue listings filter on status + visibility and sort by recency.
@@ -574,4 +585,51 @@ model ExerciseEvaluation {
   reviewer   User?              @relation("EvaluationReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
 
   @@index([reviewerId])
+}
+
+// ---------------------------------------------------------------------------
+// Course AI assistant (§15, §16, §44 Milestone 10)
+// ---------------------------------------------------------------------------
+
+/// One learner's ongoing conversation with the AI assistant for one course
+/// — scoped to (user, course), not (user, lesson): §16 frames this as a
+/// *course* assistant, and a per-lesson reset would lose continuity the
+/// moment a student asks a follow-up after moving to the next lesson.
+///
+/// No `organizationId`: exactly like `Enrollment`, this inherits scope
+/// through `Course`, the designated future organization-scope entity
+/// (§14). An enterprise customer wanting to audit assistant conversations
+/// reaches them through the course they belong to, not a duplicated
+/// ownership column here.
+model Conversation {
+  id       String @id @default(cuid())
+  userId   String
+  courseId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  /// One conversation per learner per course — also the upsert key.
+  @@unique([userId, courseId])
+  // Every read is "this learner's conversation for this course", which the
+  // unique index above already covers; no caller needs the reverse
+  // direction ("every conversation in this course") yet.
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String
+  sender         MessageSender
+  content        String
+
+  createdAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // The one read this milestone has: a conversation's messages in order.
+  @@index([conversationId, createdAt])
 }

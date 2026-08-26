@@ -114,6 +114,7 @@ export type PolicyAction =
   | { type: "progress:view"; enrollment: EnrollmentSubject | null }
   | { type: "quiz:attempt"; enrollment: EnrollmentSubject | null }
   | { type: "quiz:view"; enrollment: EnrollmentSubject | null }
+  | { type: "chat:send"; enrollment: EnrollmentSubject | null }
   | { type: "submission:view"; submission: OwnedSubject }
   | { type: "submission:grade"; submission: OwnedSubject }
   | { type: "user:manageRoles" }
@@ -202,6 +203,7 @@ export function can(actor: Actor | null, action: PolicyAction): boolean {
     case "progress:view":
     case "quiz:attempt":
     case "quiz:view":
+    case "chat:send":
       // Progress is a personal record of *this learner's own* completion,
       // not course content — deliberately not the same rule as
       // `course:learn` above. An instructor or moderator previewing a
@@ -212,10 +214,11 @@ export function can(actor: Actor | null, action: PolicyAction): boolean {
       // enrollment being live — checked here, once, rather than left for
       // every call site to reimplement (§13).
       //
-      // A quiz attempt is the same kind of personal record as lesson
-      // progress (Milestone 7), so it shares this rule rather than
-      // `course:learn`'s bypass — an author previewing their own course has
-      // nothing valid for an attempt to attach to either.
+      // A quiz attempt and a chat conversation are the same kind of
+      // personal record as lesson progress (Milestones 7, 8, 10), so all
+      // three share this rule rather than `course:learn`'s bypass — an
+      // author previewing their own course has nothing valid for an
+      // attempt, or a conversation, to attach to either.
       return (
         action.enrollment?.userId === actor.id &&
         (action.enrollment.status === "ACTIVE" ||

@@ -65,6 +65,36 @@ const envSchema = z.object({
 
   /** Failed attempts per client IP before that address is throttled. */
   AUTH_RATE_LIMIT_MAX_PER_IP: z.coerce.number().int().positive().default(20),
+
+  /**
+   * Course AI assistant (§15, §16, Milestone 10).
+   *
+   * `GEMINI_API_KEY` belongs only to `features/ai/providers/gemini-provider.ts`
+   * — the one file in the app allowed to import the Google GenAI SDK. Every
+   * other caller reaches the assistant through the vendor-neutral
+   * `AIProvider` interface in `features/ai/provider.ts`, so swapping in a
+   * paid provider later is a new provider file and a one-line change here,
+   * not a rewrite of the chat feature.
+   */
+  GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
+
+  /** Overridable without a code change as Google's free-tier lineup moves. */
+  GEMINI_MODEL: z.string().min(1).default("gemini-2.5-flash"),
+
+  /**
+   * Chat rate limiting (§29). A model call costs real money (or, on a free
+   * tier, real quota) per message, unlike the auth attempts this same
+   * `RateLimiter` interface already throttles — so this bounds worst-case
+   * spend per student rather than defending against brute force.
+   */
+  CHAT_RATE_LIMIT_WINDOW_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(3600),
+
+  /** Messages per student allowed inside the window. */
+  CHAT_RATE_LIMIT_MAX_PER_USER: z.coerce.number().int().positive().default(30),
 });
 
 export type Env = z.infer<typeof envSchema>;
