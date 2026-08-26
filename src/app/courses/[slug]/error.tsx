@@ -2,15 +2,17 @@
 
 import { useEffect } from "react";
 
+import { logger } from "@/lib/logger";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageShell } from "@/components/shared/page-shell";
 
 /**
  * Course detail error boundary (§28).
  *
- * The message stays generic; the detail goes to the server logs, where it
- * is useful without leaking internals to the user (§29). `digest`
- * correlates this render with the full server-side stack trace.
+ * The message stays generic; the full stack trace is already in the
+ * server logs via Next's own automatic server-side logging — this call is
+ * a client-side breadcrumb carrying only `digest`, the id that correlates
+ * the two (§29).
  */
 export default function CourseDetailError({
   error,
@@ -20,7 +22,8 @@ export default function CourseDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[course-detail] failed to render course", {
+    logger.error("failed to render course detail", {
+      scope: "course-detail",
       digest: error.digest,
       message: error.message,
     });

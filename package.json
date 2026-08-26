@@ -11,6 +11,7 @@
     "pretest:integration": "node scripts/migrate-test-db.mjs",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "test:e2e": "playwright test",
+    "pretypecheck": "next typegen",
     "typecheck": "tsc --noEmit",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",

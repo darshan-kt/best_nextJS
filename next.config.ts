@@ -32,6 +32,45 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  // Security response headers (§29, Milestone 12). Content-Security-Policy
+  // is deliberately not here: it needs a fresh nonce per request, which a
+  // static header list can't produce, so it's set in `src/proxy.ts`
+  // instead. These are the headers that don't vary per request.
+  async headers() {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Superseded by the CSP's `frame-ancestors 'none'` in modern
+          // browsers, but kept for the older ones that only honor this.
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Denies browser features this app never uses. Extend this list
+          // only when a feature actually needs one of them — it should
+          // stay a record of what's deliberately off, not a template.
+          {
+            key: "Permissions-Policy",
+            value:
+              "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+          // HSTS is only meaningful — and only spec-compliant to send —
+          // over HTTPS, which local development isn't.
+          ...(isProduction
+            ? [
+                {
+                  key: "Strict-Transport-Security",
+                  value: "max-age=63072000; includeSubDomains",
+                },
+              ]
+            : []),
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

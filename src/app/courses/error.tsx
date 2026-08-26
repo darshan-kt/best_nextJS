@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { logger } from "@/lib/logger";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader, PageShell } from "@/components/shared/page-shell";
 
@@ -13,8 +14,9 @@ import { PageHeader, PageShell } from "@/components/shared/page-shell";
  * than making the user reload the page.
  *
  * The message is deliberately generic. The user is told what to do next;
- * the actual error goes to the server logs, where it is useful without
- * leaking internals such as connection strings or stack traces (§29).
+ * the full stack trace is already in the server logs via Next's own
+ * automatic server-side logging — this call is a client-side breadcrumb
+ * carrying only `digest`, the id that correlates the two (§29).
  *
  * The shell comes from `PageShell`/`PageHeader` rather than being copied
  * from `page.tsx` by hand, so the heading does not sit two pixels off the
@@ -28,10 +30,8 @@ export default function CoursesError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Structured logging replaces this once observability is wired up in
-    // Milestone 12. `digest` is the id that correlates this render with
-    // the full server-side stack trace.
-    console.error("[catalog] failed to render course catalogue", {
+    logger.error("failed to render course catalogue", {
+      scope: "catalog",
       digest: error.digest,
       message: error.message,
     });

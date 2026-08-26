@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel a still-running run for the same branch/PR when a new commit lands,
+# so pushes to an active PR don't queue up redundant runs.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        # `next build` only needs env.ts (§30) to parse without throwing —
+        # none of these routes query the database at build time (every
+        # page that touches data reads cookies()/auth first, which forces
+        # Next to render it per-request instead), so a syntactically valid
+        # DATABASE_URL is enough; no Postgres service container needed.
+        #
+        # Integration tests (vitest.integration.config.mts, a real
+        # Postgres) and the @ai-tagged Playwright spec (a real Gemini API
+        # call) deliberately stay out of this workflow — they need live
+        # infrastructure/secrets and real API spend, which isn't worth
+        # paying on every PR. Run them locally: `pnpm test:integration`,
+        # `pnpm test:e2e`.
+        env:
+          DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/ci"
+          AUTH_SECRET: "ci-only-secret-value-at-least-32-characters"
+          GEMINI_API_KEY: "ci-only-placeholder-key"
+        run: pnpm build

@@ -31,6 +31,10 @@ cannot collide with another PostgreSQL instance already running locally.
 - `pnpm start` — run the production build
 - `pnpm lint` — run ESLint
 - `pnpm typecheck` — run `tsc --noEmit`
+- `pnpm test` — unit tests (Vitest, no database required)
+- `pnpm test:integration` — integration tests against a real, separate
+  Postgres database (see [`TEST_DATABASE_URL`](./.env.example))
+- `pnpm test:e2e` — Playwright end-to-end tests
 - `pnpm db:up` / `pnpm db:down` — start / stop the local PostgreSQL container
 - `pnpm db:migrate` — create and apply a migration (development)
 - `pnpm db:deploy` — apply pending migrations (production)
@@ -69,8 +73,10 @@ await requirePermission({ type: "course:update", course }); // authorization
 ```
 
 Enforcement lives in the Server Components and Actions that touch data —
-deliberately not in middleware, which is a bypassable place to put an
-authorization boundary.
+deliberately not in `src/proxy.ts` (Next's Proxy convention, formerly
+"Middleware"), which is a bypassable place to put an authorization
+boundary. `proxy.ts` exists only to attach a security header (see
+[Security headers](#security-headers) below), not to gate access.
 
 Self-service sign-up always creates a `STUDENT`. Elevated roles are
 granted administratively; there is no UI for that yet.
@@ -105,6 +111,52 @@ Two caveats worth knowing:
   [`src/server/rate-limit/index.ts`](./src/server/rate-limit/index.ts) —
   no auth code changes.
 
+## Production hardening
+
+### Security headers
+
+`next.config.ts` sets the static security headers (`X-Content-Type-Options`,
+`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and — in
+production only — `Strict-Transport-Security`).
+
+The Content-Security-Policy is set separately, in
+[`src/proxy.ts`](./src/proxy.ts) (Next's Proxy convention, formerly
+"Middleware" — [renamed in v16](https://nextjs.org/docs/messages/middleware-to-proxy)),
+because it needs a fresh nonce on every request. `script-src` carries the
+real protection (`'strict-dynamic'` plus the nonce); `style-src` stays
+permissive (`'unsafe-inline'`) because Radix UI positions overlays via
+inline `style` attributes, which a CSP nonce can't cover. `proxy.ts` is
+**not** an authorization boundary — see [Authorization](#authentication)
+above for why access control stays in Server Components/Actions instead.
+
+### Error handling
+
+`app/not-found.tsx` and `app/error.tsx` give every route a branded fallback
+instead of Next's default error screen. `app/global-error.tsx` is the
+last-resort boundary for when the root layout itself throws — it renders
+its own `<html>`/`<body>` with plain inline styles, deliberately not
+depending on anything the failure might have taken down with it.
+
+All three, plus the route-specific boundaries under `app/courses/`, report
+through [`src/lib/logger.ts`](./src/lib/logger.ts) — a thin structured-JSON
+wrapper around `console`, kept swappable for a real sink (Sentry, Datadog,
+...) later without touching call sites.
+
+### Health check
+
+`GET /api/health` checks database connectivity and returns
+`{ "status": "ok" }` (200) or `{ "status": "error" }` (503), for a load
+balancer or orchestrator to poll. Deliberately unauthenticated and
+deliberately minimal — the response never includes the underlying error.
+
+### CI
+
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs typecheck,
+lint, unit tests, and a production build on every push/PR to `main`.
+Integration tests and the `@ai`-tagged Playwright spec stay local-only —
+they need a live Postgres and a real Gemini API key respectively, which
+isn't worth paying for on every PR.
+
 ## Project structure
 
 ```text
@@ -114,18 +166,24 @@ prisma/
 
 src/
 ├── app/               # Routes (App Router)
+│   ├── api/health/     # Liveness/readiness probe
+│   ├── error.tsx       # Root error boundary
+│   ├── global-error.tsx # Last-resort boundary (root layout itself failed)
+│   └── not-found.tsx   # Global 404
 ├── features/
 │   └── auth/           # Auth.js config, policy layer, guards, actions
 ├── components/
 │   ├── ui/             # shadcn/ui primitives
 │   └── shared/          # Composite shared components (EmptyState, ErrorState)
-├── lib/               # Cross-cutting utilities
+├── lib/
+│   └── logger.ts        # Structured logging (thin console wrapper)
 ├── server/
 │   └── rate-limit/     # Swappable rate limiting (memory now, Redis later)
 ├── db/
 │   ├── client.ts       # Shared Prisma Client instance
 │   └── generated/      # Generated Prisma Client (git-ignored)
 ├── types/             # Shared domain types
+├── proxy.ts           # CSP nonce only — not an authorization boundary
 └── config/
     └── env.ts          # Validated environment configuration
 ```
