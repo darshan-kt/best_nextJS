@@ -74,8 +74,14 @@ export interface OwnedSubject {
  * A learner's enrollment in the course being accessed, or null when they
  * have none. Null is a normal input, not an error — "not enrolled" is an
  * answer the policy needs to be able to give.
+ *
+ * `userId` was added in Milestone 7, for `progress:mark` / `progress:view`
+ * — those need to know whose enrollment this is, not only whether it's
+ * live, because progress is a personal record rather than shared course
+ * content (contrast with `course:learn` below, which never needed it).
  */
 export interface EnrollmentSubject {
+  userId: string;
   status: "ACTIVE" | "COMPLETED" | "CANCELLED";
 }
 
@@ -104,6 +110,8 @@ export type PolicyAction =
     }
   | { type: "course:update"; course: CourseSubject }
   | { type: "course:delete"; course: CourseSubject }
+  | { type: "progress:mark"; enrollment: EnrollmentSubject | null }
+  | { type: "progress:view"; enrollment: EnrollmentSubject | null }
   | { type: "submission:view"; submission: OwnedSubject }
   | { type: "submission:grade"; submission: OwnedSubject }
   | { type: "user:manageRoles" }
@@ -186,6 +194,23 @@ export function can(actor: Actor | null, action: PolicyAction): boolean {
 
       return (
         action.course.instructorId === actor.id || hasRole(actor, "MODERATOR")
+      );
+
+    case "progress:mark":
+    case "progress:view":
+      // Progress is a personal record of *this learner's own* completion,
+      // not course content — deliberately not the same rule as
+      // `course:learn` above. An instructor or moderator previewing a
+      // course creates no `Enrollment` row, so there is nothing valid for
+      // a completion record to attach to; letting them through here would
+      // mean either silently doing nothing or writing progress that
+      // belongs to no one. Ownership is required in addition to the
+      // enrollment being live — checked here, once, rather than left for
+      // every call site to reimplement (§13).
+      return (
+        action.enrollment?.userId === actor.id &&
+        (action.enrollment.status === "ACTIVE" ||
+          action.enrollment.status === "COMPLETED")
       );
 
     case "course:update":

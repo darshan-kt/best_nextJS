@@ -84,7 +84,13 @@ export async function enrollStudentInCourse({
   // why status exists instead of deleting (see schema).
   const existing = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId: actor.id, courseId: course.id } },
-    select: { id: true, status: true, enrolledAt: true, completedAt: true },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      enrolledAt: true,
+      completedAt: true,
+    },
   });
 
   if (existing && existing.status !== "CANCELLED") {
@@ -95,7 +101,13 @@ export async function enrollStudentInCourse({
     where: { userId_courseId: { userId: actor.id, courseId: course.id } },
     create: { userId: actor.id, courseId: course.id },
     update: { status: "ACTIVE", completedAt: null },
-    select: { id: true, status: true, enrolledAt: true, completedAt: true },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      enrolledAt: true,
+      completedAt: true,
+    },
   });
 
   return { ok: true, enrollment, created: true };

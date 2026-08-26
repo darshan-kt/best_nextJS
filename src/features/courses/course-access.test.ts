@@ -174,9 +174,9 @@ const publicCourse: CourseSubject = {
   visibility: "PUBLIC",
 };
 
-const enrolled: EnrollmentSubject = { status: "ACTIVE" };
-const completed: EnrollmentSubject = { status: "COMPLETED" };
-const cancelled: EnrollmentSubject = { status: "CANCELLED" };
+const enrolled: EnrollmentSubject = { userId: learner.id, status: "ACTIVE" };
+const completed: EnrollmentSubject = { userId: learner.id, status: "COMPLETED" };
+const cancelled: EnrollmentSubject = { userId: learner.id, status: "CANCELLED" };
 
 function mayLearn(
   actor: Actor | null,
@@ -250,5 +250,72 @@ describe("enrollment-gated course content", () => {
     expect(can(anonymous, { type: "course:enroll", course: publicCourse })).toBe(
       false
     );
+  });
+});
+
+// --- Progress access (§12, Milestone 7) -------------------------------------
+//
+// `progress:mark` / `progress:view` deliberately diverge from `course:learn`
+// above: ownership is required, and there is no author/moderator bypass.
+// Progress is a personal record of one learner's own completion, not course
+// content — the tests below exist specifically to pin that contrast, since
+// it is the one place this milestone departs from the established
+// enrollment-gate pattern.
+
+describe("progress access", () => {
+  it("lets a learner mark and view progress on their own active enrollment", () => {
+    expect(can(learner, { type: "progress:mark", enrollment: enrolled })).toBe(
+      true
+    );
+    expect(can(learner, { type: "progress:view", enrollment: enrolled })).toBe(
+      true
+    );
+  });
+
+  it("still allows progress once the enrollment itself is COMPLETED", () => {
+    expect(
+      can(learner, { type: "progress:mark", enrollment: completed })
+    ).toBe(true);
+  });
+
+  it("refuses a cancelled enrollment, even for its own owner", () => {
+    expect(
+      can(learner, { type: "progress:mark", enrollment: cancelled })
+    ).toBe(false);
+    expect(
+      can(learner, { type: "progress:view", enrollment: cancelled })
+    ).toBe(false);
+  });
+
+  it("refuses anyone other than the enrollment's own owner", () => {
+    // A different signed-in learner: not their enrollment.
+    expect(
+      can(otherInstructor, { type: "progress:mark", enrollment: enrolled })
+    ).toBe(false);
+
+    // The course's own author is not exempt here — the point of the
+    // contrast with `course:learn`, where the same actor passes freely.
+    expect(
+      can(owner, { type: "progress:mark", enrollment: enrolled })
+    ).toBe(false);
+    expect(mayLearn(owner, null)).toBe(true);
+  });
+
+  it("refuses an instructor previewing their own course, who has no enrollment at all", () => {
+    // The scenario the ownership check exists for: `course:learn` grants
+    // the author access via its bypass, but there is no enrollment row for
+    // a completion record to attach to.
+    expect(can(owner, { type: "progress:mark", enrollment: null })).toBe(
+      false
+    );
+    expect(can(owner, { type: "progress:view", enrollment: null })).toBe(
+      false
+    );
+  });
+
+  it("refuses an anonymous visitor", () => {
+    expect(
+      can(anonymous, { type: "progress:mark", enrollment: enrolled })
+    ).toBe(false);
   });
 });

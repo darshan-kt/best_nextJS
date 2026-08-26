@@ -283,6 +283,8 @@ model Enrollment {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
+  lessonProgress LessonProgress[]
+
   /// One enrollment per learner per course. Also the upsert key, which is
   /// what makes enrolling idempotent under a double-submitted form.
   @@unique([userId, courseId])
@@ -328,9 +330,48 @@ model Lesson {
 
   section       Section              @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   contentBlocks LessonContentBlock[]
+  progress      LessonProgress[]
 
   @@unique([sectionId, slug])
   @@index([sectionId, position])
+}
+
+/// §44, Milestone 7. A learner's completion of one lesson, scoped to the
+/// enrollment it happened under — exactly the shape the Milestone 5
+/// comment on `Enrollment` anticipated.
+///
+/// The row's mere existence *is* "complete"; there is no in-progress
+/// status to model at this level. Block-level partial completion (a video
+/// resume position, say) is deliberately not here — it has no agreed
+/// shape yet across content types, and guessing one now would guess wrong
+/// for at least QUIZ and EXERCISE, which aren't functional until
+/// Milestones 8 and 9 (§35).
+///
+/// No denormalized `percentComplete` on `Enrollment`: with course sizes
+/// this small, `COUNT(*) WHERE enrollmentId = ?` against the index below
+/// is one cheap, always-correct query. A cached aggregate would only ever
+/// be a value that can drift from these rows, the actual source of truth
+/// (§10).
+model LessonProgress {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  lessonId     String
+  completedAt  DateTime @default(now())
+
+  /// Cascade on both sides, matching `Enrollment` itself: a completion
+  /// record is meaningless once either the enrollment or the lesson it
+  /// refers to is gone.
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  /// One completion per lesson per enrollment. Also the upsert key —
+  /// marking an already-complete lesson complete again must not create a
+  /// duplicate row or error.
+  @@unique([enrollmentId, lessonId])
+  // Every read in this milestone asks "what has this enrollment
+  // completed" — the reverse direction ("who has completed this lesson")
+  // has no caller yet.
+  @@index([enrollmentId])
 }
 
 /// §11. A lesson is an ordered list of content blocks, never a single

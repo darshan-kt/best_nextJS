@@ -21,6 +21,8 @@ import { CurriculumOutline } from "@/features/courses/components/curriculum-outl
 import { getCourseWithCurriculum } from "@/features/courses/queries";
 import { EnrollButton } from "@/features/enrollment/components/enroll-button";
 import { getEnrollment } from "@/features/enrollment/queries";
+import { CourseProgress } from "@/features/progress/components/course-progress";
+import { getCompletedLessonIds } from "@/features/progress/queries";
 
 /**
  * Course detail (§44, Milestone 5).
@@ -89,6 +91,14 @@ export default async function CourseDetailPage({
   const isEnrolled =
     enrollment?.status === "ACTIVE" || enrollment?.status === "COMPLETED";
 
+  // `progress:view` is the same ownership-and-liveness check `markLessonComplete`
+  // gates on — an instructor or moderator previewing the course has no
+  // enrollment row and therefore no progress to view, regardless of `canLearn`.
+  const canViewProgress = can(actor, { type: "progress:view", enrollment });
+  const completedLessonIds = canViewProgress
+    ? await getCompletedLessonIds(enrollment?.id ?? null)
+    : new Set<string>();
+
   return (
     <PageShell width="narrow" className="gap-10">
       <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
@@ -153,6 +163,8 @@ export default async function CourseDetailPage({
         signedIn={actor !== null}
         canLearn={canLearn}
         isEnrolled={isEnrolled}
+        completedLessonCount={completedLessonIds.size}
+        totalLessonCount={course.lessonCount}
       />
 
       <section className="flex flex-col gap-4">
@@ -160,7 +172,11 @@ export default async function CourseDetailPage({
           Curriculum
         </h2>
 
-        <CurriculumOutline sections={course.sections} unlocked={canLearn} />
+        <CurriculumOutline
+          sections={course.sections}
+          unlocked={canLearn}
+          completedLessonIds={completedLessonIds}
+        />
       </section>
     </PageShell>
   );
@@ -180,27 +196,42 @@ function EnrollmentPanel({
   signedIn,
   canLearn,
   isEnrolled,
+  completedLessonCount,
+  totalLessonCount,
 }: {
   slug: string;
   signedIn: boolean;
   canLearn: boolean;
   isEnrolled: boolean;
+  completedLessonCount: number;
+  totalLessonCount: number;
 }) {
   // Enrolled learners, and the instructors and moderators who reach the
   // material without enrolling, all get the same entry point.
   if (canLearn) {
     return (
       <Card className="bg-muted/40">
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-body-sm text-muted-foreground">
-            {isEnrolled
-              ? "You have full access to this course."
-              : "You can preview this course as its instructor or a moderator."}
-          </p>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-body-sm text-muted-foreground">
+              {isEnrolled
+                ? "You have full access to this course."
+                : "You can preview this course as its instructor or a moderator."}
+            </p>
 
-          <Button asChild size="lg" className="w-full sm:w-auto">
-            <Link href={`/courses/${slug}/learn`}>Continue learning</Link>
-          </Button>
+            <Button asChild size="lg" className="w-full sm:w-auto">
+              <Link href={`/courses/${slug}/learn`}>Continue learning</Link>
+            </Button>
+          </div>
+
+          {/* Only a learner's own enrollment has progress to show — an
+              instructor or moderator previewing the course has none. */}
+          {isEnrolled ? (
+            <CourseProgress
+              completed={completedLessonCount}
+              total={totalLessonCount}
+            />
+          ) : null}
         </CardContent>
       </Card>
     );

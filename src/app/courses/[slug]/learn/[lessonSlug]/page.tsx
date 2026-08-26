@@ -13,6 +13,8 @@ import { BlockRenderer } from "@/features/learning/components/block-renderer";
 import { LessonNav } from "@/features/learning/components/lesson-nav";
 import { findLessonNavigation, flattenLessons } from "@/features/learning/navigation";
 import { getLessonContentBlocks } from "@/features/learning/queries";
+import { MarkCompleteButton } from "@/features/progress/components/mark-complete-button";
+import { getCompletedLessonIds } from "@/features/progress/queries";
 
 /**
  * The lesson player (§44, Milestone 6).
@@ -27,11 +29,17 @@ import { getLessonContentBlocks } from "@/features/learning/queries";
  * passed through it. A bookmarked or shared lesson URL, hit directly, is
  * re-verified the same as a click from the outline (§12).
  *
- * What is explicitly *not* here: no progress persistence, no "mark
- * complete" — that is Milestone 7. No real quiz-taking or exercise
+ * Milestone 7 adds completion: the actor's own enrollment is re-resolved
+ * here (same call already made for the `course:learn` check) and gated
+ * again through `progress:view` before any completion state is fetched —
+ * an instructor or moderator reaching this page via the `course:learn`
+ * bypass has no enrollment row and gets no completion UI at all, not a
+ * disabled one.
+ *
+ * What is explicitly *not* here: no real quiz-taking or exercise
  * submission — QUIZ and EXERCISE blocks render as a labeled placeholder
- * (Milestones 8/9). This route only renders content and moves between
- * lessons.
+ * (Milestones 8/9). No block-level progress — only whole-lesson
+ * completion exists (§35; see the `LessonProgress` schema comment).
  */
 
 const loadLesson = async (slug: string, lessonSlug: string) => {
@@ -62,7 +70,14 @@ const loadLesson = async (slug: string, lessonSlug: string) => {
 
   const blocks = await getLessonContentBlocks(navigation.current.id);
 
-  return { course, navigation, blocks };
+  const canViewProgress = can(actor, { type: "progress:view", enrollment });
+  const isCompleted = canViewProgress
+    ? (await getCompletedLessonIds(enrollment?.id ?? null)).has(
+        navigation.current.id
+      )
+    : false;
+
+  return { course, navigation, blocks, canViewProgress, isCompleted };
 };
 
 export async function generateMetadata({
@@ -102,7 +117,7 @@ export default async function LessonPlayerPage({
     forbidden();
   }
 
-  const { course, navigation, blocks } = data;
+  const { course, navigation, blocks, canViewProgress, isCompleted } = data;
   const { current, previous, next, position, total } = navigation;
 
   return (
@@ -142,6 +157,14 @@ export default async function LessonPlayerPage({
           </p>
         )}
       </div>
+
+      {canViewProgress ? (
+        <MarkCompleteButton
+          courseSlug={slug}
+          lessonSlug={lessonSlug}
+          completed={isCompleted}
+        />
+      ) : null}
 
       <LessonNav
         courseSlug={slug}

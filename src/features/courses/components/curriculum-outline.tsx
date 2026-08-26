@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Lock, PlayCircle } from "lucide-react";
+import { CheckCircle2, Lock, PlayCircle } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { cn, focusRing } from "@/lib/utils";
@@ -23,6 +23,11 @@ import type { CurriculumSection } from "../queries";
  * distinguishes them — passing it turns unlocked lessons into links;
  * omitting it keeps every row inert, which is what the detail-page preview
  * has always needed.
+ *
+ * `completedLessonIds` (§44, Milestone 7) is the third state a row's icon
+ * can be in: locked, unlocked-not-started, or unlocked-and-done. Omitting
+ * it (an anonymous or non-enrolled viewer, who has no progress to show)
+ * behaves exactly as before — every lesson just shows locked or unlocked.
  */
 
 function formatDuration(minutes: number): string {
@@ -42,12 +47,15 @@ interface CurriculumOutlineProps {
   unlocked: boolean;
   /** Present only where lessons should link into the player. */
   courseSlug?: string;
+  /** IDs of lessons the current viewer has completed, if any. */
+  completedLessonIds?: Set<string>;
 }
 
 export function CurriculumOutline({
   sections,
   unlocked,
   courseSlug,
+  completedLessonIds,
 }: CurriculumOutlineProps) {
   const populated = sections.filter((section) => section.lessons.length > 0);
   const linkable = unlocked && courseSlug !== undefined;
@@ -85,13 +93,20 @@ export function CurriculumOutline({
 
           <ul className="flex list-none flex-col divide-y divide-border">
             {section.lessons.map((lesson) => {
-              const icon = unlocked ? (
-                <PlayCircle
+              const isCompleted = completedLessonIds?.has(lesson.id) ?? false;
+
+              const icon = !unlocked ? (
+                <Lock
                   className="size-4 shrink-0 text-muted-foreground"
                   aria-hidden="true"
                 />
+              ) : isCompleted ? (
+                <CheckCircle2
+                  className="size-4 shrink-0 text-accent-foreground"
+                  aria-hidden="true"
+                />
               ) : (
-                <Lock
+                <PlayCircle
                   className="size-4 shrink-0 text-muted-foreground"
                   aria-hidden="true"
                 />

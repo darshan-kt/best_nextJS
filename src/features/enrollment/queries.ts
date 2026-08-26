@@ -38,6 +38,7 @@ export async function getEnrollment(
     where: { userId_courseId: { userId, courseId } },
     select: {
       id: true,
+      userId: true,
       status: true,
       enrolledAt: true,
       completedAt: true,

@@ -10,6 +10,8 @@ import { requireUser } from "@/features/auth/session";
 import { CurriculumOutline } from "@/features/courses/components/curriculum-outline";
 import { getCourseWithCurriculum } from "@/features/courses/queries";
 import { getEnrollment } from "@/features/enrollment/queries";
+import { CourseProgress } from "@/features/progress/components/course-progress";
+import { getCompletedLessonIds } from "@/features/progress/queries";
 
 export const metadata: Metadata = {
   title: "Course content · LMS Platform",
@@ -60,6 +62,14 @@ export default async function CourseLearnPage({
     forbidden();
   }
 
+  // Same check `markLessonComplete` gates on — an instructor or moderator
+  // reaching this page via the `course:learn` bypass above has no
+  // enrollment row and therefore no progress to show.
+  const canViewProgress = can(actor, { type: "progress:view", enrollment });
+  const completedLessonIds = canViewProgress
+    ? await getCompletedLessonIds(enrollment?.id ?? null)
+    : new Set<string>();
+
   return (
     <PageShell width="narrow">
       <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
@@ -69,9 +79,21 @@ export default async function CourseLearnPage({
         </Link>
       </Button>
 
-      <PageHeader title={course.title} description="Pick a lesson to begin." />
+      <PageHeader title={course.title} description="Pick a lesson to begin.">
+        {canViewProgress ? (
+          <CourseProgress
+            completed={completedLessonIds.size}
+            total={course.lessonCount}
+          />
+        ) : null}
+      </PageHeader>
 
-      <CurriculumOutline sections={course.sections} unlocked courseSlug={slug} />
+      <CurriculumOutline
+        sections={course.sections}
+        unlocked
+        courseSlug={slug}
+        completedLessonIds={completedLessonIds}
+      />
     </PageShell>
   );
 }
