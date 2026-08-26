@@ -40,5 +40,74 @@ services:
       timeout: 5s
       retries: 5
 
+  # ---------------------------------------------------------------------
+  # Everything below is gated behind the "full" profile (`docker compose
+  # --profile full up`, or `pnpm docker:up`) and does not affect the
+  # plain `pnpm db:up` used for local dev against `pnpm dev` — profiled
+  # services are skipped by a bare `docker compose up`. See README's "Run
+  # everything in Docker" section.
+  # ---------------------------------------------------------------------
+
+  # One-off: applies pending migrations, then exits. Uses the `builder`
+  # stage (see Dockerfile) directly rather than the slim `app` image,
+  # which deliberately has no Prisma CLI in it.
+  migrate:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://lms:lms@postgres:5432/lms
+    command: ["pnpm", "exec", "prisma", "migrate", "deploy"]
+
+  # One-off: seeds demo courses + the student/instructor accounts (see
+  # README). Idempotent (upserts throughout — see prisma/seed.ts), so
+  # running it on every `docker compose --profile full up` is safe.
+  seed:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://lms:lms@postgres:5432/lms
+    command: ["pnpm", "db:seed"]
+
+  app:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lms-app
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      # Overrides .env's host-oriented values: from inside the Compose
+      # network, Postgres and Redis are reached by service name on their
+      # container-internal ports — 5433/6380 are host-side port mappings
+      # only, meaningless to another container.
+      DATABASE_URL: postgresql://lms:lms@postgres:5432/lms
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+
 volumes:
   lms-postgres-data:

@@ -45,6 +45,56 @@ another local instance you might already be running. `pnpm db:down` stops
 both; the seed script is idempotent, so re-running `pnpm db:seed` after
 resetting the database is safe.
 
+### Run everything in Docker
+
+The instructions above run the app with `pnpm dev` against two containers
+(Postgres, Redis). There's also a fully containerized path — useful if you
+don't want Node/pnpm on the host at all, or want to sanity-check a
+production-shaped build locally:
+
+```bash
+cp .env.example .env      # then set GEMINI_API_KEY (see Prerequisites)
+pnpm docker:up             # or: docker compose --profile full up --build
+```
+
+This builds the app image (`Dockerfile`) and brings up Postgres, Redis,
+runs pending migrations, seeds demo data, then starts the app — in that
+order, each step waiting on the last (see the `depends_on` conditions in
+`docker-compose.yml`). Open
+[http://localhost:3000](http://localhost:3000) and sign in with the same
+seeded accounts as above. `pnpm docker:down` tears it down.
+
+This is gated behind Compose's `full` profile specifically so it doesn't
+change what a plain `pnpm db:up` does — that command (used by the
+non-Docker flow above) still starts only Postgres and Redis, unaffected.
+
+A few things worth knowing about the image itself
+(see the comments in `Dockerfile` for the full reasoning):
+
+- It's a two-stage build. `builder` has the full toolchain and produces
+  Next.js's [`standalone`](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)
+  output (`next.config.ts`); `runner` is just that output plus a Node
+  runtime, running as a non-root user — this is the image the `app`
+  service actually runs. `migrate` and `seed` reuse the `builder` stage
+  directly (`--target builder`), since the CLI tools they need
+  (`prisma`, `tsx`) are devDependencies deliberately not present in the
+  slim `runner` image.
+- No Prisma binary-engine target to worry about — this app queries
+  Postgres through `@prisma/adapter-pg` (a driver adapter over the plain
+  `pg` package), not Prisma's own compiled, OS-specific query engine, so
+  there's no `binaryTargets` to get wrong for Alpine/musl.
+- `pnpm install` has to run before `NODE_ENV` gets set to `production` in
+  the build — pnpm skips devDependencies once it is, which would also
+  skip `prisma` and `tsx` (found the hard way while building this).
+- Build-time `ARG`s (`DATABASE_URL`, `AUTH_SECRET`, etc.) are placeholders
+  only, needed because `postinstall` (`prisma generate`) validates the
+  *entire* environment schema (§30) just to read `DATABASE_URL` out of
+  it. Real values come from `.env` at container **runtime**
+  (`docker-compose.yml`'s `env_file`), never baked into the image.
+- **This is a local convenience path, not the AWS deployment image** —
+  that will have its own concerns (ECR auth, health-check-driven
+  rollout) layered on top when it's built.
+
 ### Running the test suites
 
 ```bash
@@ -224,6 +274,9 @@ isn't worth paying for on every PR.
 ## Project structure
 
 ```text
+Dockerfile             # Local "run everything in Docker" image (see above)
+docker-compose.yml     # Postgres + Redis always; app/migrate/seed behind the "full" profile
+
 prisma/
 ├── schema.prisma      # Domain schema
 └── migrations/        # Versioned SQL migrations

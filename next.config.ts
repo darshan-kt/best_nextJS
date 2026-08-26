@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   // auto-generated agent-rules content to it on every `next dev`.
   agentRules: false,
 
+  // Emits `.next/standalone` — a self-contained server bundle with only
+  // the dependencies actually traced as used at runtime — alongside the
+  // normal build output. `pnpm build && pnpm start` is unaffected (it
+  // still runs from the regular `.next` output); this only feeds the
+  // Docker image's runner stage (see `Dockerfile`), which would otherwise
+  // need the full `node_modules` copied in.
+  output: "standalone",
+
   experimental: {
     // Enables `forbidden()` / `unauthorized()` from next/navigation, which
     // the authorization guards in src/features/auth/guards.ts use to
