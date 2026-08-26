@@ -2,6 +2,28 @@
 
 # LMS PROJECT — PERMANENT ENGINEERING INSTRUCTIONS
 
+## GIT AUTONOMY (EXPLICIT USER AUTHORIZATION)
+
+The repository owner has explicitly authorized full autonomy for routine git
+operations on this repo, including `git push` (to any branch, including
+`main`) without asking for confirmation each time.
+
+This authorization covers: `git add`, `git commit`, `git push`, `git pull`,
+`git fetch`, and creating/pushing branches.
+
+This authorization does NOT cover destructive or history-rewriting
+operations, which still require explicit confirmation before each use:
+
+- `git push --force` / `--force-with-lease`
+- `git reset --hard`
+- `git rebase` (rewriting already-pushed commits)
+- `git branch -D` / deleting remote branches
+- Any command with `--no-verify` or that skips hooks/signing
+
+Continue to follow all other engineering, review, and validation rules in
+this document before committing or pushing — autonomy to push is not
+license to skip STEP 4 (VALIDATE) or STEP 5 (REVIEW).
+
 ## Project Identity
 
 This repository contains a production-grade, scalable Learning Management System (LMS).
