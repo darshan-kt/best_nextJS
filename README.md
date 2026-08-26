@@ -11,19 +11,60 @@ Tailwind CSS v4 · shadcn/ui (Radix-based) · pnpm
 
 ## Getting started
 
+### Prerequisites
+
+- Node.js 20+ and [pnpm](https://pnpm.io) (pinned via `packageManager` in
+  `package.json` — `corepack enable` picks up the right version
+  automatically)
+- Docker (for the bundled Postgres + Redis — see below)
+- A [Gemini API key](https://aistudio.google.com/apikey) (free tier, no
+  billing required) for the course AI assistant
+
+### Run it
+
 ```bash
-cp .env.example .env      # adjust if you are not using the bundled database
+cp .env.example .env      # then set GEMINI_API_KEY (see Prerequisites)
 pnpm install              # also generates the Prisma Client
 pnpm db:up                # start PostgreSQL + Redis in Docker (5433, 6380)
 pnpm db:migrate           # apply migrations
+pnpm db:seed              # demo courses + a student and instructor account
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and sign in with one of
+the seeded accounts (password for both: `seed-password-123`):
+
+| Role       | Email                     |
+| ---------- | ------------------------- |
+| Student    | `student@example.com`     |
+| Instructor | `instructor@example.com`  |
 
 The bundled Postgres listens on **port 5433** and Redis on **port 6380** —
 neither the default port for its service — so neither collides with
-another local instance you might already be running.
+another local instance you might already be running. `pnpm db:down` stops
+both; the seed script is idempotent, so re-running `pnpm db:seed` after
+resetting the database is safe.
+
+### Running the test suites
+
+```bash
+pnpm test              # unit tests — no database required
+pnpm test:integration  # needs pnpm db:up; migrates a separate lms_test database automatically
+pnpm test:e2e          # Playwright — needs the dev server running (pnpm dev) in another terminal
+```
+
+### Troubleshooting
+
+- **Port already in use** (`EADDRINUSE` on 3000, 5433, or 6380): something
+  else is already listening there — stop it, or change the port mapping in
+  `docker-compose.yml` (and the corresponding `*_URL` in `.env`) for
+  Postgres/Redis, or run `next dev -p <port>` for the app itself.
+- **`Invalid environment configuration` at startup**: `src/config/env.ts`
+  is telling you exactly which variable is missing or malformed — see
+  [Environment](#environment) below.
+- **Sign-in fails after `pnpm build && pnpm start` locally**: you're
+  hitting Auth.js's `UntrustedHost` check — see
+  [Authentication](#authentication) below, `AUTH_URL` is the fix.
 
 ## Scripts
 
@@ -41,6 +82,8 @@ another local instance you might already be running.
 - `pnpm db:deploy` — apply pending migrations (production)
 - `pnpm db:generate` — regenerate the Prisma Client
 - `pnpm db:studio` — browse the database in Prisma Studio
+- `pnpm db:seed` — populate demo courses and the seeded student/instructor
+  accounts (see [Getting started](#getting-started))
 
 ## Environment
 
