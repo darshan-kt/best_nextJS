@@ -4,29 +4,29 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---------------------------------------------------------------------------
+ * DESIGN TOKENS (§21)
+ *
+ * Two rules govern this file:
+ *
+ *   1. A component never invents a value. It names a role — `text-title`,
+ *      `bg-primary`, `ring-ring` — and the role resolves here.
+ *   2. Colour is spent, not sprinkled. Neutrals carry the interface; the
+ *      single teal accent marks the primary action, the focus ring, and
+ *      the active state. Nothing else.
+ * ------------------------------------------------------------------------ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
+  --font-heading: var(--font-geist-sans);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -35,10 +35,52 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* -------------------------------------------------------------------
+   * Type scale — 1.25 (major third), anchored at 1rem body.
+   *
+   * Each step is a *role*, not a size: a heading asks for `text-title`,
+   * never for `text-3xl`. Line-height and tracking are bound to the step,
+   * because large type needs tighter leading and negative tracking while
+   * small type needs the opposite — pairing them here is what stops the
+   * rhythm drifting page by page.
+   * ---------------------------------------------------------------- */
+  --text-caption: 0.8125rem; /* 13px */
+  --text-caption--line-height: 1.45;
+  --text-caption--letter-spacing: 0.005em;
+
+  --text-body-sm: 0.875rem; /* 14px */
+  --text-body-sm--line-height: 1.55;
+
+  --text-body: 1rem; /* 16px */
+  --text-body--line-height: 1.6;
+
+  --text-lede: 1.25rem; /* 20px */
+  --text-lede--line-height: 1.5;
+  --text-lede--letter-spacing: -0.005em;
+
+  --text-title-sm: 1.5rem; /* 24px */
+  --text-title-sm--line-height: 1.3;
+  --text-title-sm--letter-spacing: -0.011em;
+
+  --text-title: 1.9375rem; /* 31px */
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.016em;
+
+  --text-title-lg: 2.4375rem; /* 39px */
+  --text-title-lg--line-height: 1.15;
+  --text-title-lg--letter-spacing: -0.021em;
+
+  --text-display: 3.0625rem; /* 49px */
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.026em;
+
+  /* Radius scale, unchanged in shape but now driven by one base. */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,86 +88,134 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Control heights. One ladder shared by Button and Input, so a button
+   * sitting beside a field is never a different height than the field. */
+  --spacing-control-sm: 2rem; /* 32px */
+  --spacing-control: 2.25rem; /* 36px */
+  --spacing-control-lg: 2.75rem; /* 44px — comfortable touch target */
 }
 
 :root {
-  --font-sans: var(--font-geist-sans);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* --- Accent -----------------------------------------------------------
+   * One hue (teal, ~192°) in five roles. A light teal surface carrying
+   * deep teal ink, rather than the usual saturated fill with white text:
+   * it keeps the "light teal" character the product asked for while
+   * clearing AA comfortably (L 0.79 against L 0.30 ink).
+   * ------------------------------------------------------------------ */
+  --brand: oklch(0.79 0.096 192);
+  --brand-hover: oklch(0.73 0.104 193);
+  --brand-ink: oklch(0.3 0.048 205);
+  --brand-subtle: oklch(0.965 0.021 192);
+  --brand-text: oklch(0.48 0.088 200);
+
+  /* --- Neutrals ---------------------------------------------------------
+   * Not pure grey: a trace of chroma at 240° keeps large flat areas from
+   * reading as "default stylesheet" without being perceptibly blue.
+   * ------------------------------------------------------------------ */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.18 0.012 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.012 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.012 240);
+
+  --primary: var(--brand);
+  --primary-hover: var(--brand-hover);
+  --primary-foreground: var(--brand-ink);
+
+  --secondary: oklch(0.965 0.004 240);
+  --secondary-foreground: oklch(0.24 0.012 240);
+
+  --muted: oklch(0.968 0.004 240);
+  --muted-foreground: oklch(0.52 0.014 240);
+
+  /* Distinct from --muted, which it used to duplicate exactly. Accent is
+   * the brand tint; muted is the neutral wash. They are different jobs. */
+  --accent: var(--brand-subtle);
+  --accent-foreground: var(--brand-text);
+
+  --destructive: oklch(0.55 0.216 27.5);
+  --destructive-foreground: oklch(0.985 0 0);
+
+  --border: oklch(0.915 0.005 240);
+  --input: oklch(0.9 0.006 240);
+  --ring: oklch(0.68 0.1 193);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --brand: oklch(0.77 0.098 192);
+  --brand-hover: oklch(0.83 0.09 192);
+  --brand-ink: oklch(0.2 0.04 210);
+  --brand-subtle: oklch(0.28 0.038 200);
+  --brand-text: oklch(0.82 0.088 192);
+
+  --background: oklch(0.165 0.012 240);
+  --foreground: oklch(0.97 0.004 240);
+  --card: oklch(0.205 0.014 240);
+  --card-foreground: oklch(0.97 0.004 240);
+  --popover: oklch(0.205 0.014 240);
+  --popover-foreground: oklch(0.97 0.004 240);
+
+  --primary: var(--brand);
+  --primary-hover: var(--brand-hover);
+  --primary-foreground: var(--brand-ink);
+
+  --secondary: oklch(0.26 0.014 240);
+  --secondary-foreground: oklch(0.97 0.004 240);
+
+  --muted: oklch(0.26 0.014 240);
+  --muted-foreground: oklch(0.715 0.012 240);
+
+  --accent: var(--brand-subtle);
+  --accent-foreground: var(--brand-text);
+
+  --destructive: oklch(0.7 0.19 22.2);
+  --destructive-foreground: oklch(0.17 0.02 25);
+
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.62 0.09 193);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-body;
   }
+
   html {
     @apply font-sans;
+  }
+
+  /* Baseline focus for anything not built from our primitives — a link in
+   * body copy, say. Components override with the shared ring in
+   * `lib/utils.ts`; this guarantees nothing is ever focusable-but-invisible
+   * (§24). */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Motion is a garnish, never the mechanism (§25). One global switch, so
+   * no component has to remember to opt out.
+   *
+   * `[data-motion="essential"]` is exempt: a loading spinner that stops
+   * spinning stops communicating, which is an accessibility regression
+   * rather than an accommodation. Only progress indicators carry it. */
+  @media (prefers-reduced-motion: reduce) {
+    *:not([data-motion="essential"]),
+    *:not([data-motion="essential"])::before,
+    *:not([data-motion="essential"])::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

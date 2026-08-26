@@ -18,20 +18,21 @@ import type { CatalogCourse } from "../queries";
  * destination, and screen readers two announcements (§24). The visible
  * "View course" affordance is therefore decorative, marked
  * `aria-hidden`, and the accessible name comes from the title.
+ *
+ * Hover and focus now come from `Card interactive`, not from ring classes
+ * written on this component — the card used to carry its own
+ * `focus-within:ring-2` that matched nothing else in the app (§21).
  */
 export function CourseCard({ course }: { course: CatalogCourse }) {
   return (
-    <Card
-      size="sm"
-      className="group/course relative h-full transition-shadow hover:ring-foreground/20 focus-within:ring-2 focus-within:ring-ring"
-    >
+    <Card size="sm" interactive className="h-full">
       <CardHeader>
-        <CardTitle className="font-heading text-base leading-snug">
+        <CardTitle>
           <Link
             href={`/courses/${course.slug}`}
             // Stretches the link's hit area over the whole card without
-            // nesting interactive elements.
-            className="after:absolute after:inset-0 focus-visible:outline-none"
+            // nesting interactive elements. The ring is raised by the card.
+            className="outline-none after:absolute after:inset-0 after:rounded-xl"
           >
             {course.title}
           </Link>
@@ -40,23 +41,23 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
 
       <CardContent className="flex-1">
         {course.subtitle ? (
-          <p className="line-clamp-3 text-sm text-muted-foreground">
+          <p className="line-clamp-3 text-body-sm text-pretty text-muted-foreground">
             {course.subtitle}
           </p>
         ) : null}
       </CardContent>
 
-      <CardFooter className="flex items-center justify-between gap-3 border-t border-border pt-3 pb-(--card-spacing)">
-        <span className="truncate text-xs text-muted-foreground">
+      <CardFooter className="justify-between">
+        <span className="truncate text-muted-foreground">
           {course.instructor.name ?? "Instructor"}
         </span>
 
         <span
-          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors group-hover/course:text-foreground motion-reduce:transition-none"
+          className="inline-flex shrink-0 items-center gap-1 font-medium text-muted-foreground transition-colors group-hover/card:text-accent-foreground"
           aria-hidden="true"
         >
           View course
-          <ArrowRight className="size-3.5 transition-transform group-hover/course:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none" />
+          <ArrowRight className="size-3.5 transition-transform group-hover/card:translate-x-0.5" />
         </span>
       </CardFooter>
     </Card>

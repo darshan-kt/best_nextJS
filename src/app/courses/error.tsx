@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { ErrorState } from "@/components/shared/error-state";
+import { PageHeader, PageShell } from "@/components/shared/page-shell";
 
 /**
  * Catalogue error boundary (§28).
@@ -14,6 +15,10 @@ import { ErrorState } from "@/components/shared/error-state";
  * The message is deliberately generic. The user is told what to do next;
  * the actual error goes to the server logs, where it is useful without
  * leaking internals such as connection strings or stack traces (§29).
+ *
+ * The shell comes from `PageShell`/`PageHeader` rather than being copied
+ * from `page.tsx` by hand, so the heading does not sit two pixels off the
+ * heading on the page it replaces.
  */
 export default function CoursesError({
   error,
@@ -33,18 +38,14 @@ export default function CoursesError({
   }, [error]);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-12 sm:px-10 sm:py-16">
-      <header className="flex flex-col gap-2">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Courses
-        </h1>
-      </header>
+    <PageShell>
+      <PageHeader title="Courses" />
 
       <ErrorState
         title="We couldn't load the catalogue"
         description="Something went wrong on our side. Your place in the catalogue hasn't been lost — try again in a moment."
         onRetry={reset}
       />
-    </div>
+    </PageShell>
   );
 }

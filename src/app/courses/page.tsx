@@ -5,6 +5,7 @@ import { BookOpen, SearchX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader, PageShell } from "@/components/shared/page-shell";
 import { getCurrentActor } from "@/features/auth/session";
 import { CatalogSearch } from "@/features/courses/components/catalog-search";
 import { CourseCard } from "@/features/courses/components/course-card";
@@ -42,19 +43,13 @@ export default async function CoursesPage({
   const params = parseCatalogSearchParams(await searchParams);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-12 sm:px-10 sm:py-16">
-      <header className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Courses
-          </h1>
-          <p className="max-w-2xl text-muted-foreground">
-            Browse the catalogue and find something to learn next.
-          </p>
-        </div>
-
+    <PageShell>
+      <PageHeader
+        title="Courses"
+        description="Browse the catalogue and find something to learn next."
+      >
         <CatalogSearch query={params.q} />
-      </header>
+      </PageHeader>
 
       {/*
         Keyed on the active search so that changing it remounts the
@@ -67,7 +62,7 @@ export default async function CoursesPage({
       >
         <CatalogResults params={params} />
       </Suspense>
-    </div>
+    </PageShell>
   );
 }
 
@@ -93,7 +88,7 @@ async function CatalogResults({ params }: { params: CatalogSearchParams }) {
 
   return (
     <section className="flex flex-col gap-8" aria-label="Course catalogue">
-      <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {courses.map((course) => (
           <li key={course.id} className="flex">
             <CourseCard course={course} />
@@ -122,7 +117,7 @@ function CatalogEmptyState({ params }: { params: CatalogSearchParams }) {
         title={`No courses match “${params.q}”`}
         description="Try a shorter or more general search term."
         action={
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline">
             <Link href={catalogHref({})}>Clear search</Link>
           </Button>
         }
@@ -139,7 +134,7 @@ function CatalogEmptyState({ params }: { params: CatalogSearchParams }) {
         title="Nothing on this page"
         description="There are fewer courses than there used to be."
         action={
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline">
             <Link href={catalogHref({})}>Back to the first page</Link>
           </Button>
         }
@@ -183,7 +178,7 @@ function CatalogPagination({
       aria-label="Catalogue pages"
     >
       {hasPrevious ? (
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline">
           <Link href={catalogHref({ q: params.q, page: params.page - 1 })}>
             Previous
           </Link>
@@ -192,12 +187,12 @@ function CatalogPagination({
         <span />
       )}
 
-      <span className="text-sm text-muted-foreground" aria-current="page">
+      <span className="text-body-sm text-muted-foreground" aria-current="page">
         Page {params.page}
       </span>
 
       {hasMore ? (
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline">
           <Link href={catalogHref({ q: params.q, page: params.page + 1 })}>
             Next
           </Link>

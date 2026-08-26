@@ -15,6 +15,9 @@ import { Input } from "@/components/ui/input";
  *
  * Submitting also drops any `page` parameter, which is the correct
  * behaviour: a new search starts at the first page of its own results.
+ *
+ * The field and both buttons sit on the same control height from the token
+ * ladder, so the row aligns by rule rather than by coincidence (§21).
  */
 export function CatalogSearch({ query }: { query: string | undefined }) {
   return (
@@ -22,9 +25,9 @@ export function CatalogSearch({ query }: { query: string | undefined }) {
       action="/courses"
       method="get"
       role="search"
-      className="flex w-full max-w-md items-center gap-2"
+      className="flex w-full max-w-xl flex-wrap items-center gap-2"
     >
-      <div className="relative flex-1">
+      <div className="relative min-w-56 flex-1">
         <Search
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
@@ -41,16 +44,14 @@ export function CatalogSearch({ query }: { query: string | undefined }) {
         />
       </div>
 
-      <Button type="submit" variant="outline">
-        Search
-      </Button>
+      <Button type="submit">Search</Button>
 
       {query ? (
-        <Button type="button" variant="ghost" size="sm" asChild>
+        <Button type="button" variant="ghost" asChild>
           {/* A link, not a reset button: clearing the search is a
               navigation back to the unfiltered catalogue. */}
           <Link href="/courses">
-            <X className="size-4" aria-hidden="true" />
+            <X aria-hidden="true" />
             Clear
           </Link>
         </Button>

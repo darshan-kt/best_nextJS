@@ -70,9 +70,38 @@ export interface OwnedSubject {
   userId: string;
 }
 
+/**
+ * A learner's enrollment in the course being accessed, or null when they
+ * have none. Null is a normal input, not an error — "not enrolled" is an
+ * answer the policy needs to be able to give.
+ */
+export interface EnrollmentSubject {
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+}
+
+/**
+ * Whether a course accepts self-enrollment (§12).
+ *
+ * Currently equivalent to being in the public catalogue: you may enroll
+ * yourself in anything you could have discovered. Deliberately expressed
+ * as its own predicate rather than inlined, because this is the seam where
+ * an invitation-only or approval-required policy lands when the product
+ * has one — at which point it consults a course field instead of this
+ * derivation, and every caller stays unchanged.
+ */
+export function isOpenForSelfEnrollment(course: CourseSubject): boolean {
+  return isPubliclyVisible(course);
+}
+
 export type PolicyAction =
   | { type: "course:create" }
   | { type: "course:view"; course: CourseSubject }
+  | { type: "course:enroll"; course: CourseSubject }
+  | {
+      type: "course:learn";
+      course: CourseSubject;
+      enrollment: EnrollmentSubject | null;
+    }
   | { type: "course:update"; course: CourseSubject }
   | { type: "course:delete"; course: CourseSubject }
   | { type: "submission:view"; submission: OwnedSubject }
@@ -128,6 +157,33 @@ export function can(actor: Actor | null, action: PolicyAction): boolean {
       //
       // Enrollment-based access arrives with the Enrollment model in
       // Milestone 5 and belongs in this branch.
+      return (
+        action.course.instructorId === actor.id || hasRole(actor, "MODERATOR")
+      );
+
+    case "course:enroll":
+      // Self-enrollment is limited to courses the actor could have found
+      // in the catalogue. Note this asks only whether the *actor* may
+      // enroll; whether the course is in a state that accepts enrollments
+      // at all is a domain question, answered by the enroll use case, and
+      // the two must not be conflated — an administrator passes this check
+      // and is still refused enrollment in an archived course.
+      return isOpenForSelfEnrollment(action.course);
+
+    case "course:learn":
+      // Enrollment-gated content (§12). Instructors reach their own
+      // course without enrolling in it, and moderators reach any course,
+      // because both need to see what learners see.
+      //
+      // COMPLETED still grants access: finishing a course should not lock
+      // someone out of material they earned. CANCELLED does not.
+      if (
+        action.enrollment?.status === "ACTIVE" ||
+        action.enrollment?.status === "COMPLETED"
+      ) {
+        return true;
+      }
+
       return (
         action.course.instructorId === actor.id || hasRole(actor, "MODERATOR")
       );

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PageHeader, PageShell } from "@/components/shared/page-shell";
 import { prisma } from "@/db/client";
 import { requireAdminAccess } from "@/features/auth/guards";
 
@@ -27,40 +27,38 @@ export default async function AdminPage() {
     prisma.course.count(),
   ]);
 
+  const stats = [
+    { label: "Users", value: userCount },
+    { label: "Courses", value: courseCount },
+  ];
+
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-16">
-      <header className="flex flex-col gap-2">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">
-          Admin
-        </h1>
-        <p className="text-muted-foreground">
-          Signed in as {actor.roles.join(", ") || "no roles"}.
-        </p>
-      </header>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardDescription>Users</CardDescription>
-            <CardTitle className="text-3xl">{userCount}</CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardDescription>Courses</CardDescription>
-            <CardTitle className="text-3xl">{courseCount}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      <Card>
-        <CardContent className="pt-0">
-          <Button asChild variant="outline" size="sm">
+    <PageShell width="narrow">
+      <PageHeader
+        title="Admin"
+        description={`Signed in as ${actor.roles.join(", ") || "no roles"}.`}
+        actions={
+          <Button asChild variant="outline">
             <Link href="/dashboard">Back to dashboard</Link>
           </Button>
-        </CardContent>
-      </Card>
-    </div>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {stats.map((stat) => (
+          <Card key={stat.label}>
+            <CardHeader>
+              <CardDescription>{stat.label}</CardDescription>
+              {/* The figure is the point of the card, so it takes a
+                  deliberate step off the scale rather than an ad-hoc
+                  `text-3xl`. */}
+              <CardTitle className="text-title tabular-nums">
+                {stat.value.toLocaleString()}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
+    </PageShell>
   );
 }

@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PageHeader, PageShell } from "@/components/shared/page-shell";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { can } from "@/features/auth/policy";
 import { requireUserRecord } from "@/features/auth/session";
@@ -33,26 +34,23 @@ export default async function DashboardPage() {
   const showAdminLink = can(actor, { type: "admin:access" });
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-16">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">
-            Welcome{user.name ? `, ${user.name}` : ""}
-          </h1>
-          <p className="text-muted-foreground">{user.email}</p>
-        </div>
+    <PageShell width="narrow">
+      <PageHeader
+        title={`Welcome${user.name ? `, ${user.name}` : ""}`}
+        description={user.email}
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <Link href="/courses">
+                <Library aria-hidden="true" />
+                Browse courses
+              </Link>
+            </Button>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/courses">
-              <Library className="size-4" aria-hidden="true" />
-              Browse courses
-            </Link>
-          </Button>
-
-          <SignOutButton />
-        </div>
-      </header>
+            <SignOutButton />
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -62,31 +60,34 @@ export default async function DashboardPage() {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-2">
             {actor.roles.length > 0 ? (
               actor.roles.map((role) => (
+                // Neutral, not accent: a row of roles is information, not a
+                // call to action, and tinting all of them teal would spend
+                // the accent on nothing (§21).
                 <Badge key={role} variant="secondary">
                   {role}
                 </Badge>
               ))
             ) : (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-body-sm text-muted-foreground">
                 No roles assigned
               </span>
             )}
           </div>
 
           {showAdminLink ? (
-            <Button asChild variant="outline" size="sm" className="w-fit">
+            <Button asChild variant="outline" className="w-fit">
               <Link href="/admin">
-                <ShieldCheck className="size-4" aria-hidden="true" />
+                <ShieldCheck aria-hidden="true" />
                 Admin area
               </Link>
             </Button>
           ) : null}
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   );
 }

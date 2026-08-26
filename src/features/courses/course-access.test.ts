@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { can, type Actor, type CourseSubject } from "@/features/auth/policy";
+import {
+  can,
+  type Actor,
+  type CourseSubject,
+  type EnrollmentSubject,
+} from "@/features/auth/policy";
 import { CATALOG_VISIBILITY, isListableInCatalog } from "./visibility";
 
 /**
@@ -15,6 +20,12 @@ import { CATALOG_VISIBILITY, isListableInCatalog } from "./visibility";
  * pins the two together against fixtures that include the cases most
  * likely to break: unpublished, archived, and the organization-private
  * stand-in.
+ *
+ * The second half covers enrollment-gated access (§12): who may reach
+ * course content, which is a different question from who may see the
+ * course exists. Both live here because they are the same concern —
+ * course access — and splitting them across files would invite the two
+ * halves to drift the way SQL and policy already can.
  *
  * This is an authorization-correctness test, not general coverage.
  */
@@ -152,5 +163,92 @@ describe("catalogue visibility", () => {
     expect(can(anonymous, { type: "course:view", course: partial })).toBe(false);
     expect(isListableInCatalog(partial)).toBe(false);
     expect(matchesCatalogFilter(partial)).toBe(false);
+  });
+});
+
+// --- Enrollment-gated access (§12) -----------------------------------------
+
+const publicCourse: CourseSubject = {
+  instructorId: OWNER_ID,
+  status: "PUBLISHED",
+  visibility: "PUBLIC",
+};
+
+const enrolled: EnrollmentSubject = { status: "ACTIVE" };
+const completed: EnrollmentSubject = { status: "COMPLETED" };
+const cancelled: EnrollmentSubject = { status: "CANCELLED" };
+
+function mayLearn(
+  actor: Actor | null,
+  enrollment: EnrollmentSubject | null,
+  course: CourseSubject = publicCourse
+): boolean {
+  return can(actor, { type: "course:learn", course, enrollment });
+}
+
+describe("enrollment-gated course content", () => {
+  it("lets an enrolled learner in", () => {
+    expect(mayLearn(learner, enrolled)).toBe(true);
+  });
+
+  it("keeps a learner who is not enrolled out", () => {
+    // The case that matters: being able to *see* a published course in the
+    // catalogue must not imply being able to open its lessons.
+    expect(mayLearn(learner, null)).toBe(false);
+    expect(can(learner, { type: "course:view", course: publicCourse })).toBe(
+      true
+    );
+  });
+
+  it("keeps an anonymous visitor out even of a public course", () => {
+    expect(mayLearn(anonymous, null)).toBe(false);
+  });
+
+  it("still admits a learner who has completed the course", () => {
+    // Finishing a course must not lock someone out of material they earned.
+    expect(mayLearn(learner, completed)).toBe(true);
+  });
+
+  it("refuses a cancelled enrollment", () => {
+    expect(mayLearn(learner, cancelled)).toBe(false);
+  });
+
+  it("admits the author and moderators without an enrollment", () => {
+    // Both need to see what learners see, and neither enrolls to do it.
+    expect(mayLearn(owner, null)).toBe(true);
+    expect(mayLearn(moderator, null)).toBe(true);
+
+    // A different instructor is just another signed-in user here.
+    expect(mayLearn(otherInstructor, null)).toBe(false);
+  });
+
+  it("does not let a cancelled enrollment override the author's access", () => {
+    expect(mayLearn(owner, cancelled)).toBe(true);
+  });
+
+  it("gates enrolling itself on the course being self-enrollable", () => {
+    const archived: CourseSubject = {
+      instructorId: OWNER_ID,
+      status: "ARCHIVED",
+      visibility: "PUBLIC",
+    };
+    const priv: CourseSubject = {
+      instructorId: OWNER_ID,
+      status: "PUBLISHED",
+      visibility: "PRIVATE",
+    };
+
+    expect(can(learner, { type: "course:enroll", course: publicCourse })).toBe(
+      true
+    );
+    expect(can(learner, { type: "course:enroll", course: archived })).toBe(
+      false
+    );
+    expect(can(learner, { type: "course:enroll", course: priv })).toBe(false);
+
+    // Anonymous users cannot enroll in anything.
+    expect(can(anonymous, { type: "course:enroll", course: publicCourse })).toBe(
+      false
+    );
   });
 });

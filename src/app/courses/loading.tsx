@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageShell } from "@/components/shared/page-shell";
 import { CourseGridSkeleton } from "@/features/courses/components/course-card-skeleton";
 
 /**
@@ -8,19 +9,30 @@ import { CourseGridSkeleton } from "@/features/courses/components/course-card-sk
  * Suspense boundary exists. Once on the page, searching and paging are
  * covered by the boundary inside `page.tsx`, which keeps the header and
  * search field on screen instead of replacing them.
+ *
+ * The placeholder heights track the real header's type steps — the h1 is
+ * `text-title`/`sm:text-title-lg`, so the block is sized to match rather
+ * than to the `h-9` it used to guess at, which shifted the grid down when
+ * the real heading arrived (§26).
  */
 export default function CoursesLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-12 sm:px-10 sm:py-16">
+    <PageShell>
       <header className="flex flex-col gap-6" aria-hidden="true">
         <div className="flex flex-col gap-3">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-5 w-80 max-w-full" />
+          <Skeleton className="h-9 w-56 sm:h-11" />
+          <Skeleton className="h-6 w-96 max-w-full" />
         </div>
-        <Skeleton className="h-8 w-full max-w-md" />
+
+        {/* Mirrors the search row: field plus submit button, both at the
+            shared control height. */}
+        <div className="flex w-full max-w-xl items-center gap-2">
+          <Skeleton className="h-control flex-1" />
+          <Skeleton className="h-control w-24" />
+        </div>
       </header>
 
       <CourseGridSkeleton />
-    </div>
+    </PageShell>
   );
 }

@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { focusRing } from "@/lib/utils";
 import { signUpAction } from "@/features/auth/actions";
 import { AuthForm } from "@/features/auth/components/auth-form";
 import { PASSWORD_MIN_LENGTH } from "@/features/auth/password";
@@ -32,46 +32,34 @@ export default async function SignUpPage({
     typeof rawCallback === "string" ? rawCallback : undefined;
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Create your account</CardTitle>
+        <CardTitle asChild>
+          <h1>Create your account</h1>
+        </CardTitle>
         <CardDescription>
           Start learning in a couple of minutes.
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-6">
+        {/* The name field is a prop rather than hand-written markup passed
+            as children, so both auth forms render identical field rows. */}
         <AuthForm
           action={signUpAction}
           submitLabel="Create account"
           pendingLabel="Creating account…"
           callbackUrl={callbackUrl}
+          includeName
           passwordAutoComplete="new-password"
           passwordHint={`At least ${PASSWORD_MIN_LENGTH} characters.`}
-        >
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="name"
-              className="text-sm font-medium text-foreground"
-            >
-              Name
-            </label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              required
-              placeholder="Ada Lovelace"
-            />
-          </div>
-        </AuthForm>
+        />
 
-        <p className="text-sm text-muted-foreground">
+        <p className="text-body-sm text-muted-foreground">
           Already have an account?{" "}
           <Link
             href="/sign-in"
-            className="font-medium text-foreground underline underline-offset-4"
+            className={`rounded-sm font-medium text-accent-foreground underline underline-offset-4 ${focusRing}`}
           >
             Sign in
           </Link>

@@ -13,19 +13,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function CourseCardSkeleton() {
   return (
     <Card size="sm" className="h-full" aria-hidden="true">
-      <CardHeader className="gap-2">
-        <Skeleton className="h-4 w-4/5" />
-        <Skeleton className="h-4 w-2/5" />
+      {/* Title block: one line at the card title's own height, so the swap
+          from skeleton to text does not move the rows below it. */}
+      <CardHeader>
+        <Skeleton className="h-5 w-4/5" />
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col gap-2">
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-11/12" />
-        <Skeleton className="h-3 w-3/5" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-11/12" />
+        <Skeleton className="h-3.5 w-3/5" />
       </CardContent>
 
-      <CardFooter className="border-t border-border pt-3 pb-(--card-spacing)">
-        <Skeleton className="h-3 w-24" />
+      <CardFooter className="justify-between">
+        <Skeleton className="h-3.5 w-24" />
+        <Skeleton className="h-3.5 w-20" />
       </CardFooter>
     </Card>
   );
@@ -35,7 +37,7 @@ export function CourseCardSkeleton() {
 export function CourseGridSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div
-      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
       role="status"
       aria-label="Loading courses"
     >

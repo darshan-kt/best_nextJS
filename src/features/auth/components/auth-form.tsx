@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 import { useFormStatus } from "react-dom";
 import { AlertCircle } from "lucide-react";
 
@@ -23,12 +23,22 @@ interface AuthFormProps {
   submitLabel: string;
   pendingLabel: string;
   callbackUrl?: string;
-  /** Rendered above the password field; sign-up adds a name field. */
-  children?: React.ReactNode;
+  /**
+   * Renders the name field above email. Previously the sign-up page passed
+   * this in as `children` with its own hand-written label markup, which is
+   * how the two forms drifted; the form now owns every field it renders.
+   */
+  includeName?: boolean;
   passwordAutoComplete: "current-password" | "new-password";
   passwordHint?: string;
 }
 
+/**
+ * Submitting now looks like submitting: the button shows a spinner and
+ * `aria-busy` rather than only swapping its label, which made a pending
+ * button visually identical to a disabled one (§21 — loading is a state the
+ * design system owes every action).
+ */
 function SubmitButton({
   label,
   pendingLabel,
@@ -39,9 +49,40 @@ function SubmitButton({
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
+    <Button type="submit" size="lg" className="w-full" loading={pending}>
       {pending ? pendingLabel : label}
     </Button>
+  );
+}
+
+/** One field row — label, control, optional hint — so the three fields on
+ *  these two pages cannot drift apart. */
+function Field({
+  id,
+  label,
+  hint,
+  children,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label
+        htmlFor={id}
+        className="text-body-sm font-medium text-foreground"
+      >
+        {label}
+      </label>
+      {children}
+      {hint ? (
+        <p id={`${id}-hint`} className="text-caption text-muted-foreground">
+          {hint}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -50,64 +91,73 @@ export function AuthForm({
   submitLabel,
   pendingLabel,
   callbackUrl,
-  children,
+  includeName = false,
   passwordAutoComplete,
   passwordHint,
 }: AuthFormProps) {
   const [state, formAction] = useActionState<AuthFormState, FormData>(action, {});
+  const errorId = useId();
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-5">
       {callbackUrl ? (
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
       ) : null}
 
-      {children}
+      {includeName ? (
+        <Field id="name" label="Name">
+          <Input
+            id="name"
+            name="name"
+            type="text"
+            inputSize="lg"
+            autoComplete="name"
+            required
+            placeholder="Ada Lovelace"
+          />
+        </Field>
+      ) : null}
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="email" className="text-sm font-medium text-foreground">
-          Email
-        </label>
+      <Field id="email" label="Email">
         <Input
           id="email"
           name="email"
           type="email"
+          inputSize="lg"
           autoComplete="email"
           required
           placeholder="you@example.com"
+          aria-invalid={state.error ? true : undefined}
+          aria-describedby={state.error ? errorId : undefined}
         />
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-2">
-        <label
-          htmlFor="password"
-          className="text-sm font-medium text-foreground"
-        >
-          Password
-        </label>
+      <Field id="password" label="Password" hint={passwordHint}>
         <Input
           id="password"
           name="password"
           type="password"
+          inputSize="lg"
           autoComplete={passwordAutoComplete}
           required
-          aria-describedby={passwordHint ? "password-hint" : undefined}
+          aria-invalid={state.error ? true : undefined}
+          aria-describedby={
+            [passwordHint ? "password-hint" : null, state.error ? errorId : null]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
         />
-        {passwordHint ? (
-          <p id="password-hint" className="text-sm text-muted-foreground">
-            {passwordHint}
-          </p>
-        ) : null}
-      </div>
+      </Field>
 
       {state.error ? (
         // role="alert" so screen readers announce the failure rather than
         // leaving the user wondering why nothing happened (§24).
         <p
+          id={errorId}
           role="alert"
-          className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2.5 text-body-sm text-destructive"
         >
-          <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           {state.error}
         </p>
       ) : null}

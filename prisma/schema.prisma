@@ -51,6 +51,19 @@ enum CourseVisibility {
   PRIVATE
 }
 
+/// A learner's participation in a course.
+///
+/// Status rather than row deletion: unenrolling must not erase the fact
+/// that someone once took the course, and Milestone 7 will hang progress
+/// off the enrollment, which a delete would take with it. Keeping the row
+/// also means the `[userId, courseId]` unique constraint still holds when
+/// somebody re-enrolls.
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
 /// §11. New content types are expected; adding a value here plus a
 /// renderer is the intended extension path.
 enum ContentBlockType {
@@ -120,6 +133,7 @@ model User {
   sessions            Session[]
   roles               UserRole[]
   instructedCourses   Course[]             @relation("CourseInstructor")
+  enrollments         Enrollment[]
   quizAttempts        QuizAttempt[]
   exerciseSubmissions ExerciseSubmission[]
   reviewedEvaluations ExerciseEvaluation[] @relation("EvaluationReviewer")
@@ -227,11 +241,55 @@ model Course {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  sections Section[]
+  sections    Section[]
+  enrollments Enrollment[]
 
   @@index([instructorId])
   // Catalogue listings filter on status + visibility and sort by recency.
   @@index([status, visibility, publishedAt])
+}
+
+/// §12. The link between a learner and a course, and the thing every
+/// enrollment-gated permission check resolves against.
+///
+/// Deliberately carries a surrogate `id` even though `[userId, courseId]`
+/// already identifies a row: Milestone 7 will reference it from
+/// `LessonProgress(enrollmentId, lessonId)`. Progress is a fact about
+/// someone's participation in a course, not about a user in the abstract,
+/// so scoping it to the enrollment lets it inherit course scope through
+/// the ownership chain (§14) and makes "this learner's progress in this
+/// course" a single foreign-key lookup rather than a join back up through
+/// lesson → section → course.
+///
+/// Course-level aggregates (percent complete, last-accessed lesson) are
+/// additive columns here when Milestone 7 establishes they are needed.
+/// They are not guessed at now.
+model Enrollment {
+  id       String @id @default(cuid())
+  userId   String
+  courseId String
+
+  status EnrollmentStatus @default(ACTIVE)
+
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Cascade on both sides: an enrollment is meaningless without the
+  /// learner and the course it joins, unlike the course itself, which
+  /// must survive the deletion of its author.
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  /// One enrollment per learner per course. Also the upsert key, which is
+  /// what makes enrolling idempotent under a double-submitted form.
+  @@unique([userId, courseId])
+  // The unique index above already covers lookups keyed on userId, so only
+  // the reverse direction — "who is enrolled in this course" — needs its
+  // own index (§10).
+  @@index([courseId, status])
 }
 
 model Section {

@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { focusRing } from "@/lib/utils";
 import { signInAction } from "@/features/auth/actions";
 import { AuthForm } from "@/features/auth/components/auth-form";
 import { getCurrentUser } from "@/features/auth/session";
@@ -31,15 +32,18 @@ export default async function SignInPage({
     typeof rawCallback === "string" ? rawCallback : undefined;
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>
-          Sign in to continue your learning.
-        </CardDescription>
+        {/* The card title is this page's primary heading, so it is an h1
+            and takes the title step — not the base size it had before,
+            which left the page with no typographic focal point (§21). */}
+        <CardTitle asChild>
+          <h1>Welcome back</h1>
+        </CardTitle>
+        <CardDescription>Sign in to continue your learning.</CardDescription>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-6">
         <AuthForm
           action={signInAction}
           submitLabel="Sign in"
@@ -48,11 +52,11 @@ export default async function SignInPage({
           passwordAutoComplete="current-password"
         />
 
-        <p className="text-sm text-muted-foreground">
+        <p className="text-body-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link
             href="/sign-up"
-            className="font-medium text-foreground underline underline-offset-4"
+            className={`rounded-sm font-medium text-accent-foreground underline underline-offset-4 ${focusRing}`}
           >
             Create one
           </Link>

@@ -1,5 +1,9 @@
 import { prisma } from "@/db/client";
-import { can, type Actor } from "@/features/auth/policy";
+import {
+  can,
+  type Actor,
+  type CourseSubject,
+} from "@/features/auth/policy";
 import { CATALOG_VISIBILITY, isListableInCatalog } from "./visibility";
 import { PAGE_SIZE } from "./search-params";
 
@@ -118,21 +122,55 @@ export interface CourseDetail extends CatalogCourse {
 }
 
 /**
- * Loads one course by slug, or null when the viewer may not see it.
+ * A lesson as the curriculum outline shows it.
  *
- * "Not found" and "not allowed" deliberately collapse into the same
- * answer. Distinguishing them would let anyone probe slugs and learn which
- * private courses exist — the 403 itself becomes the leak (§29). The
- * caller renders a 404 either way.
- *
- * Unlike the listing, this path uses `can()` alone: a single row is
- * already loaded, so there is no scalability argument for duplicating the
- * rule in SQL, and one authority is better than two.
+ * No content — that arrives with the learning player in Milestone 6, and
+ * a listing has no business loading lesson bodies it will not render.
  */
-export async function getCourseBySlug(
+export interface CurriculumLesson {
+  id: string;
+  slug: string;
+  title: string;
+  durationMinutes: number | null;
+}
+
+export interface CurriculumSection {
+  id: string;
+  title: string;
+  summary: string | null;
+  lessons: CurriculumLesson[];
+}
+
+export interface CourseWithCurriculum extends CourseDetail {
+  /**
+   * The fields `can()` needs to answer `course:learn` for this course.
+   * Carried through explicitly rather than re-fetched at the call site:
+   * the page has already loaded the row, and a second query to re-ask a
+   * question this one answered would be waste.
+   */
+  policySubject: CourseSubject;
+  sections: CurriculumSection[];
+  /** Denormalised for the header; cheap to derive, tedious to recompute. */
+  lessonCount: number;
+  totalDurationMinutes: number;
+}
+
+/**
+ * Loads a course together with its curriculum outline.
+ *
+ * One query, not one per section: a nested `select` becomes a small number
+ * of statements Prisma issues together, whereas fetching sections and then
+ * looping to fetch lessons is the N+1 pattern §10 forbids.
+ *
+ * Only published lessons are returned. A half-written lesson inside a
+ * published course is not something a prospective learner should see, and
+ * filtering here rather than in the component means it never reaches the
+ * client at all.
+ */
+export async function getCourseWithCurriculum(
   slug: string,
   actor: Actor | null
-): Promise<CourseDetail | null> {
+): Promise<CourseWithCurriculum | null> {
   const course = await prisma.course.findUnique({
     where: { slug },
     select: {
@@ -146,6 +184,24 @@ export async function getCourseBySlug(
       visibility: true,
       instructorId: true,
       instructor: { select: { name: true } },
+      sections: {
+        orderBy: { position: "asc" },
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          lessons: {
+            where: { isPublished: true },
+            orderBy: { position: "asc" },
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              durationMinutes: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -153,9 +209,28 @@ export async function getCourseBySlug(
     return null;
   }
 
-  const { id, title, subtitle, description, publishedAt, instructor } = course;
+  const lessons = course.sections.flatMap((section) => section.lessons);
 
-  return { id, slug: course.slug, title, subtitle, description, publishedAt, instructor };
+  return {
+    id: course.id,
+    slug: course.slug,
+    title: course.title,
+    subtitle: course.subtitle,
+    description: course.description,
+    publishedAt: course.publishedAt,
+    instructor: course.instructor,
+    policySubject: {
+      instructorId: course.instructorId,
+      status: course.status,
+      visibility: course.visibility,
+    },
+    sections: course.sections,
+    lessonCount: lessons.length,
+    totalDurationMinutes: lessons.reduce(
+      (total, lesson) => total + (lesson.durationMinutes ?? 0),
+      0
+    ),
+  };
 }
 
 /**

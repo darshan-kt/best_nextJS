@@ -64,3 +64,38 @@ Build minimal sign-in/sign-out UI using the design system components from Milest
 Use Playwright to verify: an unauthenticated user is blocked from a protected route, and a signed-in user reaches it.
 
 Wait for my go-ahead on the plan before implementing — the sign-in method decision especially, since that's a product call, not just an implementation detail.
+
+
+Step 4:
+Rate limiting is committed. Start Milestone 4 (Course Catalog & Discovery) from §44.
+
+Follow §36 — plan first (Objective / Files to Change / Architecture Decisions / Potential Risks / Validation Plan).
+
+Scope for this milestone:
+
+Build the course catalog/discovery UI: browsable list of courses, using the design system from Milestone 1.
+This is the first real reuse of the can() permission layer from Milestone 3 — enforce course:view against real data, respecting the visibility model from §14 (Public vs Organization-private, even though Organization itself doesn't exist yet — just make sure Public-only visibility works correctly now).
+Data fetching per §7 (Next.js Rules) — server-side by default, no client-side fetching waterfalls for the catalog list.
+Cover the states §26 (Error Handling) requires: loading, empty (no courses yet), and error.
+Basic search/filter if reasonable for this milestone — keep it simple, don't overbuild before real usage data exists (§35, §39).
+Use Playwright to screenshot the catalog page in at least two states: populated and empty.
+
+Wait for my go-ahead on the plan before implementing.
+
+Step 5
+Start Milestone 5 (Course Details & Enrollment) from §44.
+
+Follow §36 — plan first (Objective / Files to Change / Architecture Decisions / Potential Risks / Validation Plan).
+
+Scope for this milestone:
+
+Build the course detail page at /courses/[slug] — this replaces the placeholder/disabled state from Milestone 4. Include course info, curriculum outline (sections/lessons from the §11 hierarchy), and an enroll action.
+Model Enrollment properly now — you noted in Milestone 2 this was deferred; design it per §9/§38 (Database Rules, Migration Rules), considering the relationship to User, Course, and future Progress tracking (Milestone 7) so you're not setting up a schema that needs reshaping there.
+Enforce authorization per §11/§12: enrolling requires authentication; viewing enrolled-only content (if any exists at this stage) must check enrollment server-side via the can() layer, not just hide UI.
+Application-layer use case per §5: "Enroll student in course" as a discrete, testable operation — not enrollment logic scattered inside a route handler.
+Cover §26 states: loading, already-enrolled, not-yet-enrolled, error (e.g. enrolling in a course that doesn't allow self-enrollment, if that's a case you're modeling).
+Use Playwright to verify and screenshot: the detail page for a logged-out visitor, an authenticated non-enrolled user, and post-enrollment state.
+
+Since you already have the one authorization test from Milestone 4, extend it (don't create a second parallel test setup) to cover: an enrolled user can access enrollment-gated content, a non-enrolled user cannot, per §11.
+
+Wait for my go-ahead on the plan before implementing.
