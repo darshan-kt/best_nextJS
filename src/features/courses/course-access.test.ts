@@ -319,3 +319,48 @@ describe("progress access", () => {
     ).toBe(false);
   });
 });
+
+// --- Quiz access (§12, §18, Milestone 8) ------------------------------------
+//
+// `quiz:attempt` / `quiz:view` intentionally share `progress:mark` /
+// `progress:view`'s exact rule (ownership of a live enrollment, no
+// author/moderator bypass) — a quiz attempt is the same kind of personal
+// record as lesson progress, not course content. These tests exist to pin
+// that the two stay in lockstep rather than to re-prove the rule itself.
+
+describe("quiz access", () => {
+  it("lets a learner attempt and view results on their own active enrollment", () => {
+    expect(can(learner, { type: "quiz:attempt", enrollment: enrolled })).toBe(
+      true
+    );
+    expect(can(learner, { type: "quiz:view", enrollment: enrolled })).toBe(
+      true
+    );
+  });
+
+  it("still allows an attempt once the enrollment itself is COMPLETED", () => {
+    expect(can(learner, { type: "quiz:attempt", enrollment: completed })).toBe(
+      true
+    );
+  });
+
+  it("refuses a cancelled enrollment, even for its own owner", () => {
+    expect(can(learner, { type: "quiz:attempt", enrollment: cancelled })).toBe(
+      false
+    );
+  });
+
+  it("refuses the course's own author, who has no enrollment to attach an attempt to", () => {
+    // Mirrors the `progress:mark` contrast with `course:learn`: the author
+    // passes the content-access check but has nothing for an attempt
+    // record to belong to.
+    expect(can(owner, { type: "quiz:attempt", enrollment: null })).toBe(false);
+    expect(mayLearn(owner, null)).toBe(true);
+  });
+
+  it("refuses an anonymous visitor", () => {
+    expect(
+      can(anonymous, { type: "quiz:attempt", enrollment: enrolled })
+    ).toBe(false);
+  });
+});

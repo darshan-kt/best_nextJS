@@ -40,7 +40,7 @@ export type RenderableBlock =
       id: string;
       position: number;
       kind: "QUIZ";
-      quiz: { title: string; description: string | null };
+      quiz: { id: string; title: string; description: string | null };
     }
   | {
       id: string;
@@ -67,7 +67,7 @@ export async function getLessonContentBlocks(
       type: true,
       position: true,
       data: true,
-      quiz: { select: { title: true, description: true } },
+      quiz: { select: { id: true, title: true, description: true } },
       exercise: { select: { title: true, instructions: true } },
     },
   });

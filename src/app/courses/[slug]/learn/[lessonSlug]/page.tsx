@@ -36,10 +36,16 @@ import { getCompletedLessonIds } from "@/features/progress/queries";
  * bypass has no enrollment row and gets no completion UI at all, not a
  * disabled one.
  *
- * What is explicitly *not* here: no real quiz-taking or exercise
- * submission — QUIZ and EXERCISE blocks render as a labeled placeholder
- * (Milestones 8/9). No block-level progress — only whole-lesson
- * completion exists (§35; see the `LessonProgress` schema comment).
+ * Milestone 8 adds real quiz-taking — the same resolved `enrollment` is
+ * passed to `BlockRenderer` as `quizContext` so each `QUIZ` block can run
+ * its own `quiz:attempt` check without re-querying enrollment itself.
+ *
+ * What is explicitly *not* here: no real exercise submission — EXERCISE
+ * blocks still render as a labeled placeholder (Milestone 9). No
+ * block-level progress — only whole-lesson completion exists (§35; see the
+ * `LessonProgress` schema comment). Passing a quiz does not affect lesson
+ * completion — the two are deliberately independent this milestone (see
+ * `submit-quiz-attempt.ts`).
  */
 
 const loadLesson = async (slug: string, lessonSlug: string) => {
@@ -77,7 +83,15 @@ const loadLesson = async (slug: string, lessonSlug: string) => {
       )
     : false;
 
-  return { course, navigation, blocks, canViewProgress, isCompleted };
+  return {
+    actor,
+    enrollment,
+    course,
+    navigation,
+    blocks,
+    canViewProgress,
+    isCompleted,
+  };
 };
 
 export async function generateMetadata({
@@ -117,7 +131,8 @@ export default async function LessonPlayerPage({
     forbidden();
   }
 
-  const { course, navigation, blocks, canViewProgress, isCompleted } = data;
+  const { actor, enrollment, course, navigation, blocks, canViewProgress, isCompleted } =
+    data;
   const { current, previous, next, position, total } = navigation;
 
   return (
@@ -150,7 +165,19 @@ export default async function LessonPlayerPage({
 
       <div className="flex flex-col gap-6">
         {blocks.length > 0 ? (
-          blocks.map((block) => <BlockRenderer key={block.id} block={block} />)
+          blocks.map((block) => (
+            <BlockRenderer
+              key={block.id}
+              block={block}
+              quizContext={{
+                actor,
+                enrollment,
+                courseId: course.id,
+                courseSlug: slug,
+                lessonSlug,
+              }}
+            />
+          ))
         ) : (
           <p className="text-body-sm text-muted-foreground">
             This lesson doesn&apos;t have any content yet.

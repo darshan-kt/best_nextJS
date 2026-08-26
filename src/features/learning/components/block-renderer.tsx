@@ -1,3 +1,5 @@
+import type { Actor, EnrollmentSubject } from "@/features/auth/policy";
+import { QuizBlock } from "@/features/quizzes/components/quiz-block";
 import type { RenderableBlock } from "../queries";
 import { TextBlock } from "./blocks/text-block";
 import { ImageBlock } from "./blocks/image-block";
@@ -13,8 +15,25 @@ import { UnsupportedBlock } from "./blocks/unsupported-block";
  * component in `blocks/`, one new case here. No other file in the app
  * conditions on block type — the alternative, scattering `if (type ===
  * "IMAGE")` across the lesson page, is exactly what §11 rules out.
+ *
+ * `quizContext` exists only for the `QUIZ` case (§44, Milestone 8): the
+ * already-resolved actor/enrollment from the lesson page's own
+ * authorization check, threaded through rather than re-queried per block,
+ * so a lesson with several quizzes still resolves enrollment once (§12).
  */
-export function BlockRenderer({ block }: { block: RenderableBlock }) {
+export function BlockRenderer({
+  block,
+  quizContext,
+}: {
+  block: RenderableBlock;
+  quizContext: {
+    actor: Actor;
+    enrollment: EnrollmentSubject | null;
+    courseId: string;
+    courseSlug: string;
+    lessonSlug: string;
+  };
+}) {
   switch (block.kind) {
     case "TEXT":
       return <TextBlock data={block.data} />;
@@ -30,17 +49,17 @@ export function BlockRenderer({ block }: { block: RenderableBlock }) {
 
     case "QUIZ":
       return (
-        <PlaceholderBlock
-          kind="QUIZ"
-          title={block.quiz.title}
-          description={block.quiz.description}
+        <QuizBlock
+          quizId={block.quiz.id}
+          fallbackTitle={block.quiz.title}
+          fallbackDescription={block.quiz.description}
+          {...quizContext}
         />
       );
 
     case "EXERCISE":
       return (
         <PlaceholderBlock
-          kind="EXERCISE"
           title={block.exercise.title}
           description={block.exercise.instructions}
         />

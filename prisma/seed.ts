@@ -54,7 +54,42 @@ type SeedContentBlock =
       type: "CODE";
       data: { code: string; language?: string; filename?: string };
     }
-  | { type: "QUIZ"; quiz: { title: string; description?: string } };
+  | {
+      type: "QUIZ";
+      quiz: {
+        title: string;
+        description?: string;
+        questions: SeedQuizQuestion[];
+      };
+    };
+
+/// Question payloads (§18), matched to the `questionDataSchemas` /
+/// `questionValueSchemas` shapes in `features/quizzes/schemas.ts`. All four
+/// implemented types are represented so the quiz-taking flow has something
+/// real to exercise for each one.
+type SeedQuizQuestion =
+  | {
+      type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE";
+      prompt: string;
+      explanation?: string;
+      points?: number;
+      options: { id: string; label: string }[];
+      correctOptionIds: string[];
+    }
+  | {
+      type: "TRUE_FALSE";
+      prompt: string;
+      explanation?: string;
+      points?: number;
+      correctAnswer: boolean;
+    }
+  | {
+      type: "SHORT_ANSWER";
+      prompt: string;
+      explanation?: string;
+      points?: number;
+      acceptedAnswers: string[];
+    };
 
 const MDN_SAMPLE_IMAGE =
   "https://interactive-examples.mdn.mozilla.net/media/cc0-images/grapefruit-slice-332-332.jpg";
@@ -119,6 +154,52 @@ const CURRICULA: Record<string, SeedSection[]> = {
                 title: "Check your understanding: structural typing",
                 description:
                   "A short comprehension check on shape-based assignability.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Which best describes how TypeScript decides whether a value satisfies a type?",
+                    explanation:
+                      "TypeScript compares the shape of two types, not their names — that's structural typing.",
+                    options: [
+                      { id: "a", label: "By name — the value must declare the type" },
+                      { id: "b", label: "By comparing the shape of members" },
+                      { id: "c", label: "By its position in the runtime prototype chain" },
+                      { id: "d", label: "By the order its properties were declared" },
+                    ],
+                    correctOptionIds: ["b"],
+                  },
+                  {
+                    type: "MULTIPLE_CHOICE",
+                    prompt:
+                      "Which of these are true about structural typing in TypeScript? Select all that apply.",
+                    explanation:
+                      "A value can satisfy an interface it never declares, and two unrelated interfaces with identical members are mutually assignable.",
+                    options: [
+                      { id: "a", label: "A value can satisfy an interface it never declares" },
+                      { id: "b", label: "Extra properties are always rejected on direct assignment" },
+                      { id: "c", label: "Two unrelated interfaces with identical members are mutually assignable" },
+                      { id: "d", label: "It matches Java's default typing model" },
+                    ],
+                    correctOptionIds: ["a", "c"],
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "In the `logPoint` example, `labeled` was accepted because it explicitly implements the `Point` interface.",
+                    explanation:
+                      "It works because its shape matches Point, not because of a declared implementation — there is no `implements Point` anywhere.",
+                    correctAnswer: false,
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "What is the general term for a type system that checks compatibility based on structure rather than declared names?",
+                    explanation:
+                      "Structural typing — contrasted with the nominal typing used by languages like Java or C#.",
+                    acceptedAnswers: ["structural typing", "structural type system"],
+                  },
+                ],
               },
             },
           ],
@@ -535,6 +616,12 @@ async function seedContentBlock(
         data: { lessonId, position, type: "QUIZ", quizId: quiz.id },
       });
     }
+
+    await Promise.all(
+      block.quiz.questions.map((question, index) =>
+        seedQuizQuestion(prisma, quiz.id, index, question)
+      )
+    );
     return;
   }
 
@@ -547,6 +634,49 @@ async function seedContentBlock(
     await prisma.lessonContentBlock.create({
       data: { lessonId, position, type: block.type, data: block.data },
     });
+  }
+}
+
+/**
+ * One quiz question (§18). Like `LessonContentBlock`, `QuizQuestion` has no
+ * natural key beyond `(quizId, position)` — same find-then-branch shape as
+ * everything else position-ordered in this file.
+ */
+async function seedQuizQuestion(
+  prisma: PrismaClient,
+  quizId: string,
+  position: number,
+  question: SeedQuizQuestion
+): Promise<void> {
+  const existing = await prisma.quizQuestion.findFirst({
+    where: { quizId, position },
+    select: { id: true },
+  });
+
+  const data =
+    question.type === "TRUE_FALSE"
+      ? { correctAnswer: question.correctAnswer }
+      : question.type === "SHORT_ANSWER"
+        ? { acceptedAnswers: question.acceptedAnswers }
+        : { options: question.options, correctOptionIds: question.correctOptionIds };
+
+  const questionData = {
+    quizId,
+    position,
+    type: question.type,
+    prompt: question.prompt,
+    explanation: question.explanation ?? null,
+    points: question.points ?? 1,
+    data,
+  };
+
+  if (existing) {
+    await prisma.quizQuestion.update({
+      where: { id: existing.id },
+      data: questionData,
+    });
+  } else {
+    await prisma.quizQuestion.create({ data: questionData });
   }
 }
 
