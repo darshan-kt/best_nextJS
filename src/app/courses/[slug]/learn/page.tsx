@@ -69,12 +69,9 @@ export default async function CourseLearnPage({
         </Link>
       </Button>
 
-      <PageHeader
-        title={course.title}
-        description="Pick a lesson to begin. The lesson player arrives with the next milestone."
-      />
+      <PageHeader title={course.title} description="Pick a lesson to begin." />
 
-      <CurriculumOutline sections={course.sections} unlocked />
+      <CurriculumOutline sections={course.sections} unlocked courseSlug={slug} />
     </PageShell>
   );
 }

@@ -16,6 +16,22 @@ const nextConfig: NextConfig = {
     // replacing it later means editing that module, not every route.
     authInterrupts: true,
   },
+
+  images: {
+    // `next/image` refuses to optimize a remote source unless its host is
+    // named here. Scoped to exactly the one host used by IMAGE content
+    // blocks in development seed data (§26, §32) — media storage stays
+    // provider-agnostic in application code; this list is the one place
+    // that names an actual host, and it grows by one entry per real
+    // provider, never a wildcard.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "interactive-examples.mdn.mozilla.net",
+        pathname: "/media/cc0-images/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

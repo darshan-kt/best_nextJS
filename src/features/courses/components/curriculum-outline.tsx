@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { Lock, PlayCircle } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/empty-state";
+import { cn, focusRing } from "@/lib/utils";
 import type { CurriculumSection } from "../queries";
 
 /**
@@ -14,6 +16,13 @@ import type { CurriculumSection } from "../queries";
  *
  * The lock icons here are therefore an explanation of a boundary that
  * already exists, not the boundary itself (§12).
+ *
+ * Two call sites, one component: the course detail page shows this as a
+ * preview (never linked, whether locked or not), and the `/learn` gate
+ * shows it as a picker into the player (§44, Milestone 6). `courseSlug`
+ * distinguishes them — passing it turns unlocked lessons into links;
+ * omitting it keeps every row inert, which is what the detail-page preview
+ * has always needed.
  */
 
 function formatDuration(minutes: number): string {
@@ -31,13 +40,17 @@ interface CurriculumOutlineProps {
   sections: CurriculumSection[];
   /** Whether the viewer has access to the lessons themselves. */
   unlocked: boolean;
+  /** Present only where lessons should link into the player. */
+  courseSlug?: string;
 }
 
 export function CurriculumOutline({
   sections,
   unlocked,
+  courseSlug,
 }: CurriculumOutlineProps) {
   const populated = sections.filter((section) => section.lessons.length > 0);
+  const linkable = unlocked && courseSlug !== undefined;
 
   if (populated.length === 0) {
     return (
@@ -71,35 +84,62 @@ export function CurriculumOutline({
           </div>
 
           <ul className="flex list-none flex-col divide-y divide-border">
-            {section.lessons.map((lesson) => (
-              <li
-                key={lesson.id}
-                className="flex items-center justify-between gap-3 px-5 py-3"
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  {unlocked ? (
-                    <PlayCircle
-                      className="size-4 shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Lock
-                      className="size-4 shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  )}
-                  <span className="truncate text-body-sm text-foreground">
-                    {lesson.title}
-                  </span>
-                </span>
+            {section.lessons.map((lesson) => {
+              const icon = unlocked ? (
+                <PlayCircle
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Lock
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              );
 
-                {lesson.durationMinutes ? (
-                  <span className="shrink-0 text-caption text-muted-foreground">
-                    {formatDuration(lesson.durationMinutes)}
+              const duration = lesson.durationMinutes ? (
+                <span className="shrink-0 text-caption text-muted-foreground">
+                  {formatDuration(lesson.durationMinutes)}
+                </span>
+              ) : null;
+
+              if (linkable) {
+                return (
+                  <li key={lesson.id} className="relative">
+                    <Link
+                      href={`/courses/${courseSlug}/learn/${lesson.slug}`}
+                      className={cn(
+                        "flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-muted/40",
+                        focusRing
+                      )}
+                    >
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        {icon}
+                        <span className="truncate text-body-sm text-foreground">
+                          {lesson.title}
+                        </span>
+                      </span>
+                      {duration}
+                    </Link>
+                  </li>
+                );
+              }
+
+              return (
+                <li
+                  key={lesson.id}
+                  className="flex items-center justify-between gap-3 px-5 py-3"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {icon}
+                    <span className="truncate text-body-sm text-foreground">
+                      {lesson.title}
+                    </span>
                   </span>
-                ) : null}
-              </li>
-            ))}
+                  {duration}
+                </li>
+              );
+            })}
           </ul>
         </li>
       ))}

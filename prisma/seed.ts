@@ -1,6 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "../src/db/generated/client";
+import { Prisma, PrismaClient } from "../src/db/generated/client";
 import { hashPassword } from "../src/features/auth/password";
 
 /**
@@ -35,6 +35,32 @@ const INSTRUCTOR_PASSWORD = "seed-password-123";
 const STUDENT_EMAIL = "student@example.com";
 const STUDENT_PASSWORD = "seed-password-123";
 
+/// Content blocks for the two lessons the learning player (Milestone 6) is
+/// screenshotted against. Every other seeded lesson is intentionally left
+/// without blocks — an empty lesson is a real state the player has to
+/// render ("this lesson doesn't have any content yet"), and it should stay
+/// exercised rather than every lesson accidentally getting content.
+///
+/// Media points at MDN's own CC0-licensed sample assets rather than a
+/// generated placeholder, so the IMAGE and VIDEO blocks render something
+/// real for `next/image` and `<video>` to load. This is seed data, not
+/// application logic — the renderers themselves are provider-agnostic
+/// (§32) and know nothing about where these particular URLs live.
+type SeedContentBlock =
+  | { type: "TEXT"; data: { body: string } }
+  | { type: "IMAGE"; data: { src: string; alt: string; caption?: string } }
+  | { type: "VIDEO"; data: { src: string; title: string; posterSrc?: string } }
+  | {
+      type: "CODE";
+      data: { code: string; language?: string; filename?: string };
+    }
+  | { type: "QUIZ"; quiz: { title: string; description?: string } };
+
+const MDN_SAMPLE_IMAGE =
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-images/grapefruit-slice-332-332.jpg";
+const MDN_SAMPLE_VIDEO =
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+
 /// Curriculum for a couple of courses (§11: Course → Section → Lesson).
 /// Not every seeded course gets one — a course with an empty curriculum is
 /// a state the detail page has to render, so leaving some empty keeps that
@@ -44,6 +70,7 @@ interface SeedLesson {
   title: string;
   durationMinutes: number;
   isPublished?: boolean;
+  contentBlocks?: SeedContentBlock[];
 }
 
 interface SeedSection {
@@ -62,11 +89,67 @@ const CURRICULA: Record<string, SeedSection[]> = {
           slug: "structural-typing",
           title: "Structural typing and why it surprises people",
           durationMinutes: 14,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "TypeScript compares the shape of two types, not their names. A value satisfies a type if it has the required members — where it came from doesn't matter.\n\nThis is different from the nominal typing you may know from Java or C#, where a class only satisfies an interface it explicitly declares. It's also why two unrelated types can be assignable to each other by accident, which is the surprise this lesson is named for.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: MDN_SAMPLE_IMAGE,
+                alt: "A sliced grapefruit",
+                caption:
+                  "Placeholder image block — real course artwork replaces this.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "typescript",
+                filename: "structural.ts",
+                code: 'interface Point {\n  x: number;\n  y: number;\n}\n\nfunction logPoint(point: Point) {\n  console.log(`${point.x}, ${point.y}`);\n}\n\n// No declared relationship to `Point` — it just happens to have\n// the right shape, plus an extra field TypeScript doesn\'t mind.\nconst labeled = { x: 10, y: 20, label: "origin" };\nlogPoint(labeled); // fine',
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Check your understanding: structural typing",
+                description:
+                  "A short comprehension check on shape-based assignability.",
+              },
+            },
+          ],
         },
         {
           slug: "inference",
           title: "Inference: what you can leave unwritten",
           durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The compiler infers a type from the value assigned to it, so an annotation on a `const` you initialize immediately is usually redundant. Inference gets more interesting — and more useful — at function boundaries and with generics, where it can propagate a type through several calls without it ever being written down.",
+              },
+            },
+            {
+              type: "VIDEO",
+              data: {
+                src: MDN_SAMPLE_VIDEO,
+                title: "Placeholder clip — real lesson video replaces this.",
+                posterSrc: MDN_SAMPLE_IMAGE,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "typescript",
+                code: "// No annotation needed: inferred as `number`.\nlet count = 0;\n\n// Inferred as `(a: number, b: number) => number`.\nfunction add(a: number, b: number) {\n  return a + b;\n}",
+              },
+            },
+          ],
         },
         {
           slug: "narrowing",
@@ -379,7 +462,7 @@ async function seedCurricula(prisma: PrismaClient): Promise<void> {
         ).id;
 
       for (const [lessonIndex, lesson] of section.lessons.entries()) {
-        await prisma.lesson.upsert({
+        const { id: lessonId } = await prisma.lesson.upsert({
           // Lessons do have a natural key: (sectionId, slug).
           where: {
             sectionId_slug: { sectionId, slug: lesson.slug },
@@ -398,9 +481,72 @@ async function seedCurricula(prisma: PrismaClient): Promise<void> {
             isPublished: lesson.isPublished ?? true,
             position: lessonIndex,
           },
+          select: { id: true },
         });
+
+        if (lesson.contentBlocks) {
+          for (const [position, block] of lesson.contentBlocks.entries()) {
+            await seedContentBlock(prisma, lessonId, position, block);
+          }
+        }
       }
     }
+  }
+}
+
+/**
+ * One content block (§11). No natural key beyond (lessonId, position) —
+ * the same situation as `Section` above, and the same fix: look the row
+ * up first, then decide create vs. update explicitly, rather than fake a
+ * unique key `upsert` doesn't actually have.
+ *
+ * QUIZ blocks own a real `Quiz` row rather than a JSON payload (schema
+ * comment on `LessonContentBlock`), so seeding one is two writes: the quiz
+ * itself, then the block that points at it.
+ */
+async function seedContentBlock(
+  prisma: PrismaClient,
+  lessonId: string,
+  position: number,
+  block: SeedContentBlock
+): Promise<void> {
+  const existing = await prisma.lessonContentBlock.findFirst({
+    where: { lessonId, position },
+    select: { id: true, quizId: true },
+  });
+
+  if (block.type === "QUIZ") {
+    const quizData = {
+      title: block.quiz.title,
+      description: block.quiz.description ?? null,
+    };
+
+    const quiz = existing?.quizId
+      ? await prisma.quiz.update({ where: { id: existing.quizId }, data: quizData })
+      : await prisma.quiz.create({ data: quizData });
+
+    if (existing) {
+      await prisma.lessonContentBlock.update({
+        where: { id: existing.id },
+        data: { type: "QUIZ", quizId: quiz.id, data: Prisma.JsonNull },
+      });
+    } else {
+      await prisma.lessonContentBlock.create({
+        data: { lessonId, position, type: "QUIZ", quizId: quiz.id },
+      });
+    }
+    return;
+  }
+
+  if (existing) {
+    await prisma.lessonContentBlock.update({
+      where: { id: existing.id },
+      data: { type: block.type, data: block.data },
+    });
+  } else {
+    await prisma.lessonContentBlock.create({
+      data: { lessonId, position, type: block.type, data: block.data },
+    });
   }
 }
 
