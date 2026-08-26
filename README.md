@@ -14,15 +14,16 @@ Tailwind CSS v4 · shadcn/ui (Radix-based) · pnpm
 ```bash
 cp .env.example .env      # adjust if you are not using the bundled database
 pnpm install              # also generates the Prisma Client
-pnpm db:up                # start PostgreSQL in Docker (port 5433)
+pnpm db:up                # start PostgreSQL + Redis in Docker (5433, 6380)
 pnpm db:migrate           # apply migrations
 pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The bundled database listens on **port 5433**, not the default 5432, so it
-cannot collide with another PostgreSQL instance already running locally.
+The bundled Postgres listens on **port 5433** and Redis on **port 6380** —
+neither the default port for its service — so neither collides with
+another local instance you might already be running.
 
 ## Scripts
 
@@ -35,7 +36,7 @@ cannot collide with another PostgreSQL instance already running locally.
 - `pnpm test:integration` — integration tests against a real, separate
   Postgres database (see [`TEST_DATABASE_URL`](./.env.example))
 - `pnpm test:e2e` — Playwright end-to-end tests
-- `pnpm db:up` / `pnpm db:down` — start / stop the local PostgreSQL container
+- `pnpm db:up` / `pnpm db:down` — start / stop the local Postgres + Redis containers
 - `pnpm db:migrate` — create and apply a migration (development)
 - `pnpm db:deploy` — apply pending migrations (production)
 - `pnpm db:generate` — regenerate the Prisma Client
@@ -58,6 +59,13 @@ what Auth.js requires when using credentials.
 The Account / Session / VerificationToken tables exist but are unused by
 the credentials flow. They are there so that adding an OAuth or magic-link
 provider later is a configuration change, not a migration.
+
+**`AUTH_URL` is required in production outside Vercel.** Auth.js infers
+the canonical origin automatically in local development and on Vercel (via
+its own `VERCEL` env var), but nowhere else — confirmed by actually
+running a production build locally without it (Milestone 12): every
+sign-in failed with Auth.js's `UntrustedHost` error. `src/config/env.ts`
+now refuses to start in production without it (unless `VERCEL` is set).
 
 Authorization goes through a single policy function,
 [`src/features/auth/policy.ts`](./src/features/auth/policy.ts). Features
@@ -102,14 +110,20 @@ Two caveats worth knowing:
   you control overwrites it; Next.js exposes no remote-address API to
   Server Actions. The per-account limit is the one that actually stops a
   brute-force attack, and it cannot be evaded this way.
-- **The default limiter stores state in process memory**, so it is correct
-  only for a single instance. On multiple instances or serverless, each
-  process keeps its own counters and the effective limit is multiplied by
-  the instance count. Implement `RateLimiter`
-  ([`src/server/rate-limit/types.ts`](./src/server/rate-limit/types.ts))
-  against Redis and swap it in
-  [`src/server/rate-limit/index.ts`](./src/server/rate-limit/index.ts) —
-  no auth code changes.
+- **The backing store is swappable, and production requires the Redis
+  one.** [`src/server/rate-limit/memory.ts`](./src/server/rate-limit/memory.ts)
+  stores state in process memory, which is correct only for a single
+  instance — on multiple instances or serverless, each process keeps its
+  own counters and the effective limit is multiplied by the instance
+  count (or stops applying at all under unbounded concurrency).
+  [`src/server/rate-limit/redis.ts`](./src/server/rate-limit/redis.ts)
+  implements the same `RateLimiter` interface
+  ([`types.ts`](./src/server/rate-limit/types.ts)) against Redis, chosen
+  automatically in [`index.ts`](./src/server/rate-limit/index.ts) whenever
+  `REDIS_URL` is set — no auth or chat code changes either way, which was
+  the entire reason the interface existed before either implementation of
+  it needed to swap. `src/config/env.ts` refuses to start in production
+  without `REDIS_URL` for exactly this reason.
 
 ## Production hardening
 
@@ -123,11 +137,18 @@ The Content-Security-Policy is set separately, in
 [`src/proxy.ts`](./src/proxy.ts) (Next's Proxy convention, formerly
 "Middleware" — [renamed in v16](https://nextjs.org/docs/messages/middleware-to-proxy)),
 because it needs a fresh nonce on every request. `script-src` carries the
-real protection (`'strict-dynamic'` plus the nonce); `style-src` stays
-permissive (`'unsafe-inline'`) because Radix UI positions overlays via
-inline `style` attributes, which a CSP nonce can't cover. `proxy.ts` is
-**not** an authorization boundary — see [Authorization](#authentication)
-above for why access control stays in Server Components/Actions instead.
+real protection (`'strict-dynamic'` plus the nonce). `style-src` stays
+permissive (`'unsafe-inline'`) — re-examined, not carried forward
+unexamined, for two independent reasons: Radix UI positions overlays via
+inline `style` attributes (which a CSP nonce can't cover — nonces only
+apply to `<style>` elements), and `vaul` (the mobile Drawer) injects a
+real `<style>` element at runtime whose exact content lives inside its own
+bundled output, not this codebase, making it impractical to pin safely.
+See the comment in `proxy.ts` for the full reasoning, including why a
+split `style-src-elem`/`style-src-attr` policy was tried and rejected.
+`proxy.ts` is **not** an authorization boundary — see
+[Authorization](#authentication) above for why access control stays in
+Server Components/Actions instead.
 
 ### Error handling
 
@@ -178,7 +199,7 @@ src/
 ├── lib/
 │   └── logger.ts        # Structured logging (thin console wrapper)
 ├── server/
-│   └── rate-limit/     # Swappable rate limiting (memory now, Redis later)
+│   └── rate-limit/     # Swappable rate limiting (memory or Redis; Redis in prod)
 ├── db/
 │   ├── client.ts       # Shared Prisma Client instance
 │   └── generated/      # Generated Prisma Client (git-ignored)

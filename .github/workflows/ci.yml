@@ -51,8 +51,19 @@ jobs:
         # infrastructure/secrets and real API spend, which isn't worth
         # paying on every PR. Run them locally: `pnpm test:integration`,
         # `pnpm test:e2e`.
+        # `next build` sets NODE_ENV=production internally regardless of the
+        # job's own environment, which trips src/config/env.ts's
+        # production-only checks (Milestone 12): REDIS_URL and AUTH_URL are
+        # both required whenever NODE_ENV is "production" and this isn't
+        # Vercel — the in-memory rate limiter is only correct for a single
+        # instance, and Auth.js rejects every request with an
+        # UntrustedHost error without a canonical origin to trust. A
+        # syntactically valid placeholder is enough for both, same as
+        # DATABASE_URL below — nothing at build time actually connects.
         env:
           DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/ci"
           AUTH_SECRET: "ci-only-secret-value-at-least-32-characters"
+          AUTH_URL: "https://ci.example.com"
           GEMINI_API_KEY: "ci-only-placeholder-key"
+          REDIS_URL: "redis://ci:6379"
         run: pnpm build

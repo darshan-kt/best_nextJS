@@ -19,13 +19,43 @@ import { NextResponse, type NextRequest } from "next/server";
  * it to the inline scripts it manages itself (the RSC streaming payload),
  * so nothing else in the app needs to read or thread the nonce through.
  *
- * `style-src` stays permissive (`'unsafe-inline'`): a CSP nonce only
- * covers `<style>` elements, not inline `style="..."` attributes, and
- * Radix UI — the primitive layer under shadcn/ui — positions overlays
- * (Dialog, Select, Tooltip, Drawer) by setting `style` from JS. Locking
- * that down would mean replacing how those primitives position themselves,
- * not editing a header, so this is accepted as a real, scoped trade-off
- * rather than worked around.
+ * `style-src` still carries `'unsafe-inline'` — re-examined for the AWS
+ * production rollout, not carried forward from Milestone 12 unexamined,
+ * and the conclusion changed shape along the way. Two independent things
+ * need it, not one:
+ *
+ *   1. Radix UI (the primitive layer under shadcn/ui) positions overlays
+ *      — Dialog, Select, Tooltip, Drawer — by setting inline `style="..."`
+ *      from JS, to arbitrary, per-render-computed pixel/transform values.
+ *      A nonce can't cover inline style *attributes* at all (nonces only
+ *      apply to `<style>` elements), and CSP3's attribute-hashing escape
+ *      hatch (`'unsafe-hashes'`) can't either, for a more fundamental
+ *      reason: hashing needs a fixed, enumerable set of known strings, and
+ *      these values don't exist until the browser lays out that specific
+ *      popover on that specific screen.
+ *   2. `vaul` (the mobile Drawer, §23) injects a real `<style>` *element*
+ *      into `<head>` at runtime — confirmed live, not assumed: an earlier
+ *      version of this policy split `style-src` into `style-src-elem`
+ *      (no exception) and `style-src-attr` (Radix's exception only),
+ *      reasoning that nothing else injects a `<style>` block. Testing the
+ *      actual lesson player against that split immediately produced a
+ *      real, non-devtools CSP violation from vaul. Its injected CSS is a
+ *      fixed string (not per-render-computed like Radix's), so hashing it
+ *      is technically possible — but the string lives inside vaul's
+ *      bundled `dist` output, not anywhere this app owns; pinning a hash
+ *      to it means either hardcoding a value that silently goes stale
+ *      (drawer animations breaking with zero build-time signal) on the
+ *      next `vaul` version bump, or reaching into another package's
+ *      internal bundle output to extract it programmatically — real
+ *      fragility either way, not a genuine fix.
+ *
+ * With both `style-src-elem` and `style-src-attr` needing the same
+ * exception, the split earns nothing a single `style-src 'unsafe-inline'`
+ * doesn't already cover for modern browsers, while actively regressing
+ * older ones (which ignore the split and fall back to enforcing plain
+ * `style-src`, breaking both Radix and vaul there). So this stays a single
+ * directive — the trade-off itself is real and accepted, not silently
+ * carried forward.
  *
  * `img-src` and `media-src` allow exactly the one remote host
  * `next.config.ts`'s `images.remotePatterns` already allowlists for IMAGE
