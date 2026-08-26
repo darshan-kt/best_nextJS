@@ -55,12 +55,59 @@ type SeedContentBlock =
       data: { code: string; language?: string; filename?: string };
     }
   | {
+      type: "EMBED";
+      data: {
+        provider: "youtube";
+        videoId: string;
+        title: string;
+        creator: string;
+        whySelected?: string;
+        durationLabel?: string;
+      };
+    }
+  | {
+      type: "CALLOUT";
+      data: { variant: "INFO" | "TIP" | "WARNING" | "DANGER"; title?: string; body: string };
+    }
+  | {
+      type: "FILE";
+      data: { href: string; label: string; description?: string; sizeLabel?: string };
+    }
+  | {
       type: "QUIZ";
       quiz: {
         title: string;
         description?: string;
         questions: SeedQuizQuestion[];
       };
+    }
+  | {
+      type: "EXERCISE";
+      exercise: { title: string; instructions?: string; config: SeedExerciseConfig };
+    };
+
+/// Mirrors `exerciseConfigSchema` in `features/exercises/schemas.ts` —
+/// kept as a separate, looser type here rather than importing the Zod
+/// schema's inferred type, the same way `SeedQuizQuestion` doesn't import
+/// from `features/quizzes/schemas.ts`: seed data is allowed to be a
+/// simplified shape of what the real schema accepts, and importing the
+/// exact type would make this file's blocks accidentally coupled to
+/// whichever fields the app schema happens to make optional today.
+type SeedRichText = { body: string };
+type SeedExerciseConfig =
+  | { type: "GUIDED"; goal: SeedRichText; steps: { title: string; content: SeedRichText }[] }
+  | {
+      type: "INDEPENDENT";
+      goal: SeedRichText;
+      successCriteria: string[];
+      hints?: string[];
+    }
+  | {
+      type: "DEBUGGING";
+      scenario: SeedRichText;
+      hints: string[];
+      solution: SeedRichText;
+      rootCause?: SeedRichText;
     };
 
 /// Question payloads (§18), matched to the `questionDataSchemas` /
@@ -228,6 +275,60 @@ const CURRICULA: Record<string, SeedSection[]> = {
               data: {
                 language: "typescript",
                 code: "// No annotation needed: inferred as `number`.\nlet count = 0;\n\n// Inferred as `(a: number, b: number) => number`.\nfunction add(a: number, b: number) {\n  return a + b;\n}",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "Editor tip",
+                body: "Hover any inferred variable in your editor to see the type TypeScript actually assigned it — you don't have to work it out by hand.",
+              },
+            },
+            {
+              type: "EMBED",
+              data: {
+                provider: "youtube",
+                videoId: "dQw4w9WgXcQ",
+                title: "Placeholder video — a real curated video replaces this.",
+                creator: "Placeholder channel",
+                whySelected:
+                  "Stands in for a real, verified curated video until one is researched — see EMBED's attribution fields.",
+                durationLabel: "3 min",
+              },
+            },
+            {
+              type: "FILE",
+              data: {
+                href: "https://example.com/typescript-inference-notes.pdf",
+                label: "Inference quick reference (placeholder)",
+                description:
+                  "Placeholder download — points at a real hosted file once one exists.",
+                sizeLabel: "1 page",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Why won't this compile?",
+                instructions:
+                  "A short type-narrowing bug to find using the compiler's own error message.",
+                config: {
+                  type: "DEBUGGING",
+                  scenario: {
+                    body: 'This function refuses to compile: `function shout(input: string | null) { return input.toUpperCase(); }`. TypeScript reports: "\'input\' is possibly \'null\'."',
+                  },
+                  hints: [
+                    "The union type `string | null` means TypeScript can't assume which branch you're in at that line, even though you might \"know\" it won't be null.",
+                    "TypeScript narrows a union only after a runtime check it can see — try adding a check for `null` before calling `.toUpperCase()`.",
+                  ],
+                  solution: {
+                    body: "Add a null check before calling .toUpperCase() so the compiler can narrow the type on the line that uses it.",
+                  },
+                  rootCause: {
+                    body: "TypeScript's control-flow analysis narrows a union based only on checks it can see in the code — an `if` guard, a truthiness check, or similar. It never infers that a value \"can't actually be null\" from how the code is used elsewhere.",
+                  },
+                },
               },
             },
           ],
@@ -581,9 +682,9 @@ async function seedCurricula(prisma: PrismaClient): Promise<void> {
  * up first, then decide create vs. update explicitly, rather than fake a
  * unique key `upsert` doesn't actually have.
  *
- * QUIZ blocks own a real `Quiz` row rather than a JSON payload (schema
- * comment on `LessonContentBlock`), so seeding one is two writes: the quiz
- * itself, then the block that points at it.
+ * QUIZ and EXERCISE blocks own a real `Quiz`/`Exercise` row rather than a
+ * JSON payload (schema comment on `LessonContentBlock`), so seeding either
+ * is two writes: the row itself, then the block that points at it.
  */
 async function seedContentBlock(
   prisma: PrismaClient,
@@ -593,7 +694,7 @@ async function seedContentBlock(
 ): Promise<void> {
   const existing = await prisma.lessonContentBlock.findFirst({
     where: { lessonId, position },
-    select: { id: true, quizId: true },
+    select: { id: true, quizId: true, exerciseId: true },
   });
 
   if (block.type === "QUIZ") {
@@ -622,6 +723,30 @@ async function seedContentBlock(
         seedQuizQuestion(prisma, quiz.id, index, question)
       )
     );
+    return;
+  }
+
+  if (block.type === "EXERCISE") {
+    const exerciseData = {
+      title: block.exercise.title,
+      instructions: block.exercise.instructions ?? null,
+      config: block.exercise.config as Prisma.InputJsonValue,
+    };
+
+    const exercise = existing?.exerciseId
+      ? await prisma.exercise.update({ where: { id: existing.exerciseId }, data: exerciseData })
+      : await prisma.exercise.create({ data: exerciseData });
+
+    if (existing) {
+      await prisma.lessonContentBlock.update({
+        where: { id: existing.id },
+        data: { type: "EXERCISE", exerciseId: exercise.id, data: Prisma.JsonNull },
+      });
+    } else {
+      await prisma.lessonContentBlock.create({
+        data: { lessonId, position, type: "EXERCISE", exerciseId: exercise.id },
+      });
+    }
     return;
   }
 

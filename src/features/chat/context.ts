@@ -51,10 +51,28 @@ function extractBlockText(block: RenderableBlock): string | null {
       return block.data.caption ? `Image: ${block.data.caption}` : null;
     case "VIDEO":
       return `Video: ${block.data.title}`;
+    case "EMBED":
+      return `Video: ${block.data.title} (${block.data.creator})`;
+    case "CALLOUT":
+      return block.data.title
+        ? `${block.data.title}: ${block.data.body}`
+        : block.data.body;
+    case "FILE":
+      return `Downloadable resource: ${block.data.label}`;
     case "QUIZ":
       return `This lesson includes a quiz titled "${block.quiz.title}".`;
-    case "EXERCISE":
-      return `This lesson includes an exercise titled "${block.exercise.title}".`;
+    case "EXERCISE": {
+      const { config } = block.exercise;
+      // Gives the assistant enough to actually help a stuck learner —
+      // the DEBUGGING scenario in particular is exactly the situation a
+      // student is likely to ask about — without leaking the solution or
+      // hints into the grounding context and spoiling the exercise.
+      const summary =
+        config.type === "DEBUGGING"
+          ? config.scenario.body
+          : config.goal.body;
+      return `This lesson includes a ${config.type.toLowerCase()} exercise titled "${block.exercise.title}": ${summary}`;
+    }
     case "INVALID":
     case "UNSUPPORTED":
       return null;

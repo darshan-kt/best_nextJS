@@ -1,11 +1,18 @@
 import { prisma } from "@/db/client";
 import type { ContentBlockType } from "@/db/generated/enums";
+import { exerciseConfigSchema, type ExerciseConfig } from "@/features/exercises/schemas";
 import {
+  calloutBlockSchema,
   codeBlockSchema,
+  embedBlockSchema,
+  fileBlockSchema,
   imageBlockSchema,
   textBlockSchema,
   videoBlockSchema,
+  type CalloutBlockData,
   type CodeBlockData,
+  type EmbedBlockData,
+  type FileBlockData,
   type ImageBlockData,
   type TextBlockData,
   type VideoBlockData,
@@ -36,6 +43,9 @@ export type RenderableBlock =
   | { id: string; position: number; kind: "IMAGE"; data: ImageBlockData }
   | { id: string; position: number; kind: "VIDEO"; data: VideoBlockData }
   | { id: string; position: number; kind: "CODE"; data: CodeBlockData }
+  | { id: string; position: number; kind: "EMBED"; data: EmbedBlockData }
+  | { id: string; position: number; kind: "CALLOUT"; data: CalloutBlockData }
+  | { id: string; position: number; kind: "FILE"; data: FileBlockData }
   | {
       id: string;
       position: number;
@@ -46,14 +56,17 @@ export type RenderableBlock =
       id: string;
       position: number;
       kind: "EXERCISE";
-      exercise: { title: string; instructions: string | null };
+      exercise: {
+        title: string;
+        instructions: string | null;
+        config: ExerciseConfig;
+      };
     }
   /** JSON present but did not match its type's schema — a bad row, not a
    *  bad request; rendered as an inline notice rather than failing the
    *  whole lesson (§28). */
   | { id: string; position: number; kind: "INVALID"; blockType: ContentBlockType }
-  /** CALLOUT / FILE / EMBED, or any future type this player doesn't have a
-   *  renderer for yet. */
+  /** Any future type this player doesn't have a renderer for yet. */
   | { id: string; position: number; kind: "UNSUPPORTED"; blockType: ContentBlockType };
 
 export async function getLessonContentBlocks(
@@ -68,7 +81,7 @@ export async function getLessonContentBlocks(
       position: true,
       data: true,
       quiz: { select: { id: true, title: true, description: true } },
-      exercise: { select: { title: true, instructions: true } },
+      exercise: { select: { title: true, instructions: true, config: true } },
     },
   });
 
@@ -104,15 +117,51 @@ export async function getLessonContentBlocks(
           : { id, position, kind: "INVALID", blockType: block.type };
       }
 
+      case "EMBED": {
+        const parsed = embedBlockSchema.safeParse(block.data);
+        return parsed.success
+          ? { id, position, kind: "EMBED", data: parsed.data }
+          : { id, position, kind: "INVALID", blockType: block.type };
+      }
+
+      case "CALLOUT": {
+        const parsed = calloutBlockSchema.safeParse(block.data);
+        return parsed.success
+          ? { id, position, kind: "CALLOUT", data: parsed.data }
+          : { id, position, kind: "INVALID", blockType: block.type };
+      }
+
+      case "FILE": {
+        const parsed = fileBlockSchema.safeParse(block.data);
+        return parsed.success
+          ? { id, position, kind: "FILE", data: parsed.data }
+          : { id, position, kind: "INVALID", blockType: block.type };
+      }
+
       case "QUIZ":
         return block.quiz
           ? { id, position, kind: "QUIZ", quiz: block.quiz }
           : { id, position, kind: "INVALID", blockType: block.type };
 
-      case "EXERCISE":
-        return block.exercise
-          ? { id, position, kind: "EXERCISE", exercise: block.exercise }
+      case "EXERCISE": {
+        if (!block.exercise) {
+          return { id, position, kind: "INVALID", blockType: block.type };
+        }
+
+        const parsedConfig = exerciseConfigSchema.safeParse(block.exercise.config);
+        return parsedConfig.success
+          ? {
+              id,
+              position,
+              kind: "EXERCISE",
+              exercise: {
+                title: block.exercise.title,
+                instructions: block.exercise.instructions,
+                config: parsedConfig.data,
+              },
+            }
           : { id, position, kind: "INVALID", blockType: block.type };
+      }
 
       default:
         return { id, position, kind: "UNSUPPORTED", blockType: block.type };

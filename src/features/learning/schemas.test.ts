@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  calloutBlockSchema,
   codeBlockSchema,
+  embedBlockSchema,
+  fileBlockSchema,
   imageBlockSchema,
   textBlockSchema,
   videoBlockSchema,
@@ -107,5 +110,102 @@ describe("codeBlockSchema", () => {
 
   it("rejects empty code", () => {
     expect(codeBlockSchema.safeParse({ code: "" }).success).toBe(false);
+  });
+});
+
+describe("embedBlockSchema", () => {
+  const valid = {
+    provider: "youtube",
+    videoId: "dQw4w9WgXcQ",
+    title: "Understanding ROS 2 topics",
+    creator: "Articulated Robotics",
+  };
+
+  it("accepts a valid YouTube embed", () => {
+    expect(embedBlockSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("accepts optional whySelected and durationLabel", () => {
+    expect(
+      embedBlockSchema.safeParse({
+        ...valid,
+        whySelected: "Clearest explanation of topics available.",
+        durationLabel: "12 min",
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects a video id that isn't exactly 11 characters", () => {
+    expect(
+      embedBlockSchema.safeParse({ ...valid, videoId: "short" }).success
+    ).toBe(false);
+  });
+
+  it("rejects a video id with characters YouTube ids never contain", () => {
+    // A URL-injection attempt: this is what strict videoId validation
+    // (rather than trusting an authored embed URL directly) rules out.
+    expect(
+      embedBlockSchema.safeParse({ ...valid, videoId: "abc/def?ghi" }).success
+    ).toBe(false);
+  });
+
+  it("rejects a provider other than youtube", () => {
+    expect(
+      embedBlockSchema.safeParse({ ...valid, provider: "vimeo" }).success
+    ).toBe(false);
+  });
+});
+
+describe("calloutBlockSchema", () => {
+  it("accepts a valid callout without a title", () => {
+    expect(
+      calloutBlockSchema.safeParse({ variant: "TIP", body: "Use tab completion." })
+        .success
+    ).toBe(true);
+  });
+
+  it("accepts every documented variant", () => {
+    for (const variant of ["INFO", "TIP", "WARNING", "DANGER"]) {
+      expect(
+        calloutBlockSchema.safeParse({ variant, body: "Body text." }).success
+      ).toBe(true);
+    }
+  });
+
+  it("rejects an undocumented variant", () => {
+    expect(
+      calloutBlockSchema.safeParse({ variant: "SUCCESS", body: "Body text." })
+        .success
+    ).toBe(false);
+  });
+
+  it("rejects an empty body", () => {
+    expect(calloutBlockSchema.safeParse({ variant: "INFO", body: "" }).success).toBe(
+      false
+    );
+  });
+});
+
+describe("fileBlockSchema", () => {
+  it("accepts a valid file with only the required fields", () => {
+    expect(
+      fileBlockSchema.safeParse({
+        href: "https://example.com/cheatsheet.pdf",
+        label: "ROS 2 command cheat sheet",
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects a non-URL href", () => {
+    expect(
+      fileBlockSchema.safeParse({ href: "not-a-url", label: "Cheat sheet" })
+        .success
+    ).toBe(false);
+  });
+
+  it("rejects a missing label", () => {
+    expect(
+      fileBlockSchema.safeParse({ href: "https://example.com/file.pdf" }).success
+    ).toBe(false);
   });
 });

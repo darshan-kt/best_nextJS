@@ -61,6 +61,15 @@ import { NextResponse, type NextRequest } from "next/server";
  * `next.config.ts`'s `images.remotePatterns` already allowlists for IMAGE
  * content blocks (VIDEO blocks stream from the same host in this seed
  * data), so this doesn't re-litigate that decision in a second place.
+ *
+ * `frame-src` allows exactly `youtube-nocookie.com` — added for the
+ * EMBED content-block type (ROS 2 course Stage 0, curated external
+ * videos). Without it, `default-src 'self'` would block the iframe
+ * entirely. Scoped to that one host rather than a generic
+ * arbitrary-iframe allowance, matching `embedBlockSchema`
+ * (`features/learning/schemas.ts`) restricting `provider` to a single
+ * literal — the two are the same decision made in both the data layer
+ * and the header that enforces it.
  */
 export function proxy(request: NextRequest): NextResponse {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -75,6 +84,7 @@ export function proxy(request: NextRequest): NextResponse {
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: https://interactive-examples.mdn.mozilla.net`,
     `media-src 'self' https://interactive-examples.mdn.mozilla.net`,
+    `frame-src https://www.youtube-nocookie.com`,
     `font-src 'self'`,
     `connect-src 'self'`,
     `object-src 'none'`,
