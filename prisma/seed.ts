@@ -96,7 +96,18 @@ type SeedContentBlock =
 /// simplified shape of what the real schema accepts, and importing the
 /// exact type would make this file's blocks accidentally coupled to
 /// whichever fields the app schema happens to make optional today.
-type SeedRichText = { body: string };
+/** Mirrors `richTextSchema`, including the inline visuals (diagrams and
+ *  code samples) that `inlineVisualSchema` allows inside an exercise step,
+ *  goal, scenario or solution — Module 3's exercises are the first to use
+ *  them, since a terminal command is part of the instruction, not a
+ *  separate block beside it. */
+type SeedRichText = {
+  body: string;
+  visuals?: (
+    | { kind: "IMAGE"; data: { src: string; alt: string; caption?: string } }
+    | { kind: "CODE"; data: { code: string; language?: string; filename?: string } }
+  )[];
+};
 type SeedExerciseConfig =
   | { type: "GUIDED"; goal: SeedRichText; steps: { title: string; content: SeedRichText }[] }
   | {
@@ -403,8 +414,8 @@ const CURRICULA: Record<string, SeedSection[]> = {
   ],
 
   /// ROS 2 Fundamentals — real course content, not a demo fixture like the
-  /// courses above (see the COURSES entry for this slug). Modules 0-2 so
-  /// far; modules 3-15 land module-by-module per
+  /// courses above (see the COURSES entry for this slug). Modules 0-3 so
+  /// far; modules 4-15 land module-by-module per
   /// ROS2_COURSE_KICKOFF_PROMPTS.md's own sequencing, each carrying its own
   /// quality review before implementation. The approved per-module designs
   /// these are built from live in `docs/course-design/`.
@@ -985,6 +996,563 @@ const CURRICULA: Record<string, SeedSection[]> = {
                       "rclpy is the client library — the API you actually call. Your request then travels down through RMW, which translates it, to DDS, which does the real discovery and data transport, and finally onto the network. All three of those lower layers are involved in delivering the message, but the call you wrote lands in the client library. Review Lesson 2's stack diagram.",
                   },
                 ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "ROS 2 Installation and Environment Setup",
+      summary:
+        "Get ROS 2 Jazzy running on your own machine — and understand every step well enough to fix it when it breaks.",
+      lessons: [
+        {
+          slug: "choosing-your-setup",
+          title: "Choosing Your Setup",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "You know what ROS 2 is built from. Now you'll put it on your machine.\n\nThat starts with a decision you have to make before installing anything: how are you going to run Ubuntu 24.04?",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "There are four realistic options, and none of them is universally right.\n\nNative means Ubuntu is the only operating system on the machine. Best performance, cleanest graphics support, and by far the least trouble when you reach Gazebo. The cost is that it claims a whole machine.\n\nDual-boot keeps your existing operating system and lets you choose at startup. You get native performance when you're in Ubuntu, at the price of the most setup friction of the four — partitioning a disk is the one step here that can genuinely lose data if rushed.\n\nA virtual machine runs Ubuntu in a window on your current OS. Easiest to set up, trivially easy to undo — delete the VM and nothing remains — but you pay some performance cost, and graphics acceleration is where VMs get awkward.\n\nWSL2 runs Ubuntu inside Windows, with the least setup of all if you're already on Windows. Everything up to and including Module 13 works well. Graphics support has real caveats.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-3-setup-options.png",
+                alt: "A comparison table of four ways to run Ubuntu 24.04 — native, dual-boot, virtual machine and WSL2 — rated across performance, setup effort, how easy each is to undo, and Gazebo/GPU readiness for Module 14. Native and dual-boot rate best for performance and Gazebo; the VM is easiest to undo; WSL2 is easiest to set up; both the VM and WSL2 carry real caveats for Gazebo.",
+                caption:
+                  "The same four options, scored on what actually differs between them.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "If you're leaning towards a VM or WSL2",
+                body: "Graphics and GPU passthrough is the single most common source of pain in those two setups, and it lands in Module 14 when you start running Gazebo. Nothing before that module will make you feel it. It's not a reason to avoid either option — plenty of people complete this course on both — but it's worth knowing now, while changing your mind is still cheap.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Whichever option you pick, the version is not negotiable.\n\nThis course targets ROS 2 Jazzy Jalisco, and Jazzy's standard install path supports Ubuntu 24.04 and no other version. Not 22.04, not 25.04. The packages simply are not published for them.\n\nIf you're currently on a different Ubuntu version, that is the first thing to fix — before anything ROS 2-related. Trying to force Jazzy onto the wrong base is the single most common way to lose a day on this module.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "You've seen this pin before",
+                body: "This is the same Jazzy / Ubuntu 24.04 pairing from Module 0's environment checklist and Module 1's version-awareness note. Nothing new — this is just the point where you act on it.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Confirm you're actually on Ubuntu 24.04",
+                instructions:
+                  "Before installing anything, prove the foundation is right. This takes about a minute.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Boot into the setup you've chosen and confirm, from the terminal, that you're running Ubuntu 24.04 — not assuming it, checking it.",
+                  },
+                  steps: [
+                    {
+                      title: "Open a terminal in your Ubuntu environment",
+                      content: {
+                        body: "Native or dual-boot: boot into Ubuntu. VM: start the VM and open a terminal inside it. WSL2: open your Ubuntu distribution from Windows Terminal. Ctrl+Alt+T opens a terminal in a standard Ubuntu desktop.",
+                      },
+                    },
+                    {
+                      title: "Ask the system what it is",
+                      content: {
+                        body: "Run this and read the output rather than skimming it:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "lsb_release -a" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Check the Release line specifically",
+                      content: {
+                        body: "You're looking for a Release line reading exactly 24.04, and a Codename of noble. Anything else means Jazzy will not install by the method this course teaches — stop here and sort the base system out first.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "text",
+                              code: "Distributor ID: Ubuntu\nDescription:    Ubuntu 24.04.1 LTS\nRelease:        24.04\nCodename:       noble",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Ubuntu 24.04 confirmed.\n\nNext: actually installing ROS 2 Jazzy onto it — and understanding exactly what that puts on your machine, and where.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "installing-ros-2-jazzy",
+          title: "Installing ROS 2 Jazzy",
+          durationMinutes: 24,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Module 2 said a distribution is a tested bundle of ROS 2 plus thousands of community packages.\n\nInstalling Jazzy means putting a real copy of that bundle onto your machine. It's worth knowing exactly where it lands, because in two lessons' time you'll be pointing your terminal at that location deliberately.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Conceptually, the install is two steps, and neither is ROS-specific.\n\nFirst you add a package source. Ubuntu's package manager only installs from repositories it knows about, and ROS 2 isn't in Ubuntu's default set. You add the ROS repository's address and its signing key — the key is what lets apt verify the packages genuinely came from the ROS maintainers.\n\nThen you install, using exactly the same apt command you'd use for any other Ubuntu software. The bundle you want is ros-jazzy-desktop: ROS 2 itself plus the common tooling, including RViz and the demo nodes you'll verify with in Lesson 4.\n\nThat's the whole mechanism. There is nothing mysterious in it — which is precisely why running the commands without knowing this makes failures so much harder to diagnose.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "install-ros2-jazzy.sh",
+                code: "# 1. Make sure the base system is up to date and can fetch over HTTPS.\nsudo apt update && sudo apt install -y software-properties-common curl\nsudo add-apt-repository universe\n\n# 2. Add the ROS 2 repository's signing key, then the repository itself.\nsudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \\\n  -o /usr/share/keyrings/ros-archive-keyring.gpg\n\necho \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \\\nhttp://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main\" \\\n  | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null\n\n# 3. Install the desktop bundle. This is the long step.\nsudo apt update\nsudo apt install -y ros-jazzy-desktop",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "When that finishes, everything has landed under a single directory: /opt/ros/jazzy/.\n\nThis is the literal, physical answer to the question Module 2 left open — where did all those packages actually go? They're there. You can list them, read them, and inspect them like any other files on the machine.\n\nNothing was scattered across your home directory, and nothing was hidden. One distribution, one directory.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-3-install-tree.png",
+                alt: "An annotated directory tree of /opt/ros/jazzy/ showing five entries: bin/ where the ros2 command lives, lib/ holding compiled libraries and the node executables ros2 run launches, include/ holding C++ headers for building your own packages in Module 10, share/ holding per-package resources such as message definitions and launch files, and setup.bash, the script sourced in Lesson 3 that connects the terminal to everything above.",
+                caption:
+                  "What the install actually put on your machine. setup.bash at the bottom is Lesson 3's whole subject.",
+              },
+            },
+            {
+              type: "EMBED",
+              data: {
+                provider: "youtube",
+                videoId: "ZGds6NuZLzo",
+                title: "Install ROS2 Jazzy Jalisco on Ubuntu 24.04 | ROS2 Tutorial",
+                creator: "The Construct Robotics Institute",
+                durationLabel: "6 min",
+                whySelected:
+                  "A real screen recording of the exact install you just read through, on the exact distribution and Ubuntu version this course targets. Watch it to see what success looks like on screen — the pace of each step, and what the output should roughly resemble — before or while you run it yourself.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "Check the distro name on anything you watch or read",
+                body: "The video above installs the full desktop bundle for Jazzy, matching this course. When you look this up elsewhere later — and you will — check the distribution name on screen first. Instructions for Humble, Foxy or Iron look almost identical and will not work here. A wrong distro name is the fastest thing to spot and the easiest to miss.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Install ROS 2 Jazzy on your machine",
+                instructions:
+                  "The module's central make-it-real moment. Work through it alongside the video if that helps.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Get ros-jazzy-desktop installed on the Ubuntu 24.04 environment you confirmed in Lesson 1, and confirm the files landed where this lesson says they do.",
+                  },
+                  steps: [
+                    {
+                      title: "Add the repository and its signing key",
+                      content: {
+                        body: "Run steps 1 and 2 from the code block above. If the add-apt-repository step asks you to press Enter to continue, that's expected. If anything here fails outright, note the exact error — Lesson 4's decision tree covers the two most likely causes.",
+                      },
+                    },
+                    {
+                      title: "Install the desktop bundle",
+                      content: {
+                        body: "Run step 3. This downloads on the order of a gigabyte and can take several minutes on a slow connection — a long pause is normal, not a hang.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "sudo apt update\nsudo apt install -y ros-jazzy-desktop" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Confirm the files are actually there",
+                      content: {
+                        body: "Don't take the installer's word for it. List the directory and check you can see the entries from the diagram above:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "ls /opt/ros/jazzy/" },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "ROS 2 is on disk now.\n\nOpen a brand new terminal and type ros2. It won't work.\n\nThat's not a mistake, and you haven't broken anything. That's Lesson 3's problem, and understanding why is more useful than the fix itself.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "sourcing-and-environment-variables",
+          title: "Sourcing and Environment Variables",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Open a brand new terminal and type:\n\nros2 --help\n\nYou'll get command not found: ros2 — even though you just installed it, and even though you watched the files land in /opt/ros/jazzy/.\n\nThis isn't a bug, and nothing went wrong with your install. This is exactly how this stage is supposed to look.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Here's why.\n\nWhen you type a command, your terminal doesn't search the whole filesystem for something with that name. That would be slow and unpredictable. Instead it looks only in the directories listed in an environment variable called PATH — a list of places worth checking, carried by your current shell session.\n\nInstalling ROS 2 put files on disk. It did not add /opt/ros/jazzy/bin to your PATH. As far as your terminal is concerned, that directory may as well not exist.\n\nPATH isn't the only variable involved, either. ROS 2 also needs to know where to find message definitions, Python modules, and the packages themselves — several variables, all currently unset.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Which is what setup.bash is for.\n\n/opt/ros/jazzy/setup.bash is a script that sets every environment variable ROS 2 needs, all at once. You saw it at the bottom of the directory diagram in the last lesson.\n\nThe important part is how you run it. Running a script normally starts a separate process, that process gets its own copy of the environment, it makes its changes, and then it exits and takes them with it — leaving your terminal exactly as it was.\n\nSourcing runs the script inside your current shell instead of in a child process. The variables it sets stay set, because there was never a separate process for them to disappear with.\n\nThat's the whole idea. \"Sourcing\" means \"run this in my current shell so its changes stick.\"",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "before-and-after.sh",
+                code: "# --- Before ---------------------------------------------------------\n$ ros2 --help\nros2: command not found\n\n$ echo $ROS_DISTRO          # empty: nothing has told this shell about ROS 2\n\n\n# --- Source it ------------------------------------------------------\n$ source /opt/ros/jazzy/setup.bash\n\n\n# --- After ----------------------------------------------------------\n$ echo $ROS_DISTRO\njazzy\n\n$ ros2 --help\nusage: ros2 [-h] Call `ros2 <command> -h` for more detailed usage. ...\n\nros2 is an extensible command-line tool for ROS 2.\n\noptional arguments:\n  -h, --help            show this help message and exit\n\nCommands:\n  action     Various action related sub-commands\n  bag        Various rosbag related sub-commands\n  node       Various node related sub-commands\n  param      Various param related sub-commands\n  pkg        Various package related sub-commands\n  run        Run a package specific executable\n  topic      Various topic related sub-commands\n  ...",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "That only fixed the terminal you ran it in",
+                body: "Sourcing changes the environment of one shell session. Open a new terminal window right now and ros2 will be missing again — that's expected, not broken. It catches nearly everyone once, and it's the single most common reason a beginner thinks their install failed. Making it automatic is the next step.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You don't want to type that line every time you open a terminal.\n\nThe standard fix is to append it to ~/.bashrc — a script bash runs automatically whenever it starts an interactive shell. Put the source line there and every new terminal sources ROS 2 for you.\n\nThis is worth understanding rather than pasting. You're not installing anything or changing ROS 2; you're adding one line to a file that runs on terminal startup. If it ever causes a problem, you remove that line. That's the entire mechanism, and it's why Lesson 4's troubleshooting tree can tell you to go and read that file.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Make ros2 available, then make it permanent",
+                instructions:
+                  "Three steps, each with an outcome you can see. Don't skip the first one — watching it fail is the point.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Observe the before/after of sourcing yourself, then configure your shell so every new terminal has ROS 2 available automatically — and prove it in a genuinely new terminal.",
+                  },
+                  steps: [
+                    {
+                      title: "Watch it fail, deliberately",
+                      content: {
+                        body: "In a fresh terminal, confirm both of these behave as this lesson describes. Seeing the failure yourself is what makes the fix meaningful later:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "ros2 --help        # expect: command not found\necho $ROS_DISTRO   # expect: an empty line" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Source it, and watch it work",
+                      content: {
+                        body: "Now source the setup script and re-run both commands in the same terminal. ROS_DISTRO should read jazzy, and ros2 --help should print its command list:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "source /opt/ros/jazzy/setup.bash\necho $ROS_DISTRO   # expect: jazzy\nros2 --help        # expect: the ros2 help output" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Make it permanent, then prove it",
+                      content: {
+                        body: "Append the source line to ~/.bashrc, then open a completely new terminal window — not a cleared screen, not a new tab in the same shell that's already sourced. In that new window, echo $ROS_DISTRO should read jazzy with no manual sourcing:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "echo \"source /opt/ros/jazzy/setup.bash\" >> ~/.bashrc\n\n# Now open a NEW terminal window, and in it:\necho $ROS_DISTRO   # expect: jazzy" },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "What you just connected",
+                body: "Module 2's stack diagram had a ROS 2 Client Library layer sitting under your code. Sourcing setup.bash is literally the step that connects your terminal to that layer — it's why rclpy becomes importable and why ros2 becomes a command. The diagram stopped being an abstraction about thirty seconds ago.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Your terminal knows about ROS 2 permanently now.\n\nNext: formally verifying that everything actually works — three checkpoints in order — and exactly what to do when one of them doesn't.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "verification-and-troubleshooting",
+          title: "Verification and Troubleshooting",
+          durationMinutes: 26,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Three checks, in order, each more specific than the last.\n\nThey're deliberately cumulative: Checkpoint 2 only means anything if Checkpoint 1 passed, and Checkpoint 3 presupposes both. So run them in sequence and stop at the first failure — that's the one worth diagnosing. Chasing a Checkpoint 3 failure while Checkpoint 1 is quietly broken is how people end up reinstalling for no reason.\n\nIf one fails, the decision tree further down tells you exactly where to look.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "CHECKPOINT 1 — Can ROS 2 run?\n\nThe most basic question there is: does your terminal have a working ros2 command at all?\n\nRun ros2 --help. Success looks like the usage text and the list of subcommands — action, bag, node, param, pkg, run, topic and the rest.\n\nIf you want a fuller picture, ros2 doctor runs a set of environment checks and reports back; \"All checks passed\" is what you're after. A warning or two about network interfaces is common and not necessarily a problem at this stage.\n\nFailure here almost always means one of two things: not sourced, or not actually installed.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "CHECKPOINT 2 — Can the terminal find ROS 2 packages?\n\nA working ros2 command doesn't prove your environment can find the packages that came with the distribution. This checks that.\n\nRun ros2 pkg list. Success is a long alphabetical list — several hundred entries, starting around action_msgs and ament_cmake and running well past rclpy, rviz2 and turtlesim.\n\nThose names should look familiar. They're the package chips from Module 2's diagram, and this is the moment that concept stops being a diagram and becomes a list your own machine produced.\n\nA short list, or no list, means your environment is only partly wired up — the install may have half-completed, or the wrong distribution may be sourced.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "CHECKPOINT 3 — Can a ROS 2 node run?\n\nFinding packages isn't the same as running one. This is the real test.\n\nRun ros2 run demo_nodes_cpp talker. Success is a steady stream of log lines, roughly one per second, each announcing a published message:\n\n[INFO] [1699887654.123456789] [talker]: Publishing: 'Hello World: 1'\n[INFO] [1699887655.187654321] [talker]: Publishing: 'Hello World: 2'\n\nPress Ctrl+C to stop it.\n\nThat is a real ROS 2 node, running on your machine, publishing to a topic — the thing Module 1's diagram was drawing and Module 2 named. demo_nodes_cpp ships with the desktop bundle you installed, which is why it's here rather than anything you'd have to build.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-3-troubleshooting-tree.png",
+                alt: "A troubleshooting decision tree with five branches, each running symptom to diagnostic command to fix. Branch one: apt install fails immediately, check lsb_release -a, cause is the wrong Ubuntu version. Branch two, marked as the fifth branch: commands die mid-run with UnicodeDecodeError or encoding errors, check locale, cause is a locale that is not UTF-8. Branch three: permission denied during install or when running a node, check ls -la on the dot-ros directory, cause is permission issues from a stray sudo. Branch four: command not found for ros2 despite a successful install, check echo of ROS_DISTRO, cause is forgetting to source. Branch five: ros2 runs but behaves oddly, check for ros lines in bashrc, cause is conflicting installs.",
+                caption:
+                  "Find your symptom along the top row, then read down. Every failure here has a specific, checkable cause — the diagram opens full-size if the text is small.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Walking the branches, left to right.\n\nWrong Ubuntu version. The symptom is early and blunt: the repository step or apt install ros-jazzy-desktop fails almost immediately, often complaining it can't find the package. Run lsb_release -a and read the Release line. It must say exactly 24.04. If it says 22.04 or 20.04, Jazzy's standard install path cannot proceed — the packages don't exist for those releases. Fix the base system first; there's no workaround worth attempting here.\n\nLocale not set to UTF-8. Covered on its own below, because its symptom looks unlike the other four.\n\nPermission issues. Either the install fails with \"Permission denied\", or — more confusingly — the install went fine and a ros2 command fails later. Run ls -la ~/.ros and look at the owner column. If root owns files in there, a ros2 command was run with sudo at some point, and every later run as yourself now fails trying to write to files it no longer owns. Fix with sudo chown -R $USER:$USER ~/.ros. Then don't sudo ros2 commands: apt needs root, ROS 2 does not.\n\nForgot to source. command not found: ros2, despite an install you watched succeed. Run echo $ROS_DISTRO — an empty line means this terminal was never sourced. Source it, and if you expected it to be automatic, check the line actually made it into ~/.bashrc with grep ros ~/.bashrc, and that you tested in a genuinely new terminal rather than the one that was already open.\n\nExisting conflicting installs. The subtlest of the five, because nothing errors outright — ros2 runs, but the wrong packages appear or discovery behaves inconsistently. Run echo $ROS_DISTRO and confirm it reads exactly jazzy, then grep ros ~/.bashrc to see how many distributions are being sourced. More than one is the problem.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Why locale gets its own branch",
+                body: "The other four branches all fail in ways that point at themselves: something is missing, unset, unowned, or duplicated. A misconfigured locale is different. The install is correct, sourcing is correct, permissions are fine, nothing conflicts — the environment is right, but its character encoding is wrong. So commands die partway through with a UnicodeDecodeError or an encoding complaint rather than a clean \"not found\", which sends people hunting for a broken install that isn't broken. Run locale: if LANG reads C or POSIX rather than something ending in UTF-8, that's your answer. Setting a UTF-8 locale is step one of ROS 2's own official install instructions, which is exactly why it's so easy to skim past and so puzzling afterwards.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "fix-locale.sh",
+                code: "# Diagnose: is this shell using a UTF-8 locale?\nlocale\n#   LANG=C           <- the problem\n#   LANG=en_US.UTF-8 <- what you want\n\n# Fix it, then re-check.\nsudo apt update && sudo apt install -y locales\nsudo locale-gen en_US en_US.UTF-8\nsudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8\nexport LANG=en_US.UTF-8\n\nlocale   # confirm LANG and LC_ALL now end in UTF-8",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "Never source two distributions in one terminal",
+                body: "If ROS 1, or a second ROS 2 distribution, is also installed on this machine, having both sourced at once produces failures that are genuinely hard to explain — commands that exist but behave wrongly, packages that appear and disappear, nodes that can't find each other. Nothing errors cleanly, which is what makes it so costly. Source exactly one distribution per terminal, and keep only one source line in ~/.bashrc.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Debugging challenge: Checkpoint 3 fails on permissions",
+                instructions:
+                  "Work the symptom before revealing anything. The hints come one at a time on purpose — the habit of diagnosing systematically is what this exercise is actually teaching.",
+                config: {
+                  type: "DEBUGGING",
+                  scenario: {
+                    body: "Checkpoints 1 and 2 both passed cleanly. ros2 --help prints its help, and ros2 pkg list returns several hundred packages.\n\nThen Checkpoint 3 fails. Running ros2 run demo_nodes_cpp talker produces a Permission denied error as the node tries to write to its log directory, and the node never starts publishing.\n\nNothing was reinstalled between the checks, and no error appeared during installation.\n\nWhat's happened, and how would you confirm it before changing anything?",
+                    visuals: [
+                      {
+                        kind: "CODE",
+                        data: {
+                          language: "text",
+                          code: "$ ros2 run demo_nodes_cpp talker\n[ERROR] [rcl]: Failed to create log directory: /home/you/.ros/log\n  Permission denied\n[ros2run]: Process exited with failure 1",
+                        },
+                      },
+                    ],
+                  },
+                  hints: [
+                    "Checkpoints 1 and 2 passing tells you a lot: ROS 2 is installed, this terminal is sourced correctly, and packages are discoverable. So the problem isn't the install and isn't the environment — it's specific to writing something.",
+                    "Check who owns the ROS 2 log directory: ls -la ~/.ros. Look at the owner column rather than the permission bits. Does anything in there belong to someone other than your own username?",
+                    "If root owns files under ~/.ros, ask how they got there. What would have to have been run, at least once, for root to create files in your home directory? Think back over the commands you've run in this module.",
+                  ],
+                  rootCause: {
+                    body: "sudo runs a command as root — including any files that command creates as a side effect. A single sudo ros2 ... run, even once, creates root-owned log and configuration files under ~/.ros. Every subsequent run as your normal user then fails trying to write to files it no longer has permission to touch.\n\nThe reason this is confusing is that the failure appears long after the mistake, on a completely different command, and looks like a broken installation rather than a permissions problem.",
+                  },
+                  solution: {
+                    body: "Give the directory back to yourself, then re-run Checkpoint 3 normally — without sudo:",
+                    visuals: [
+                      {
+                        kind: "CODE",
+                        data: {
+                          language: "bash",
+                          code: "ls -la ~/.ros            # confirm root owns something in here\nsudo chown -R $USER:$USER ~/.ros\n\nros2 run demo_nodes_cpp talker   # no sudo, ever",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Closing challenge: run all three checkpoints from memory",
+                instructions:
+                  "No scrolling back. If you can't recall a command, that's useful information about what to re-read.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Open a completely fresh terminal and run all three checkpoints in order, from memory, without referring back to this lesson. Confirm all three pass.",
+                  },
+                  successCriteria: [
+                    "A brand new terminal window, opened after your ~/.bashrc change — not one that was already open",
+                    "Checkpoint 1 passes without sourcing anything manually first",
+                    "Checkpoint 2 returns a long package list, and you can spot at least one package name you recognise from Module 2",
+                    "Checkpoint 3 prints publishing log lines, which you then stop cleanly with Ctrl+C",
+                    "You can say, in your own words, what sourcing did to make all three possible",
+                  ],
+                  hints: [
+                    "The three checkpoints go from most general to most specific: can it run at all, can it find things, can it do something.",
+                    "Checkpoint 3's node lives in the demo_nodes_cpp package, and the executable is the one that talks rather than the one that listens.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 3 Check: Installation, Sourcing, and Diagnosis",
+                description:
+                  "Five troubleshooting scenarios. Each explanation names the branch of the decision tree it belongs to, so a wrong answer points you somewhere specific.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You open a brand new terminal and run ros2 --help. It says command not found. You installed ROS 2 successfully an hour ago. Most likely cause?",
+                    options: [
+                      { id: "not-sourced", label: "This terminal hasn't sourced the ROS 2 setup script" },
+                      { id: "bad-install", label: "The installation silently failed and must be redone" },
+                      { id: "wrong-ubuntu", label: "The machine is running the wrong Ubuntu version" },
+                      { id: "needs-sudo", label: "ros2 needs to be run with sudo" },
+                    ],
+                    correctOptionIds: ["not-sourced"],
+                    explanation:
+                      "Sourcing affects one shell session, so a new terminal starts without ROS 2 on its PATH unless ~/.bashrc does it for you. Confirm with echo $ROS_DISTRO — an empty line means unsourced. This is the \"forgot to source\" branch, and it's the most common failure on this module by a wide margin. Reinstalling would waste an hour and change nothing, and sudo would actively make things worse by creating root-owned files.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "ros2 --help works fine, but ros2 pkg list returns nothing at all. Which checkpoint has failed, and what's the sensible next step?",
+                    options: [
+                      { id: "cp2", label: "Checkpoint 2 — re-check $ROS_DISTRO and sourcing, and confirm the install actually completed" },
+                      { id: "cp1", label: "Checkpoint 1 — the ros2 command itself is broken" },
+                      { id: "cp3", label: "Checkpoint 3 — nodes can't be run on this machine" },
+                      { id: "reinstall", label: "None — reinstall Ubuntu and start over" },
+                    ],
+                    correctOptionIds: ["cp2"],
+                    explanation:
+                      "Checkpoint 2 is exactly \"can the terminal find ROS 2 packages?\", so an empty list is that checkpoint failing. Checkpoint 1 clearly passed, since ros2 --help worked. The usual causes are a partly-sourced environment or an install that didn't finish, both of which are checkable in seconds. Reinstalling the operating system for this is the instinct the whole decision tree exists to replace.",
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "If a ros2 command isn't working, it's reasonable to try running it with sudo to rule out a permissions problem.",
+                    correctAnswer: false,
+                    explanation:
+                      "False, and this one bites hard. sudo ros2 ... creates root-owned files under ~/.ros, and every later run as your normal user then fails trying to write to them — so a command that was merely unsourced becomes a genuine permissions problem you created. This is precisely the debugging exercise's root cause. apt needs root to install ROS 2; ROS 2 itself never needs root to run.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "A colleague has ROS 1 and ROS 2 Jazzy installed on the same machine, and ~/.bashrc sources both. Things mostly work but behave inconsistently. What's the safest practice?",
+                    options: [
+                      { id: "one-per-terminal", label: "Source exactly one distribution per terminal — leave only one source line in ~/.bashrc" },
+                      { id: "order", label: "Keep both, but make sure ROS 2 is sourced after ROS 1 so it wins" },
+                      { id: "uninstall", label: "Uninstall ROS 1 entirely; the two cannot coexist on one machine" },
+                      { id: "fine", label: "Nothing — sourcing both is supported and the inconsistency is unrelated" },
+                    ],
+                    correctOptionIds: ["one-per-terminal"],
+                    explanation:
+                      "Both can be installed side by side; what causes trouble is having both sourced in the same shell, which produces failures that don't error cleanly. Relying on source order is fragile and doesn't actually separate the environments. Uninstalling ROS 1 is heavier than necessary — the fix is one source line per terminal. This is the \"conflicting installs\" branch.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Partway through setup, commands start failing with a UnicodeDecodeError rather than a \"not found\" error. Sourcing is correct, the packages are installed, and nothing is owned by root. What should you check?",
+                    options: [
+                      { id: "locale", label: "Run locale — the shell may not be using a UTF-8 locale" },
+                      { id: "resource", label: "Re-source setup.bash; the environment has been lost mid-session" },
+                      { id: "reinstall2", label: "Reinstall ros-jazzy-desktop, since the package files are corrupted" },
+                      { id: "domain", label: "Set ROS_DOMAIN_ID, since discovery is misconfigured" },
+                    ],
+                    correctOptionIds: ["locale"],
+                    explanation:
+                      "An encoding error means the environment is present but mis-encoded — LANG reading C or POSIX instead of a UTF-8 locale. Setting a UTF-8 locale is step one of ROS 2's official install instructions, which is exactly why it gets skimmed past. This branch is worth knowing precisely because it doesn't look like the others: nothing is missing, unset or unowned, so the usual four checks all come back clean. Fix with locale-gen and update-locale, then re-check with locale.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That's the module.\n\nUbuntu confirmed (Lesson 1), ROS 2 physically installed and located (Lesson 2), your terminal connected to it permanently (Lesson 3), and three checkpoints passed — with five real failure modes either fixed or now understood well enough to diagnose (this lesson).\n\nEvery checkpoint you just ran used a plain demo node, deliberately not Turtlesim. That's next. Module 4 is the first time you'll run and control an actual simulated robot — and everything that makes ros2 run work today is what makes that possible.",
               },
             },
           ],

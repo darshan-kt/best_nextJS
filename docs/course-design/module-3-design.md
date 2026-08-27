@@ -173,3 +173,71 @@ WHAT THE LEARNER WILL GAIN: A real screen recording of the exact install
 ---
 
 **Checkpoint:** review before Module 4 — particularly whether the decision-tree's four branches are actually exhaustive enough for a real class of learners, and whether reserving `demo_nodes_cpp` for Checkpoint 3 (instead of an early Turtlesim peek) correctly protects Module 4's reveal.
+---
+
+# Addendum — closing the exhaustiveness question (2026-08-27)
+
+The checkpoint above asked, before Module 4: *"whether the decision-tree's
+four branches are actually exhaustive enough for a real class of learners."*
+
+**Answered: they were not. A fifth branch — locale / UTF-8 misconfiguration —
+has been added, and it is the direct answer to that question rather than an
+unrelated addition.**
+
+## Why the four were not exhaustive
+
+Each of the original four branches fails in a way that points at itself:
+
+| Branch | What is wrong |
+|---|---|
+| Wrong Ubuntu version | The base system is wrong |
+| Forgot to source | The environment is *unset* |
+| Permission issues | Files are *unowned* by the user |
+| Conflicting installs | The environment is *duplicated* |
+
+A misconfigured locale fits none of those. The install is correct, sourcing
+is correct, permissions are fine, and nothing conflicts — the environment is
+present and correct, but its *character encoding* is wrong. That is a fifth
+category, not a variation on an existing one, which is why it could not be
+folded into any of the four.
+
+## Why it is common enough to earn a branch
+
+Setting a UTF-8 locale is **step one of ROS 2's own official installation
+instructions**, before the repository is even added. It is the easiest step
+in the whole procedure to skim past, precisely because it looks like
+boilerplate and has nothing to do with ROS.
+
+## Why it is disproportionately costly when missed
+
+Its symptom does not resemble the other four. Instead of a clean
+`command not found`, commands die *partway through* with a
+`UnicodeDecodeError` or an encoding complaint — from Python-based ROS 2
+tooling in particular. A learner running the original four checks gets four
+clean results and concludes their install is broken, when the four checks
+were simply blind to the failure. That is the specific gap this closes.
+
+## As implemented
+
+- **Diagram:** the tree carries five branches, with the locale branch
+  labelled *5th branch*. Rows are aligned across all five so a learner can
+  scan symptoms sideways without reading linearly.
+- **Ordering:** placed second, immediately after "wrong Ubuntu version" —
+  both are install-time failures, and locale must be correct *before* the
+  repository step, matching the official install order.
+- **Prose walkthrough:** deferred to its own CALLOUT rather than covered
+  inline with the other four, since the point being made is that it *does
+  not look like them*.
+- **CODE block:** the real `locale-gen` / `update-locale` fix, with the
+  diagnostic `locale` output showing what a wrong value looks like.
+- **Quiz:** a fifth question was added, presenting an encoding failure with
+  sourcing, packages and ownership all explicitly ruled out — so the
+  question can only be answered by recognising the fifth category.
+
+## Remaining open item from the same checkpoint
+
+The other half of that checkpoint — *whether reserving `demo_nodes_cpp` for
+Checkpoint 3 (instead of an early Turtlesim peek) correctly protects Module
+4's reveal* — was implemented as designed (`demo_nodes_cpp`, no Turtlesim
+anywhere in Module 3) but has **not** been independently re-litigated. It
+should be judged against Module 4's design when that is written.

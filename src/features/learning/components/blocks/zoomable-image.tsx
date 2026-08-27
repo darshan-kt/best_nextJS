@@ -59,7 +59,11 @@ export function ZoomableImage({ data }: { data: ImageBlockData }) {
           />
           <span
             aria-hidden
-            className="pointer-events-none absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-background/85 px-2 py-1 text-caption text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+            // Always visible, not hover-only: a touch device has no hover
+            // state, so a hover-revealed affordance is invisible to every
+            // learner on a tablet or phone. Subtle at rest, stronger on
+            // hover/focus.
+            className="pointer-events-none absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-background/85 px-2 py-1 text-caption text-muted-foreground opacity-70 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
           >
             <ZoomInIcon className="size-3.5" />
             Enlarge
