@@ -91,6 +91,23 @@ is currently unmonitored** — see §1.
 
 ---
 
+## 5. Module 10 must pick up the standalone-script thread from Module 5
+
+Module 5 Lesson 3 has the learner write their first node as a plain Python
+script run with `python3` — no workspace, no package, no `colcon` — because
+packaging is Module 10 and pulling it forward would teach nodes while the
+learner debugs build configuration. See `module-5-design.md`, Flag 1.
+
+That decision hands Module 10 a specific opening: *you have a loose script in
+your home directory; here is why that doesn't survive a second machine or a
+second developer.* If Module 10 is designed without knowing this, it will
+introduce packaging as an unexplained ritual and the setup will be wasted.
+
+**To close:** Module 10's design references Flag 1 explicitly and opens from
+the script the learner already has.
+
+---
+
 ## Closed items, for reference
 
 - **`demo_nodes_cpp` vs. an early Turtlesim peek** — closed 2026-08-27 in
