@@ -131,33 +131,6 @@ passes should read `module-6-design.md`'s "Continuation" section.
 
 ---
 
-## 6. Module 6's one video candidate is review-gated and unwatched
-
-`module-6-design.md`'s research record carries one candidate that was neither
-accepted nor rejected: **"ROS2 Publisher subscriber and DDS pipeline"**,
-EraBotLabs, `https://www.youtube.com/watch?v=nKxdOQOYIKk`, verified at 242s
-(4m02s), published 2024-05-10.
-
-Length and scope are right and the pub/sub model is distribution-independent,
-so the pre-Jazzy date is not disqualifying. What cannot be checked from
-metadata is §15's teaching-quality and production-quality criteria — and the
-title foregrounds "DDS pipeline" while Module 2 told the learner in as many
-words that this course would not go deeper on DDS than one paragraph.
-
-**To close:** a human watches all four minutes and decides two things — (a) is
-the teaching and production quality good enough for this course, and (b) is DDS
-named rather than walked through, leaving Module 2's declared ceiling intact.
-If both hold, it embeds in Module 6 Lesson 1 after block 4. If either fails,
-Module 6 ships without video, which is what Lesson 1 is designed for.
-
-Worth noting either way: this would be **two consecutive modules with no
-video** (Module 5 rejected all three of its candidates). That is a signal about
-the material available at this altitude, not evidence that §14 is wrong — but a
-third in a row would be worth treating as a strategy question rather than three
-independent decisions.
-
----
-
 ## 7. QoS is assigned to Module 9 — not yet designed there
 
 `module-6-design.md`, Flag 5. **Status changed 2026-08-27: assigned, not
@@ -201,3 +174,13 @@ else about interfaces).
 - **Module 4 video duration** — closed 2026-08-27. `k3NHSOq64xc` verified at
   PT20M18S and **dropped** for violating §14; no chapters, so clip bounds would
   have meant publishing a guess.
+- **Module 6's video candidate (`nKxdOQOYIKk`)** — closed 2026-08-28 by direct
+  human review (watched, not inferred from metadata). **Dropped.** Module 6
+  ships without video, same as Module 5.
+
+  **Two consecutive modules (5, 6) now video-less.** That is not evidence §14
+  is wrong on its own — but it is a pattern, not two independent rejections
+  anymore. **If Module 7 also ships without a video, flag that explicitly as a
+  pattern worth a strategy conversation on video sourcing at this altitude,
+  during Module 7's design pass** — not as a third independent rejection to
+  wave through the same way the first two were.
