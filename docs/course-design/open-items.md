@@ -158,34 +158,36 @@ independent decisions.
 
 ---
 
-## 7. QoS is not owned by any module in the curriculum
+## 7. QoS is assigned to Module 9 — not yet designed there
 
-`module-6-design.md`, Flag 5. Module 6 Lesson 3 is the first place a learner
-meets a QoS setting: the `10` in
-`self.create_publisher(Twist, '/turtle1/cmd_vel', 10)` is a queue depth. Module
-6 handles that responsibly — one sentence on what the number does, one CALLOUT
-naming QoS as the family it belongs to and saying it does not matter here — so
-nothing in this module is misleading.
+`module-6-design.md`, Flag 5. **Status changed 2026-08-27: assigned, not
+open.** Originally recorded as unassigned anywhere in §9's curriculum; at
+Stage 5 review of Module 6, the decision was made to give it to Module 9, and
+Module 6 Lesson 3's CALLOUT now names Module 9 explicitly to the learner —
+*"Module 9 is where you actually learn what this number does and how to
+choose a different one"* — the same forward-pointer pattern as item 5's
+Module 5 → Module 10 thread. That sentence is a promise the course has now
+made in shipped content once Module 6 is implemented, not just a design note.
 
-The gap is the curriculum's, not Module 6's. Searching §9 of
-`ROS2_COURSE_DESIGN.md`: QoS is not in Module 2 (explicitly excluded by the
-depth ceiling recorded in `module-2-dds-depth-decision.md`), not in Module 9
-(Parameters, Messages, and Interfaces), not in Module 12 (Lifecycle Nodes), and
-not anywhere else. **No module teaches it.**
+Background, unchanged from the original entry: Module 6 Lesson 3 is the first
+place a learner meets a QoS setting — the `10` in
+`self.create_publisher(Twist, '/turtle1/cmd_vel', 10)`, a queue depth. Module 6
+handles it responsibly on its own terms (one sentence on what the number does,
+one CALLOUT naming QoS as the family it belongs to), so nothing in Module 6
+itself is misleading. QoS incompatibility is also one of the most common real
+failures in production ROS 2 — a subscriber that receives nothing from a
+correctly-named, correctly-typed, actively-publishing topic — and Module 6
+Lesson 4 trains the learner that name and type matching is sufficient, which is
+true for everything in this course and not true in general.
 
-That matters because QoS incompatibility is one of the most common real
-failures in production ROS 2: a subscriber that receives nothing from a
-correctly-named, correctly-typed, actively-publishing topic. A learner who
-finishes this course cannot diagnose it, and — worse — has been trained by
-Module 6 Lesson 4 to conclude that name and type matching is sufficient, which
-is true for everything they will meet in this course and not true in general.
-
-**To close:** assign it. Module 9 is the most natural home (it already owns
-messages and interfaces, and QoS is the other half of "what governs whether two
-endpoints connect"), but Module 13 (RQt and development tools) is defensible if
-it is framed as a diagnostic subject. Whichever module takes it should also
-revisit Module 6 Lesson 2's contract diagram, which currently draws name and
-type as the complete matching condition.
+**To close:** Module 9's design pass must actually deliver the material the
+Lesson 3 callout promises, and should revisit Module 6 Lesson 2's contract
+diagram (currently draws name and type as the complete matching condition) once
+it does. Module 9 was chosen over Module 13 (RQt and development tools)
+because it already owns messages and interfaces, and QoS is the other half of
+"what governs whether two endpoints connect" — the same boundary Module 6
+Flag 4 drew between Module 6 (reading a definition) and Module 9 (everything
+else about interfaces).
 
 ---
 

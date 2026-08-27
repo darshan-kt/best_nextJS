@@ -140,17 +140,24 @@ naming QoS as the family the setting belongs to and stating plainly that it
 matters enormously for sensor data and not at all for driving a turtle. Naming
 it once is the right call: silence would leave a learner who googles the number
 believing they had missed something, which is the exact failure Module 1's
-"check the distribution on anything you find" callout exists to prevent.
+"check the distribution on anything you find" callout exists to prevent. The
+callout ends with a named forward-pointer — *"Module 9 is where you actually
+learn what this number does and how to choose a different one"* — the same
+pattern Module 5 used for packaging ("Module 10 will explain why that stops
+being good enough"): a promise the learner can hold onto rather than a topic
+quietly dropped.
 
-*Beyond this module:* **QoS is not assigned to any module in §9.** It is not in
-Module 2 (explicitly excluded), not in Module 9, not in Module 12. It is also
-the cause of one of the most common real-world ROS 2 failures — a subscriber
-that receives nothing from a correctly-named, correctly-typed, actively
-publishing topic, because the QoS profiles are incompatible. This course will
-eventually need to say something about that, and right now nothing does.
-
-That is a curriculum gap, not a Module 6 problem, and it is recorded in
-`open-items.md` rather than solved by quietly expanding this module.
+*Beyond this module:* **QoS was not assigned to any module in §9** — not
+Module 2 (explicitly excluded), not 9, not 12. Decided at Stage 5 review
+(2026-08-27): **Module 9 owns it.** It already owns messages and interfaces,
+and QoS is the other half of "what governs whether two endpoints connect" —
+Module 6 Lesson 2 draws name and type as the complete matching condition, and
+QoS compatibility is the third condition that lesson doesn't mention. This
+module's Lesson 3 callout now names Module 9 by number, which makes that
+assignment a promise this course has made to the learner, not just a note in
+this file. `open-items.md` item 7 is updated accordingly — the gap itself is
+closed; what remains open is Module 9 actually designing the material that
+pays the promise off, and revisiting Lesson 2's contract diagram once it does.
 
 ## Flag 6 — `ros2 topic hz` is not in §9's command list, and is added anyway
 
@@ -369,7 +376,7 @@ is a design decision rather than a detail.
 2. **TEXT** — what has to be true before writing a line, assembled from what the learner already knows: publish to the **same name** turtlesim subscribes to (Lesson 2's `topic info` proves which), with the **same type** (`geometry_msgs/msg/Twist`), **more often than once a second** (Lesson 1's timeout). Three facts, all already earned.
 3. **CODE** — the driver node, complete and about twenty-five lines: subclass `Node` as in Module 5, `self.create_publisher(Twist, '/turtle1/cmd_vel', 10)`, a timer at 2 Hz, and a callback that builds a `Twist`, sets `linear.x` and `angular.z`, and publishes it. The turtle drives in a circle.
 4. **TEXT** — what running it just proved, and it is worth stopping on: teleop is not running. Nothing is reading the keyboard. The only thing steering the turtle is a file the learner wrote, and turtlesim cannot tell the difference — because from turtlesim's side there is no difference. Lesson 1's anonymity property, now demonstrated rather than asserted.
-5. **CALLOUT** (INFO) — the `10`, per Flag 5: "That third argument is a send queue — how many outgoing messages ROS 2 will hold for you if a subscriber or the network can't keep up. 10 is the conventional default and the right choice here. It belongs to a family of delivery settings called QoS, which matters a great deal for high-rate sensor data and not at all for driving a turtle. If you go looking, that is what you will find; you are not missing a prerequisite."
+5. **CALLOUT** (INFO) — the `10`, per Flag 5: "That third argument is a send queue — how many outgoing messages ROS 2 will hold for you if a subscriber or the network can't keep up. 10 is the conventional default and the right choice here. It belongs to a family of delivery settings called QoS, which matters a great deal for high-rate sensor data and not at all for driving a turtle. If you go looking, that is what you will find; you are not missing a prerequisite. Module 9 is where you actually learn what this number does and how to choose a different one — for now, treat 10 as a safe default that needs no justification."
 6. **TEXT** — **the rate is not arbitrary.** At 2 Hz a message arrives every half-second, comfortably inside turtlesim's one-second window. Slow the timer past one second and the turtle stutters — moving, stopping, moving — because each command expires before its replacement arrives. That is not a bug in the code. It is Lesson 1's safety rule doing exactly what it is for, seen from the publishing side for the first time.
 7. **CALLOUT** (TIP) — `ros2 topic hz /turtle1/cmd_vel` (Flag 6): "You chose a rate in your code. This measures the rate that actually reached the topic — and on a busy machine, or with slow work in a callback, those are not always the same number."
 8. **EXERCISE** (GUIDED) — write it, run it, and break it deliberately (below)
@@ -403,8 +410,8 @@ in one node; the reactive control loop.
 **Content block sequence:**
 1. **TEXT** — the connection Module 5 set up explicitly: a timer says *"call this every second."* A subscription says *"call this every time a message arrives on this name."* Same machinery, same `spin` doing the calling, different trigger. Module 5's exact words were that a subscriber is the same idea with a message arriving instead of a second passing — this is that, cashed in.
 2. **CODE** — the listener node, about twenty lines: `self.create_subscription(Pose, '/turtle1/pose', self.pose_callback, 10)`, and a callback that logs `x`, `y` and `theta`. Note that the callback takes the message as its one argument — the learner did not call it, so ROS 2 hands the message in.
-3. **TEXT** — what running it proves, including the part that looks like a failure: log lines appear only while turtlesim is running. Close turtlesim and the listener goes quiet — no error, no warning, no exit. A subscriber with nothing publishing to it is a completely valid, completely silent program, and that silence is indistinguishable from a bug. Which is the next block.
-4. **EXERCISE** (DEBUGGING) — the silent subscriber (below)
+3. **TEXT** — what running it proves, including the part that looks like a failure: log lines appear only while turtlesim is running. Close turtlesim and the listener goes quiet — no error, no warning, no exit. A subscriber with nothing publishing to it is a completely valid, completely silent program, and that silence is indistinguishable from a bug. The next block has you cause that exact silence on purpose, so you meet it under controlled conditions rather than the first time it happens by accident.
+4. **EXERCISE** (GUIDED) — the silent subscriber (below)
 5. **IMAGE** — one mechanism, two triggers (below)
 6. **CALLOUT** (TIP) — "Do not do slow work inside a callback. `rclpy.spin` runs your callbacks one at a time by default, so a callback that takes a second stops everything else in that node for a second — including the timer that was supposed to be publishing. The symptom is a node that mysteriously stops sending, and the cause is never where people look first."
 7. **TEXT** — now combine them, and name what the combination is: a node with both a subscription and a publisher is the standard shape of nearly every real ROS 2 node. Read something, decide something, write something. Sensor in, command out. Everything from a battery monitor to a path planner is that shape at different scales.
@@ -419,44 +426,46 @@ in one node; the reactive control loop.
 - **Purpose:** collapse two things that look different in code into one mechanism · **Concept:** callbacks, and what triggers them · **Format:** a single `spin` block with two branches drawn off it, deliberately symmetrical · **What should be shown:** one branch labelled "every 0.5 seconds → `timer_callback()`", the other "message arrives on `/turtle1/pose` → `pose_callback(msg)`", both drawn identically below the trigger, with the note that `spin` is what calls both and the learner never calls either · **What the learner should understand:** they are the same thing; only the trigger differs — and this is why `spin` is not a wait.
 - **Purpose:** show the loop as a loop, since the whole point is that it closes · **Concept:** a two-topic cycle between two nodes · **Format:** two boxes and two arrows forming a visible ring · **What should be shown:** turtlesim and the learner's node as the only two boxes; `/turtle1/pose` on the arrow one way, `/turtle1/cmd_vel` on the arrow back (labels on arrows, Flag 2); the decision — "past the wall? turn the other way" — marked inside the learner's node, which is the only place in the ring where anything is decided · **What the learner should understand:** neither node is in charge; the behaviour is a property of the cycle.
 
-**Practical exercise — DEBUGGING** (per §11: observe → investigate → use ROS 2 tools → identify root cause → fix). §11's own worked example for this material is *"subscriber receives no messages"*, with wrong topic name among the listed causes — this is that exercise, made concrete:
+**Practical exercise — GUIDED** (§11's worked example for this material is
+*"subscriber receives no messages"*, with wrong topic name among the listed
+causes — this exercise walks it deliberately rather than presenting it as a
+mystery, for the reason given below):
 
-> **Scenario:** You write the listener node. It starts cleanly, prints no
-> errors, and sits there. Turtlesim is definitely running and you can drive the
-> turtle around the window with your driver node from Lesson 3, so the system
-> is alive.
+> **Step 1 — cause the silence on purpose.** In `listener.py`, change the
+> subscribed name from `/turtle1/pose` to `/turtle/pose` — drop the `1`. Run
+> it alongside turtlesim. Confirm: no error, no warning, no exit. It just sits
+> there, silent, exactly like the failure case in block 3.
 >
-> Your listener logs nothing. Not once, not slowly — nothing at all. Python has
-> not complained. ROS 2 has not complained.
+> **Step 2 — establish whether the data exists at all**, before touching your
+> own code. In a second terminal, run `ros2 topic echo /turtle1/pose` while
+> the turtle is moving. You should see a steady stream of messages. That rules
+> out the publisher: turtlesim is fine, and the data is real.
 >
-> **Hint 1:** Don't reread the callback yet. Establish whether the data exists
-> before asking why you aren't getting it — `ros2 topic echo /turtle1/pose` in
-> another terminal, while the turtle moves. Messages, or silence?
-> **Hint 2:** Messages. So the publisher is fine and the data is real, which
-> means the fault is entirely on your side. Now interrogate *your node* rather
-> than the topic: `ros2 node info` on it, and read what it says it subscribes
-> to. Read the string character by character against the one `ros2 topic list`
-> prints.
-> **Hint 3:** `/turtle/pose` is not `/turtle1/pose`. Ask yourself why nothing
-> anywhere told you that.
+> **Step 3 — interrogate your own node**, not the topic. Run
+> `ros2 node info` on your listener and read what it says it subscribes to.
+> Compare that string, character by character, against the name
+> `ros2 topic list` actually shows for turtlesim's pose topic.
 >
-> **Solution:** The subscription was created for `/turtle/pose` — the `1` was
-> missing. **Root cause:** a topic name is a string, and ROS 2 matches strings.
-> A subscription to a name nobody publishes is not an error; it is a
-> perfectly ordinary subscription that will start delivering the moment
-> somebody starts publishing that name. Since that never happens, the node
-> waits forever, correctly, in silence. **Fix:** correct the string, restart,
-> and confirm with `ros2 node info` on your own node that the name it lists now
-> matches the one in `ros2 topic list` exactly.
+> **Step 4 — fix it and confirm the fix**, not just the symptom. Correct the
+> string back to `/turtle1/pose`, restart the listener, and use
+> `ros2 node info` again to confirm the name it now lists matches
+> `ros2 topic list` exactly — don't rely on the log lines resuming as your
+> only evidence, since that would be checking the symptom rather than the
+> cause.
 
-Deliberately chosen over a crash-style bug for the second module running, and
-for a different reason than Module 5's. Module 5's duplicate-name exercise
-taught that *inconsistency is a symptom*. This one teaches something narrower
-and more immediately useful: **the two-sided split** — establish whether the
-data exists before investigating why you aren't receiving it. That is the same
-habit Module 4 installed with `echo` ("ask whether anything is being published
-before asking why nothing is arriving"), now applied for the first time to code
-the learner wrote themselves, which is where it actually gets used.
+Deliberately **guided rather than a debugging exercise**, and that is a
+considered choice, not a downgrade. §11's DEBUGGING format is for a mystery the
+learner has to work backwards from; the skill this exercise teaches — establish
+whether the data exists before investigating why you aren't receiving it — is
+not new here. It is Module 4's `echo`-first habit ("ask whether anything is
+being published before asking why nothing is arriving"), applied for the first
+time to code the learner wrote themselves. Presenting a *reapplication* of an
+already-taught habit as if it were a fresh diagnostic mystery would be
+borrowing DEBUGGING's weight for content that hasn't earned it — and this
+course's rhythm is one DEBUGGING exercise per module (Modules 3 through 5 each
+have exactly one). Lesson 5 below is where that slot belongs this module: its
+exercise has no correct answer to discover by inspecting one node harder, which
+this one does.
 
 **Practical exercise — INDEPENDENT:** extend the closed loop so the turtle stays
 inside a box rather than only reversing on one axis — turning away when it
@@ -533,13 +542,21 @@ the "one topic, one authority" rule.
 > real alternative — remapping one publisher onto a different topic name so
 > both can run without conflicting — and remapping in general is Module 9's.
 
-Chosen deliberately as the module's second debugging exercise, and it is a
-different species from every other one in this course. Nothing is broken. No
-program is misconfigured, no string is mistyped, and both nodes are doing
-precisely what they were written to do. The fault is in the *system design* —
-which is the first time this course has presented a bug that cannot be fixed by
-correcting a mistake, and the reason the two-publisher case deserves an
-exercise rather than a paragraph.
+This is the module's one DEBUGGING exercise, and the reason it, rather than
+Lesson 4's silent subscriber, is the one that earns that format: it is a
+different species from every debugging exercise in this course so far, this
+module's own Lesson 4 walkthrough included. Nothing is broken. No program is
+misconfigured, no string is mistyped, and both nodes are doing precisely what
+they were written to do. The fault is in the *system design* — which is the
+first time this course has presented a bug that cannot be fixed by correcting a
+mistake, only by deciding which of two equally-valid nodes should not be
+running. That is a genuinely new diagnostic skill, not a reapplication of one
+the learner already has (contrast Lesson 4, above): recognizing *ambiguity* as
+the failure mode, rather than an *error*, and reading a publisher count instead
+of a string for the answer. Keeping the module at one DEBUGGING exercise, as
+every module since Module 3 has done, and spending it here rather than
+splitting it across two smaller ones is what makes that novelty legible instead
+of diluted.
 
 **Practical exercise — INDEPENDENT:** run turtlesim, the Lesson 3 driver, and
 the Lesson 4 listener all at once. Then, using `ros2 topic info` on both
@@ -588,9 +605,42 @@ services: the mechanism for asking and being answered."
 
 ---
 
-**Checkpoint:** review before implementation — particularly (a) whether five
-lessons and ~68 blocks is the right size or whether Lesson 2 should be
-compressed into Lessons 1 and 3, (b) whether two debugging exercises in one
-module is right or whether the Lesson 4 silent-subscriber case is enough on its
-own, and (c) the video gate in the research record, which needs a human to
-watch four minutes before that decision can be closed either way.
+**Stage 5 review (2026-08-27) — three of four open questions resolved:**
+
+**(a) Sizing — kept at five lessons, uncompressed.** Per-lesson block counts:
+L1 14, L2 15, L3 13, L4 13, L5 13 (total 68). Lesson 2 is one block over
+Lesson 1 and two over Lessons 3–5 — inside normal lesson-to-lesson variance
+(Module 5's own four lessons ran 10/10/16/10), not the disproportionate load
+that would justify a split. Lesson 2 does carry two distinct payoffs — reading
+a message type (blocks 1–10) and the reverse/state-topic direction (blocks
+11–15) — but that seam is a fact worth knowing during implementation, not a
+reason to force two lessons out of a lesson that isn't oversized.
+
+**(b) Exercise types — restored to one DEBUGGING per module.** Lesson 4's
+silent-subscriber exercise is now GUIDED, not DEBUGGING: on inspection, it
+reapplies Module 4's echo-first habit to the learner's own code rather than
+teaching a new diagnostic skill, and presenting a reapplication as a mystery
+would borrow DEBUGGING's weight for content that hadn't earned it. Lesson 5's
+two-publisher conflict remains the module's one DEBUGGING exercise, matching
+Modules 3 through 5's rhythm; it earns the format on a distinction the
+Lesson 4 case doesn't share — nothing is broken and no string is wrong, so the
+skill is recognizing ambiguity as the failure mode rather than error, read off
+a publisher count rather than a string comparison.
+
+**(c) Video gate — still open, pending a direct human decision.** Candidate:
+*"ROS2 Publisher subscriber and DDS pipeline: ROS2 Framework overview - ROS2
+beginners tutorial,"* EraBotLabs,
+[youtube.com/watch?v=nKxdOQOYIKk](https://www.youtube.com/watch?v=nKxdOQOYIKk),
+verified 242s (4m02s), published 2024-05-10. No chapter markers exist (checked
+against player metadata), and this environment could not pull a working
+transcript to pinpoint a DDS-specific segment within the four minutes — the
+video's own description outlines three sections (the pub/sub model, its
+advantages, using it in practice) and never allocates one to DDS by name, which
+is suggestive that the DDS content is brief rather than a walkthrough, but that
+is an inference from the outline, not a verified timestamp. At 4:02 total, the
+honest gate is to watch the whole thing rather than a clipped range: confirm
+(i) teaching and production quality clear the bar for this course, and (ii) DDS
+is named as "the thing that carries the data" rather than walked through,
+keeping Module 2's declared depth ceiling intact. If both hold, it embeds in
+Lesson 1 after block 4; if either fails, Lesson 1 ships without it, which is
+what it's designed for.

@@ -163,33 +163,35 @@ Wait for my go-ahead on the plan before implementing — especially the attempt-
 
 
 
-Completed
+----------------------
 
-Four lessons, 46 blocks (10/10/16/10), four diagrams, a downloadable starter script, three GUIDED exercises plus DEBUGGING and INDEPENDENT, five-question quiz. No video, as designed.
+Module 6 design written and committed (43e9f3a, pushed). Five lessons, ~68 blocks, seven diagrams, six exercises, six-question quiz. Not implemented — this is the Stage 4 pass, for your review before Stage 5/6.
 
-All four design flags implemented as specified. Lesson 3's node is a standalone python3 script with no packaging, and the lesson opens by saying why rather than leaving the learner wondering what's being withheld. The three-stage progression stands in for live coding. "Lifecycle" appears nowhere — init/create/spin/shutdown is "the shape of a node program" in the prose, the diagram title and the alt text, keeping the word free for Module 12.
+Files changed
+- docs/course-design/module-6-design.md (new, 596 lines)
+- docs/course-design/open-items.md — items 6 and 7 added, item 5 strengthened
+- milestones_prompt.md — your pasted Module 5 report, committed as-is
 
-Drift from the approved design — both additive
+Two flags that contradict the design document directly
 
-- Lesson 3 is 16 blocks, not the 12 the design implied. Each CODE stage needed a TEXT after it explaining what running it just proved. The design folded those into the stage descriptions, but on the page a code block followed immediately by another code block loses the progression entirely — which is the whole point of staging it.
-- The C++ block gained a following TEXT tying it back to Lesson 2's language-independence argument, rather than leaving the comparison to stand alone.
+§9's own example diagram for this module draws TOPIC as a box between publisher and subscribers. That box is the broker misconception §21 warns about, and it sets up a specific later failure — a learner who believes in a topic process looks for it when data stops, instead of checking the two endpoints, which is the only place the fault can be. Every diagram here puts the topic name on the arrows instead. Flagged rather than silently corrected.
 
-Caught by checking rather than assuming
+ros2 interface show is listed under both Module 6 and Module 9. I drew the boundary: Module 6 reads a definition (two types, to answer "where did those six numbers come from"), Module 9 owns the .msg format, custom interfaces, and the standard-interface landscape. Lesson 2 says this to the learner so the shallow treatment reads as deliberate.
 
-Two apparent defects in the exercise reveal were both my own automation. The hint button relabels from "Show a hint" to "Show another hint" after the first click, so my selector silently stopped matching and my next click landed on the other exercise's button — the same class of error as Module 3's pass, which I should have anticipated. Re-run scoped correctly: all three debugging hints reveal in order, then root cause and solution with its captioned CODE visual; all three independent-exercise hints reveal alongside the success criteria. No product defect.
+A curriculum gap this module surfaced but can't fix
 
-The starter script is syntax-checked with py_compile rather than assumed valid, since it ships as a download learners will diff against.
+The 10 in create_publisher(Twist, '/turtle1/cmd_vel', 10) is a QoS queue depth — the first line of ROS 2 code in this course whose meaning the course hasn't scoped. Module 6 handles it honestly in a sentence and a callout. But QoS is taught by no module in §9 — not Module 2 (explicitly excluded by its own depth ceiling), not 9, not 12. It's also the cause of one of the most common real ROS 2 failures, and Module 6 Lesson 2 actively trains the learner that name + type matching is sufficient. True for everything in this course; not true in general. Open item 7, with Module 9 as my recommended home.
 
-Validation
+Verified rather than recalled
 
-Typecheck, lint, unit (177 passed, 3 self-retired), integration (41), and production build all pass. Seeded twice, no duplication. Playwright walkthrough: zero console errors, all four diagrams at the 704px box, every authored-output block carrying a path D caption, correct python/bash/cpp language labels, the .py serving at 2270 bytes, quiz at 100%, progress 18/21. Restored to DRAFT.
+The one-second command timeout that Lesson 1's whole payoff rests on came from turtle.cpp on the jazzy branch, not memory. And /turtle1/color_sensor samples a uniform background — so driving around changes nothing unless the turtle crosses its own trail. I'd written the Lesson 2 exercise asking what the values do when you drive; checking changed the question, and the design now forbids implementation from phrasing it as a promise that they'll move.
 
-Cross-reference confirmed
+Video durations came from player metadata, not estimates: DigiKey at 2133s (35m33s, and C++) rejected, The Construct's topics episode rejected as Bouncy-era like its sibling in Module 5. One 4m02s candidate is review-gated, not accepted — §15 asks for a teaching-quality judgement I can't make from metadata, and its title foregrounds "DDS pipeline" against Module 2's stated ceiling. Lesson 1 is designed to work without it.
 
-open-items.md item 5 now points Module 10's design pass at three specific things: the design flag with its reasoning, the seed lesson slug writing-your-first-node whose first block makes the promise "Module 10 will explain why that stops being good enough", and module-5-first-node.py as the concrete artefact to convert into a package.
+Known limitations
 
-Still open, unchanged
+Two consecutive modules would ship without video. Worth treating as a strategy question if a third follows, rather than three independent rejections.
 
-Path C built but paused and never run; Module 4's CODE blocks unwired to fixtures; the WSL2/VM display branch with no automated coverage; the signing-key risk currently unmonitored. All tracked in open-items.md.
+Next recommended step
 
-Module 6 — topics, publishers and subscribers — is the one the design calls "one of the strongest modules," and Modules 4 and 5 have both left promises pointing at it. Ready when you are.
+Stage 5 quality review on this design before implementation — and the checkpoint at the end asks you three specific things: whether ~68 blocks is right or Lesson 2 should compress, whether two debugging exercises in one module is one too many, and the video gate, which needs four minutes of someone's attention to close either way.
