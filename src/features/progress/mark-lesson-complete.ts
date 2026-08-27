@@ -6,6 +6,7 @@ import {
   findLessonNavigation,
   flattenLessons,
 } from "@/features/learning/navigation";
+import { reconcileEnrollmentStatus } from "./reconcile-enrollment-status";
 
 /**
  * Use case: mark a lesson complete (§5, application layer).
@@ -89,23 +90,27 @@ export async function markLessonComplete({
     update: {},
   });
 
-  const completedLessonCount = await prisma.lessonProgress.count({
-    where: { enrollmentId: enrollment.id },
-  });
-  const totalLessonCount = course.lessonCount;
-  const courseCompleted = completedLessonCount >= totalLessonCount;
+  // Counting and the ACTIVE/COMPLETED decision both live in
+  // `reconcileEnrollmentStatus` now, rather than being re-derived here.
+  // This used to set COMPLETED one-way, on the assumption that nothing
+  // un-marks a lesson — but a course's published-lesson count can grow
+  // (the ROS 2 course lands module by module), which stranded learners on
+  // a COMPLETED status their real progress no longer matched. Sharing one
+  // definition means that class of drift cannot reappear in only one of
+  // the two places completion is decided (§34).
+  const reconciled = await reconcileEnrollmentStatus(enrollment.id);
 
-  // Activates a status this codebase has carried since Milestone 5
-  // (`EnrollmentStatus.COMPLETED`, and the "Completed" badge on the course
-  // detail page) without anything ever setting it. One-way in this
-  // milestone: nothing un-marks a lesson, so nothing needs to move an
-  // enrollment back out of COMPLETED either.
-  if (courseCompleted && enrollment.status !== "COMPLETED") {
-    await prisma.enrollment.update({
-      where: { id: enrollment.id },
-      data: { status: "COMPLETED", completedAt: new Date() },
-    });
+  if (!reconciled) {
+    // The enrollment was resolved a moment ago and authorized against, so
+    // this means it was deleted concurrently — nothing to report progress
+    // against.
+    return { ok: false, reason: "NOT_FOUND" };
   }
 
-  return { ok: true, completedLessonCount, totalLessonCount, courseCompleted };
+  return {
+    ok: true,
+    completedLessonCount: reconciled.completedLessonCount,
+    totalLessonCount: reconciled.totalLessonCount,
+    courseCompleted: reconciled.status === "COMPLETED",
+  };
 }

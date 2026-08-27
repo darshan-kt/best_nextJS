@@ -20,6 +20,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "postdb:seed": "pnpm db:reconcile",
+    "db:reconcile": "tsx scripts/reconcile-enrollments.ts",
     "docker:up": "docker compose --profile full up --build",
     "docker:down": "docker compose --profile full down",
     "postinstall": "prisma generate"
