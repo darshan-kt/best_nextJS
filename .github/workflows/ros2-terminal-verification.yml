@@ -1,0 +1,182 @@
+name: ROS 2 terminal-output verification
+
+# Every terminal output in the ROS 2 Fundamentals course was authored by hand
+# against the official Jazzy documentation — never captured from a real
+# machine. A learner compares their own screen against ours line by line, so a
+# wrong string does not read to them as our typo; it reads as their broken
+# install. This job closes that gap: it performs the actual install Module 3
+# teaches on a real Ubuntu 24.04 machine, runs each command the course shows,
+# and diffs the captured output against the fixtures the seed renders from.
+#
+# It is also the monitor for the pinned-signing-key risk. Module 3 hands the
+# learner a fixed key URL and apt source line; running them for real, weekly,
+# turns "that key might go stale one day" into a check that goes red the week
+# it happens rather than the week a learner writes in.
+#
+# NOT on push or pull_request, deliberately: the install pulls several GB and
+# takes 10-15 minutes, and none of it depends on the diff under review. The
+# thing being watched is the outside world, not the branch.
+
+on:
+  schedule:
+    # Mondays, 04:17 UTC. Off the hour on purpose — the top of the hour is
+    # when every scheduled workflow on GitHub queues at once.
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      fixture:
+        description: "Verify a single fixture id (blank = all of them)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ros2-terminal-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Real Jazzy install, real captured output
+    # Pinned, not `ubuntu-latest`. The course targets Ubuntu 24.04 specifically
+    # — Jazzy's packages do not exist for any other release — so a runner
+    # rolling forward to 26.04 would not be a newer environment to test in, it
+    # would be testing something the course does not describe.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm the runner really is Ubuntu 24.04
+        # The whole job is only meaningful on the release the course targets.
+        # Fail here with a readable message rather than 15 minutes later with
+        # an apt error nobody can interpret.
+        run: |
+          set -euo pipefail
+          lsb_release -a || true
+          release="$(. /etc/os-release && echo "$VERSION_ID")"
+          if [ "$release" != "24.04" ]; then
+            echo "::error::Runner is Ubuntu $release, but the course targets 24.04."
+            exit 1
+          fi
+
+      - name: Reclaim disk space
+        # ros-jazzy-desktop is a couple of gigabytes of packages plus their
+        # apt cache. The hosted image ships toolchains this job will never
+        # use, and running out of disk halfway through an install produces a
+        # confusing failure.
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /usr/share/dotnet
+          df -h /
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Emit the install script the course teaches
+        # Written out from src/features/courses/content/ros2/terminal-fixtures.ts
+        # rather than transcribed into this file. A copy here would drift from
+        # the lesson within a release or two, and then this job would be
+        # verifying an install path nobody is taught.
+        run: |
+          set -euo pipefail
+          pnpm exec tsx scripts/verify-ros2-terminal-output.ts \
+            --emit-install-script "$RUNNER_TEMP/install-ros2-jazzy.sh" \
+            --emit-locale-script "$RUNNER_TEMP/fix-locale.sh"
+          echo "----- install-ros2-jazzy.sh (verbatim from the lesson) -----"
+          cat "$RUNNER_TEMP/install-ros2-jazzy.sh"
+          echo "-----------------------------------------------------------"
+
+      - name: Set a UTF-8 locale, per Module 3's locale branch
+        run: bash -euo pipefail "$RUNNER_TEMP/fix-locale.sh" < /dev/null
+
+      - name: Install ROS 2 Jazzy exactly as Module 3 instructs
+        # The real thing: apt repository, signing key, ros-jazzy-desktop. A
+        # prebuilt ros:jazzy container would run in two minutes and verify
+        # nothing this job exists to verify — the install path itself is the
+        # subject, not merely a prerequisite for the fixtures.
+        run: bash -euo pipefail "$RUNNER_TEMP/install-ros2-jazzy.sh" < /dev/null
+
+      - name: Report the signing key and repository state
+        # The monitoring half of the signing-key risk. A key that is expiring
+        # is worth knowing about before it expires, because the failure mode
+        # for a learner is an opaque apt error during their very first
+        # ROS 2 command.
+        run: |
+          set -euo pipefail
+          echo "apt source line:"
+          cat /etc/apt/sources.list.d/ros2.list
+          echo
+          echo "signing key:"
+          gpg --show-keys --with-colons /usr/share/keyrings/ros-archive-keyring.gpg \
+            | tee "$RUNNER_TEMP/ros-key.txt"
+          expiry="$(awk -F: '/^pub:/ { print $7; exit }' "$RUNNER_TEMP/ros-key.txt")"
+          if [ -n "$expiry" ] && [ "$expiry" != "0" ]; then
+            days=$(( (expiry - $(date +%s)) / 86400 ))
+            echo "ROS signing key expires in $days day(s)."
+            if [ "$days" -lt 60 ]; then
+              echo "::warning::The ROS 2 signing key pinned in Module 3 expires in $days day(s). Module 3's install-ros2-jazzy.sh will start failing for learners when it does."
+            fi
+          else
+            echo "ROS signing key has no expiry date set."
+          fi
+
+      - name: Install the X server turtlesim draws into
+        # Module 4's inspection commands only have anything to inspect while
+        # turtlesim_node is running, and turtlesim_node is a GUI node. Xvfb is
+        # the display; the lesson's own point that "a window that never
+        # appears is almost never a ROS 2 problem" is exactly why this is a
+        # separate, explicit step rather than something hidden in the script.
+        run: sudo apt-get install -y --no-install-recommends xvfb
+
+      - name: Sanity check — can this shell run ROS 2 at all?
+        # Module 3's Checkpoint 1, as a fast fail. If this is broken there is
+        # no point running twenty fixtures to say so twenty times.
+        run: |
+          set -euo pipefail
+          source /opt/ros/jazzy/setup.bash
+          echo "ROS_DISTRO=$ROS_DISTRO"
+          ros2 --help > /dev/null
+
+      - name: Capture real output and diff it against the course fixtures
+        # The dispatch input goes through the environment, never through
+        # string interpolation into the script body — an expression expanded
+        # inline is executed by the shell, which is a command-injection hole
+        # regardless of who can currently press the button (§29). The script
+        # rejects an unknown id rather than running everything.
+        env:
+          FIXTURE_ID: ${{ inputs.fixture }}
+        run: |
+          set -euo pipefail
+          source /opt/ros/jazzy/setup.bash
+          args=(--log-dir "$RUNNER_TEMP/ros2-capture")
+          if [ -n "${FIXTURE_ID:-}" ]; then
+            args+=(--only "$FIXTURE_ID")
+          fi
+          xvfb-run -a --server-args="-screen 0 1280x1024x24" \
+            pnpm exec tsx scripts/verify-ros2-terminal-output.ts "${args[@]}"
+
+      - name: Upload the captured output
+        # Always, not only on failure. A green run's captures are the only
+        # window anyone has onto what a real Jazzy machine actually prints —
+        # they are what settles the open questions recorded in the fixtures'
+        # `note` fields (the argparse heading, the `command not found` prefix,
+        # the real service count) without anyone owning an Ubuntu box.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ros2-captured-terminal-output
+          path: ${{ runner.temp }}/ros2-capture
+          if-no-files-found: warn
+          retention-days: 90
