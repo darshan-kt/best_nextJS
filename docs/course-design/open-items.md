@@ -4,7 +4,7 @@ One place for everything deliberately left open, so nothing is silently
 forgotten or assumed to be working. Items are removed only when closed, and
 closing one means saying where and how.
 
-Last reviewed: **2026-08-27**
+Last reviewed: **2026-08-28**
 
 ---
 
