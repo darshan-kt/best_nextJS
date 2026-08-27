@@ -103,8 +103,22 @@ your home directory; here is why that doesn't survive a second machine or a
 second developer.* If Module 10 is designed without knowing this, it will
 introduce packaging as an unexplained ritual and the setup will be wasted.
 
-**To close:** Module 10's design references Flag 1 explicitly and opens from
-the script the learner already has.
+**Implemented 2026-08-27.** The thread now exists in shipped content, not just
+in a design document. Module 10's design pass should read, in order:
+
+- `module-5-design.md`, **Flag 1** — the reasoning, and the trade-off accepted
+- `prisma/seed.ts`, lesson slug **`writing-your-first-node`**, first block —
+  the learner has already been told *"Module 10 will explain why that stops
+  being good enough"*, so that promise is outstanding and load-bearing
+- `public/courses/ros2-fundamentals/module-5-first-node.py` — the actual file
+  the learner is left holding, whose docstring says it is deliberately not a
+  package and must be run with `python3`, not `ros2 run`. This is the concrete
+  artefact Module 10 should convert into a package.
+
+**To close:** Module 10's design opens from that script — "you have a loose
+file in your home directory; here is why that does not survive a second machine
+or a second developer" — rather than introducing packaging as an unexplained
+ritual.
 
 ---
 

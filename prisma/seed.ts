@@ -2107,6 +2107,632 @@ const CURRICULA: Record<string, SeedSection[]> = {
         },
       ],
     },
+    {
+      title: "ROS 2 Nodes",
+      summary:
+        "What a node actually is, why robots are built out of dozens of them, and how to write one yourself — in about fifteen lines.",
+      lessons: [
+        {
+          slug: "what-a-node-actually-is",
+          title: "What a Node Actually Is",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "In Module 4 you ran ros2 node list and got two lines back. You were told they were \"the separate programs running right now\", and that each one gets a full module.\n\nThis is that module, and this is the rest of the answer.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A node is one running process that does one job and announces itself to the rest of the system by name.\n\nRead that again with the emphasis on running. A node is not a file on disk. It is not a class, or a library, or a folder. It is a process that is executing right now — which is why it appears in ros2 node list only while it's running, and why pressing Ctrl+C makes it stop existing.\n\nThat distinction sounds pedantic until something goes wrong. \"The node isn't there\" and \"the file isn't there\" are completely different problems with completely different fixes, and beginners conflate them constantly.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "One executable, usually one node",
+                body: "Everything in this module assumes one program contains exactly one node, which is true of almost everything you'll meet as a beginner and true of both programs you ran in Module 4.\n\nIt is possible to put several nodes inside one executable. It's occasionally useful, it has a name (composition), and it comes up much later. Worth knowing the rule has an exception so you don't build a false certainty — not worth chasing now.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now the thing that costs beginners an hour: there are three names in play, they look alike, and they are not the same.\n\nIn ros2 run turtlesim turtlesim_node, turtlesim is the package — a bundle of software you installed. turtlesim_node is the executable — the specific program inside that package that you asked to run. And /turtlesim, with a leading slash, is the node name — what the running process calls itself, and what showed up in ros2 node list.\n\nThree words, three different things, and in this case two of them look nearly identical.\n\nTeleop makes the point unmissable. The executable is turtle_teleop_key. The node is /teleop_turtle. Those aren't even the same words in the same order. You cannot derive one from the other — you have to ask the running system.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-5-node-anatomy.png",
+                alt: "A diagram separating how a node is started from what a node is. On the left, the package turtlesim and the executable turtlesim_node are labelled \"how you started it\", with a warning that neither is the node's name. In the centre, a box labelled \"the node\" named /turtlesim, described as one running process doing one job that stops existing on Ctrl+C. On the right, four ports: publishes, subscribes, services and actions.",
+                caption:
+                  "The package and executable are how you launched it. The node is the thing that's running.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A node exposes four kinds of connection to the rest of the system: the topics it publishes, the topics it subscribes to, the services it offers, and the actions it offers.\n\nThose are exactly Module 4's four list commands — but seen from inside one node rather than across the whole system. ros2 topic list told you every topic that exists anywhere. ros2 node info tells you which of them this particular node is responsible for.\n\nThat shift in viewpoint is what makes debugging possible. \"A topic exists\" is rarely useful. \"This node publishes it and that node subscribes to it\" is the thing you actually need to know.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "node-info.sh",
+                code: "ros2 node info /turtlesim\n\n/turtlesim\n  Subscribers:\n    /parameter_events: rcl_interfaces/msg/ParameterEvent\n    /turtle1/cmd_vel: geometry_msgs/msg/Twist\n  Publishers:\n    /parameter_events: rcl_interfaces/msg/ParameterEvent\n    /rosout: rcl_interfaces/msg/Log\n    /turtle1/color_sensor: turtlesim/msg/Color\n    /turtle1/pose: turtlesim/msg/Pose\n  Service Servers:\n    /clear: std_srvs/srv/Empty\n    /kill: turtlesim/srv/Kill\n    /spawn: turtlesim/srv/Spawn\n    ...\n  Action Servers:\n    /turtle1/rotate_absolute: turtlesim/action/RotateAbsolute",
+                caption:
+                  "Illustrative output, abridged at the ellipsis. Service lists are longer than shown and parameter-related entries vary by ROS 2 version. What matters is the shape: four labelled sections, with /turtle1/cmd_vel appearing under Subscribers.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "node list is the census. node info is the interview.",
+                body: "One tells you who is out there. The other tells you what a specific node thinks it's connected to — which is very often not what you assumed when you wrote it.\n\nWhen one node in a working system starts misbehaving, this is the command that narrows the problem fastest. It comes back in every remaining module.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Interrogate both nodes",
+                instructions:
+                  "Start turtlesim and teleop again if they're not running — same two commands as Module 4. Then read the output rather than skimming it.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Use ros2 node info on both nodes and answer two questions from the output alone: which node publishes /turtle1/cmd_vel and which subscribes to it, and which of the two offers services.",
+                  },
+                  steps: [
+                    {
+                      title: "Interview the simulator",
+                      content: {
+                        body: "Look specifically at where /turtle1/cmd_vel appears — under Subscribers or under Publishers:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 node info /turtlesim",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Interview the driver",
+                      content: {
+                        body: "Now the other one. The same topic should appear — in the opposite section:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 node info /teleop_turtle",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Say the direction out loud",
+                      content: {
+                        body: "Teleop publishes /turtle1/cmd_vel. Turtlesim subscribes to it. Data flows from the thing reading your keyboard to the thing drawing the turtle — which is the direction the arrow pointed in Module 4's diagram, now confirmed from the system itself rather than taken on trust.\n\nGetting publisher and subscriber the wrong way round is the single most common misreading of this output, and it makes Module 6 twice as hard. Worth thirty seconds of care now.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You can now say what a node is, tell it apart from the package and executable that started it, and interrogate one.\n\nThe more interesting question is why anyone would build a robot out of dozens of these instead of one program that does everything. That's next.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "why-systems-are-split-into-nodes",
+          title: "Why Systems Are Split Into Nodes",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Splitting a program into a dozen communicating processes is more work than writing one program. More things to start, more things to name, more places for a bug to hide.\n\nNobody does that for elegance. Here is what it actually buys — and, at the end of this lesson, what it costs.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Picture a mobile robot that drives itself around a building.\n\nSomething reads the laser scanner. Something works out where the robot is from those readings. Something decides where to go next. Something turns that decision into wheel speeds. Something watches the battery. Something reads the camera.\n\nIn ROS 2 each of those is its own node — its own process, with its own job, started and stopped independently. Several of them were probably written by different people, and at least one was almost certainly written by someone outside the team entirely and reused without modification.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-5-real-robot-nodes.png",
+                alt: "A node graph of a mobile robot: lidar_driver and camera_driver feed localisation over /scan and /image_raw; localisation feeds path_planner over /pose; path_planner feeds motor_controller over /cmd_vel; battery_monitor publishes /battery_state. The lidar_driver box is shaded and tagged \"written by someone else, reused unchanged\".",
+                caption:
+                  "Six nodes, each one job. A working robot runs dozens — and no one person wrote them all.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Four things that buys you, each of them concrete rather than architectural.\n\nIndependent failure. If the path planner crashes, the motor controller does not. It keeps running, keeps accepting commands, and is still there when the planner is restarted. In a single-program design, one bad pointer takes down the wheels too.\n\nReuse. A driver written for one laser scanner works on the next robot that uses the same scanner, unchanged. This is why the lidar node in the diagram above is shaded — most teams did not write theirs.\n\nLanguage independence. A Python node and a C++ node work together with no bridge, no bindings and no translation layer, because they communicate over topics rather than by calling each other's functions. You will write Python in this course and use C++ nodes without noticing.\n\nDistribution. Nodes can run on different computers on the same network. The heavy vision processing on a workstation, the motor driver on the robot itself — and neither one needs to know the difference.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Kill one node and watch the other survive",
+                instructions:
+                  "Thirty seconds, no new commands. The claim about independent failure is one you can test rather than believe.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "With turtlesim and teleop both running, stop teleop only — and confirm from three different angles that turtlesim neither noticed nor cared.",
+                  },
+                  steps: [
+                    {
+                      title: "Stop teleop, and only teleop",
+                      content: {
+                        body: "Click the teleop terminal and press Ctrl+C. Leave the turtlesim terminal completely alone.",
+                      },
+                    },
+                    {
+                      title: "Look at the simulator",
+                      content: {
+                        body: "The turtle is still on screen. The turtlesim terminal shows no error, no warning, and hasn't exited. From its point of view nothing happened at all — which is the point.",
+                      },
+                    },
+                    {
+                      title: "Take the census",
+                      content: {
+                        body: "Confirm it from the system rather than by eye. One name should be gone; the other should still be there:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 node list   # /turtlesim only — /teleop_turtle is gone",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Bring it back",
+                      content: {
+                        body: "Restart teleop and press an arrow key. It works immediately. You reconfigured nothing, restarted nothing else, and told neither program about the other:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 run turtlesim turtle_teleop_key",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That is the entire argument, and you just ran it.\n\nA component of a running system was killed and restarted, and the rest of the system did not notice. In a single-program design that sequence is called a crash followed by a restart, and everything else goes down with it. Here it's called Tuesday.\n\nOn a real robot this is not a party trick. It's how you restart a misbehaving path planner without power-cycling a machine that's holding something heavy.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Module 1 argued this. You just did the experiment.",
+                body: "Module 1 made the case that monolithic robotics software doesn't scale, and drew monolith-versus-modular as a diagram. It was a claim you were asked to accept on the strength of the argument.\n\nYou now have evidence. Same idea, your machine, thirty seconds.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now the honest half, because a module that only sells the benefits produces engineers who split everything into forty pieces.\n\nMore nodes means more processes to start, supervise and shut down — which is why launch files exist, and why they get a whole module later. It means a bug can now live between two nodes rather than inside either one, in the space where they disagree about a topic name or a message type. It means debugging spans several terminals at once, which is why RQt and the inspection tools matter. And data crossing a process boundary is not free — it is cheap, and almost always worth it, but it is not the zero cost of a function call.\n\nDeciding how many nodes, and where to draw the lines between them, is real engineering judgement. It is not a rule you can look up.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "\"One node per job\" hides a hard question",
+                body: "The guideline is one node, one job. The trouble is that \"job\" is doing enormous work in that sentence.\n\nA node per sensor is almost always right. A node per function is almost always wrong — follow that instinct and you end up with forty processes, a launch file nobody understands, and a debugging problem worse than the monolith you were avoiding.\n\nWhen in doubt, start with fewer and split when something concrete forces you to — a piece that needs to restart independently, or run on a different machine, or be reused elsewhere.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You've seen why systems are split up, and what it costs to split them badly.\n\nNext: writing one yourself. About fifteen lines, and no build system anywhere in sight.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "writing-your-first-node",
+          title: "Writing Your First Node",
+          durationMinutes: 24,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "This is a plain Python file that you run with python3. No workspace, no package, no build step.\n\nThat is deliberate, and it's worth saying why before you wonder what's being hidden from you. Workspaces, packages and colcon are real, they matter, and they get a full module later. But none of them is what a node is. Dragging them in now would mean your first node fails because an entry point string had a typo, and you'd spend the evening debugging build configuration instead of learning the thing this module is about.\n\nSo: one file, run it directly, and Module 10 will explain why that stops being good enough.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Why import rclpy works at all",
+                body: "You can import ROS 2's Python library from an ordinary script because sourcing /opt/ros/jazzy/setup.bash put it on this shell's Python path.\n\nThat's the same sourcing from Module 3 Lesson 3 — the one that felt like a chore at the time. This is the first moment it does something you can see. If import rclpy fails, the fix is not pip; it's echo $ROS_DISTRO, and then sourcing.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Build it in three stages. Run each one before reading the next — every stage does something different, and the differences are the lesson.\n\nCreate a file called my_first_node.py anywhere you like. Your home directory is fine.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "my_first_node.py — stage 1",
+                code: "import rclpy\nfrom rclpy.node import Node\n\nrclpy.init()\nnode = Node(\"my_first_node\")\nrclpy.shutdown()",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Run it with python3 my_first_node.py. It returns to the prompt instantly and prints nothing.\n\nThat is the correct outcome. A node was created — briefly. Then the script reached the end and the process exited, taking the node with it.\n\nThis is the first lesson's point made concrete: a node is a running process, so a node that doesn't stay running isn't a node you can do anything with. If you'd run ros2 node list in another terminal you would never have caught it; it didn't exist long enough.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "my_first_node.py — stage 2",
+                code: "import rclpy\nfrom rclpy.node import Node\n\nrclpy.init()\nnode = Node(\"my_first_node\")\n\n# Keep this node alive and let ROS 2 run it.\nrclpy.spin(node)\n\nnode.destroy_node()\nrclpy.shutdown()",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Run it again. This time it doesn't come back — the terminal sits there, apparently doing nothing, until you press Ctrl+C.\n\nspin is worth understanding rather than copying. It hands control of your program over to ROS 2 and says: keep this node alive, and call my code when something happens. It is the reason the process doesn't exit, and it is the reason Ctrl+C is how you stop a node.\n\nThe common misreading is that spin is a wait — a sleep with a nicer name. It isn't. It's the thing that runs your code. Nothing in a ROS 2 node happens outside it.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Write it, run it, and find yourself in the census",
+                instructions:
+                  "Two terminals. The second one is where this becomes real.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Get stage 2 running, then find your own node's name in ros2 node list from a different terminal — the same command that showed you turtlesim and teleop in Module 4.",
+                  },
+                  steps: [
+                    {
+                      title: "Run stage 1 and watch it exit",
+                      content: {
+                        body: "Don't skip this. Seeing it exit instantly is what makes spin meaningful thirty seconds later:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "python3 my_first_node.py   # returns immediately, prints nothing",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Add spin and run it again",
+                      content: {
+                        body: "Now it should stay running and not return to the prompt. Leave it running.",
+                      },
+                    },
+                    {
+                      title: "Take the census from a second terminal",
+                      content: {
+                        body: "Open a new terminal — check it's sourced if you skipped the ~/.bashrc step — and look for your own node's name:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 node list\n# /my_first_node",
+                              caption:
+                                "Illustrative output. If turtlesim or teleop are still running from earlier lessons, their names appear here too — that's fine and expected.",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Notice what just happened",
+                      content: {
+                        body: "The program you wrote is in the same list, produced by the same command, as the simulator you were given. There is no separate category for beginner nodes. From the system's point of view yours is simply a node, exactly like the others.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-5-node-program-shape.png",
+                alt: "The shape of a ROS 2 node program as four stages with their code beside them: start ROS 2 for this process (rclpy.init), create the node, hand control to ROS 2 (rclpy.spin) with a branch showing that your callbacks run from spin rather than spin being a wait, and clean up node first (destroy_node then shutdown).",
+                caption:
+                  "Every ROS 2 node program has this shape. Your code lives in the callbacks, not in a loop you write yourself.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "my_first_node.py — stage 3",
+                code: "import rclpy\nfrom rclpy.node import Node\n\n\nclass MyFirstNode(Node):\n    def __init__(self):\n        super().__init__(\"my_first_node\")\n        self.count = 0\n        # Call self.on_timer() once every second.\n        self.create_timer(1.0, self.on_timer)\n\n    def on_timer(self):\n        self.count += 1\n        self.get_logger().info(f\"Still here. Tick {self.count}.\")\n\n\ndef main():\n    rclpy.init()\n    node = MyFirstNode()\n    try:\n        rclpy.spin(node)\n    except KeyboardInterrupt:\n        pass\n    finally:\n        node.destroy_node()\n        rclpy.shutdown()\n\n\nif __name__ == \"__main__\":\n    main()",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Run this one and it logs a line every second until you stop it.\n\nTwo things changed. The node is now a class that inherits from Node, which is how essentially every real ROS 2 node is written — it gives you somewhere to keep state, like that counter. And there's a timer, which asks ROS 2 to call your method once a second.\n\nThat timer is the important one. You did not write a loop. You handed ROS 2 a function and said \"call this every second,\" and spin does the calling. That callback pattern is the whole of Module 6: a subscriber is the same idea, except the trigger is a message arriving instead of a second passing.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "Use the logger, not print()",
+                body: "print() works and nobody will stop you. But self.get_logger().info() stamps every line with the node's name and a timestamp, and publishes it on /rosout alongside every other node's output.\n\nWith one node running, that's a nicety. With twelve running across three terminals, it's the difference between a debuggable system and a wall of anonymous text where you cannot tell which process said what.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "cpp",
+                filename: "the same node in C++ (read only)",
+                code: "#include \"rclcpp/rclcpp.hpp\"\n\nclass MyFirstNode : public rclcpp::Node {\npublic:\n  MyFirstNode() : Node(\"my_first_node\"), count_(0) {\n    timer_ = create_wall_timer(std::chrono::seconds(1),\n                               [this]() { on_timer(); });\n  }\n\nprivate:\n  void on_timer() {\n    RCLCPP_INFO(get_logger(), \"Still here. Tick %d.\", ++count_);\n  }\n  rclcpp::TimerBase::SharedPtr timer_;\n  int count_;\n};\n\nint main(int argc, char ** argv) {\n  rclcpp::init(argc, argv);\n  rclcpp::spin(std::make_shared<MyFirstNode>());\n  rclcpp::shutdown();\n}",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You are not expected to write that, and this course stays in Python throughout.\n\nRead it for one reason: init, a node object with a name, a timer, spin, shutdown. All five are there, in the same order, doing the same jobs. The concept transfers completely. Only the syntax changes.\n\nThat is not a coincidence or a nicety — it's the language independence from Lesson 2, seen from the inside. A C++ node and a Python node are the same kind of thing to ROS 2, which is why they interoperate without anyone building a bridge.",
+              },
+            },
+            {
+              type: "FILE",
+              data: {
+                href: "/courses/ros2-fundamentals/module-5-first-node.py",
+                label: "my_first_node.py — the finished stage 3 script",
+                description:
+                  "The complete, commented version of what you just built. If you fought a typo, diff against this rather than starting over. Run it with python3, not ros2 run — it deliberately isn't a package.",
+                sizeLabel: "2 KB",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You've written a node, run it, and found it in the system's own list.\n\nNext: what happens when there are several of them — including the one mistake that produces the strangest symptoms in this whole module, because it produces no error at all.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "naming-discovery-and-many-nodes",
+          title: "Naming, Discovery, and Many Nodes",
+          durationMinutes: 22,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "A node's name is not decoration. It's the address every other piece of tooling uses to talk about it.\n\nros2 node info takes a name. Every debugging command you've learned takes a name. So a node called my_first_node in a system of thirty nodes is a node you cannot usefully talk about — and on a real robot you will have several instances of the same program running at once, which makes the hard-coded name in your script an active problem rather than a cosmetic one.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "renaming.sh",
+                code: "# Rename at launch, without editing the file:\nros2 run turtlesim turtlesim_node --ros-args -r __node:=simulator_a\n\n# The same works for your own script:\npython3 my_first_node.py --ros-args -r __node:=left_wheel\n\n# Confirm it took effect:\nros2 node list\n# /left_wheel",
+                caption:
+                  "Illustrative output. Your list will also show anything else you have running. The point is that the name changed without the file changing.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That -r __node:= is your first taste of remapping — telling a node to use a different name for something at launch rather than at edit time. Node names are the narrowest and most useful case; the general form covers topics too, and that's Module 9.\n\nNow discovery, which Module 4 asked you to notice and this module can finally explain.\n\nWhen a node starts, it announces itself and what it publishes and subscribes to. Other nodes are listening for exactly those announcements, and they match up automatically. There is no central server, no master process, nothing that has to be started first.\n\nThat last point is a genuine difference from ROS 1, where a roscore had to be running before anything else would work — and it's why start order didn't matter in Module 4. Turtlesim didn't need to exist before teleop, or after it.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "No master also means no fence",
+                body: "Because there's no central process deciding who belongs, a node running on another machine on the same network can join your system without you doing anything at all.\n\nThat's genuinely useful — it's how the distribution benefit from Lesson 2 works in practice. It's also occasionally startling, particularly in a classroom or shared office where several people are running the same tutorial at once and suddenly seeing each other's nodes.\n\nThe fix is ROS_DOMAIN_ID, which partitions networks into separate ROS 2 systems. That's Module 9 — worth knowing it exists if you hit this before then.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Which brings us to the failure mode that makes this lesson worth its length.\n\nWhat happens if two nodes have the same name?\n\nROS 2 does not stop you. There's no error, no warning, no refusal to start. Both processes run. Both work. Both log happily.\n\nThe only visible symptom is that ros2 node list prints the same name twice — and that's easy to read as a display quirk rather than a problem. Meanwhile every tool that resolves a node name has become ambiguous, because the name no longer identifies one thing. Commands don't fail; they just answer a question that now has two answers.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-5-name-collision.png",
+                alt: "Two identical node boxes, both named /my_first_node, both marked healthy and logging in separate terminals. Dashed red arrows fork upward from a ros2 node info command toward both boxes, labelled \"which one?\". Below, ros2 node list prints /my_first_node twice, annotated as the only warning you get.",
+                caption:
+                  "Nothing crashed. The system is ambiguous rather than broken — which is harder to notice and harder to diagnose.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Debugging challenge: results that keep changing",
+                instructions:
+                  "This one has no error message anywhere. Work the symptom systematically — that's the skill being taught here, more than the specific answer.",
+                config: {
+                  type: "DEBUGGING",
+                  scenario: {
+                    body: "You start your node from Lesson 3 in one terminal. In a second terminal you start the same script again, because you want two of them running.\n\nBoth terminals look completely healthy. Both are logging their tick once a second, exactly as expected. Nothing has errored and nothing has crashed.\n\nThen ros2 node info /my_first_node starts returning results that don't match what you expect — and, stranger, results that differ between runs of the same command.\n\nWhat's happened, and how would you confirm it before changing anything?",
+                  },
+                  hints: [
+                    "Before investigating either node, take the census. Run ros2 node list and read every line carefully — including the ones that look like duplicates of each other. Count them.",
+                    "The same name appears twice. That isn't a display bug: there really are two nodes, and they really are both called the same thing. Now reconsider the command you were running — what can ros2 node info /my_first_node possibly mean when the name identifies two things?",
+                    "Every node-targeting command takes a name, not a process id. There's nothing else for it to go on. What should a tool do when the name it was handed matches two different nodes?",
+                  ],
+                  rootCause: {
+                    body: "Both processes claimed the node name my_first_node, because the name is hard-coded in the script and you ran that script twice.\n\nA node's name is its address in the system, and ROS 2 does not enforce uniqueness — it will let two nodes share a name and carry on without comment. Every tool that resolves that name is then ambiguous, which is exactly why the results looked inconsistent rather than wrong. Nothing failed. The question simply stopped having a single answer.\n\nThis is worth sitting with, because it breaks a habit. Most of the bugs in this course so far announced themselves: command not found, Permission denied, a turtle that wouldn't move. This one announces nothing. Inconsistency is the symptom.",
+                  },
+                  solution: {
+                    body: "Give each instance a distinct name at launch rather than editing the file twice. Stop the second one, and restart it renamed:",
+                    visuals: [
+                      {
+                        kind: "CODE",
+                        data: {
+                          language: "bash",
+                          code: "python3 my_first_node.py --ros-args -r __node:=my_second_node\n\nros2 node list\n# /my_first_node\n# /my_second_node   <- two different names, no ambiguity",
+                          caption:
+                            "Illustrative output. Anything else you have running appears here too. The fix is confirmed by two different names, not by an absence of errors — there were never any errors.",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Run a three-node system",
+                instructions:
+                  "Goal only, no procedure. Every command you need appeared earlier in this module.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Start three copies of your Lesson 3 node at the same time, each with a distinct and meaningful name of your own choosing — something like left_wheel, right_wheel and battery_monitor rather than node1, node2, node3.\n\nConfirm all three appear with distinct names, then interrogate exactly one of them and explain how the system knew which one you meant.",
+                  },
+                  successCriteria: [
+                    "Three copies of the same script are running simultaneously, in three terminals.",
+                    "ros2 node list shows three distinct names, with no duplicates.",
+                    "You renamed them at launch rather than by editing the file three times.",
+                    "ros2 node info on one of them returns that node specifically, and you can say why that worked here but not in the debugging exercise.",
+                  ],
+                  hints: [
+                    "You are not editing my_first_node.py at all for this. Everything happens on the command line.",
+                    "The renaming syntax is in this lesson's first CODE block. It goes after the script name, not before it.",
+                    "If a name comes back with a leading slash in node list and you typed it without one, that's normal — pass it to node info the way node list printed it.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 5 Check: Nodes, Names, and Why Systems Split",
+                description:
+                  "Five questions on what you built and observed. The explanations carry the teaching — each one names the concept to revisit if the answer surprised you.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "ros2 node list shows /my_first_node twice. Nothing has errored, and both terminals look healthy. What has happened, and why does it matter?",
+                    options: [
+                      { id: "ambiguous", label: "Two processes claim the same node name, so every name-targeting tool is now ambiguous" },
+                      { id: "display", label: "A display glitch in node list — there is really only one node" },
+                      { id: "crashed", label: "One node has crashed and is being shown twice before it disappears" },
+                      { id: "harmless", label: "Nothing — duplicate names are normal and ROS 2 resolves them automatically" },
+                    ],
+                    correctOptionIds: ["ambiguous"],
+                    explanation:
+                      "ROS 2 does not enforce unique node names. Both nodes run happily, which is precisely the problem: there is no error to notice, and the duplicated line in node list is the only signal you get. Tools like ros2 node info take a name and nothing else, so once a name matches two nodes the answer stops being well-defined — you see inconsistency rather than failure. Fix it by renaming at launch with --ros-args -r __node:=<name>.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Your robot's path planner node crashes while the robot is driving. What happens to the motor controller node running alongside it?",
+                    options: [
+                      { id: "keeps-running", label: "It keeps running, unaffected — it is a separate process" },
+                      { id: "crashes-too", label: "It crashes too, since nodes in one system share a process" },
+                      { id: "restarts", label: "ROS 2 automatically restarts both nodes together" },
+                      { id: "blocks", label: "It blocks and waits until the planner comes back" },
+                    ],
+                    correctOptionIds: ["keeps-running"],
+                    explanation:
+                      "Independent failure is the concrete benefit of splitting a system into processes, and you tested it in Lesson 2 by killing teleop while turtlesim carried on without noticing. The motor controller keeps running and keeps accepting commands; it simply stops receiving new ones until the planner is restarted. Nothing restarts anything automatically in plain ROS 2 — supervising and restarting nodes is what launch files and process managers are for, which is Module 11.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You want to know which topics one specific node publishes and which it subscribes to. Which command?",
+                    options: [
+                      { id: "node-info", label: "ros2 node info <name>" },
+                      { id: "node-list", label: "ros2 node list" },
+                      { id: "topic-list", label: "ros2 topic list" },
+                      { id: "pkg-list", label: "ros2 pkg list" },
+                    ],
+                    correctOptionIds: ["node-info"],
+                    explanation:
+                      "node list is the census — who is out there. node info is the interview — what one specific node thinks it is connected to. topic list is the closest wrong answer and worth being clear about: it tells you which topics exist across the whole system, but says nothing about which node is responsible for any of them, which is usually the thing you actually need when debugging.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "In the command ros2 run turtlesim turtlesim_node, which part is the node's name?",
+                    options: [
+                      { id: "neither", label: "Neither — the node is called /turtlesim, and you can only learn that by asking the running system" },
+                      { id: "turtlesim-node", label: "turtlesim_node — the second argument is always the node name" },
+                      { id: "turtlesim", label: "turtlesim — the first argument is always the node name" },
+                      { id: "ros2-run", label: "ros2 run — the command sets the name automatically" },
+                    ],
+                    correctOptionIds: ["neither"],
+                    explanation:
+                      "Three different things share similar words here: turtlesim is the package, turtlesim_node is the executable, and /turtlesim is the node name that appears in ros2 node list. You cannot derive the node name from the command — it is chosen inside the program. Teleop makes this unmissable: the executable is turtle_teleop_key and the node is /teleop_turtle, which are not even the same words in the same order.",
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "Because a Python node and a C++ node are written in different languages, they need a bridge or translation layer to communicate.",
+                    correctAnswer: false,
+                    explanation:
+                      "False. Nodes communicate over topics, services and actions — not by calling each other's functions — so the language boundary never arises. You saw the same node written twice in this lesson, and init, a named node object, a timer, spin and shutdown appeared in both. That is exactly why a team can reuse a driver someone else wrote without caring what language it was written in, which was the reuse argument from Lesson 2 seen from the inside.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That's the module.\n\nA node is a named running process with four kinds of connection, distinct from the package and executable that started it (Lesson 1). Systems are split into many of them for independent failure, reuse, language independence and distribution — at a real cost in moving parts (Lesson 2). You wrote one in about fifteen lines and found it in the system's own census (Lesson 3). Names are addresses, discovery needs no master, and duplicate names produce ambiguity rather than errors (this lesson).\n\nYour node runs, logs, and has a name. But it doesn't talk to anything — it's a node in a system of one.\n\nModule 6 is the big one: topics, publishers and subscribers. It answers the question Module 4 left open on purpose, about why the turtle stops moving the moment you let go of the arrow key. And by the end of it your node will be driving the turtle itself, with teleop removed entirely.",
+              },
+            },
+          ],
+        },
+      ],
+    },
   ],
 };
 
