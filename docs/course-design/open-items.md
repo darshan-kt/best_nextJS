@@ -120,6 +120,73 @@ file in your home directory; here is why that does not survive a second machine
 or a second developer" — rather than introducing packaging as an unexplained
 ritual.
 
+**Strengthened by Module 6 (designed 2026-08-27).** Module 6 adds a second and
+a third standalone script — `module-6-turtle-driver.py` and
+`module-6-turtle-loop.py` — which must be started in the right combination, in
+separate terminals, alongside turtlesim. Module 6 Lesson 5's debugging exercise
+is *caused* by starting the wrong combination. The loose-script problem is
+therefore no longer hypothetical by the time Module 10 arrives, and the same
+lived experience is the motivation Module 11 (launch files) needs. Both design
+passes should read `module-6-design.md`'s "Continuation" section.
+
+---
+
+## 6. Module 6's one video candidate is review-gated and unwatched
+
+`module-6-design.md`'s research record carries one candidate that was neither
+accepted nor rejected: **"ROS2 Publisher subscriber and DDS pipeline"**,
+EraBotLabs, `https://www.youtube.com/watch?v=nKxdOQOYIKk`, verified at 242s
+(4m02s), published 2024-05-10.
+
+Length and scope are right and the pub/sub model is distribution-independent,
+so the pre-Jazzy date is not disqualifying. What cannot be checked from
+metadata is §15's teaching-quality and production-quality criteria — and the
+title foregrounds "DDS pipeline" while Module 2 told the learner in as many
+words that this course would not go deeper on DDS than one paragraph.
+
+**To close:** a human watches all four minutes and decides two things — (a) is
+the teaching and production quality good enough for this course, and (b) is DDS
+named rather than walked through, leaving Module 2's declared ceiling intact.
+If both hold, it embeds in Module 6 Lesson 1 after block 4. If either fails,
+Module 6 ships without video, which is what Lesson 1 is designed for.
+
+Worth noting either way: this would be **two consecutive modules with no
+video** (Module 5 rejected all three of its candidates). That is a signal about
+the material available at this altitude, not evidence that §14 is wrong — but a
+third in a row would be worth treating as a strategy question rather than three
+independent decisions.
+
+---
+
+## 7. QoS is not owned by any module in the curriculum
+
+`module-6-design.md`, Flag 5. Module 6 Lesson 3 is the first place a learner
+meets a QoS setting: the `10` in
+`self.create_publisher(Twist, '/turtle1/cmd_vel', 10)` is a queue depth. Module
+6 handles that responsibly — one sentence on what the number does, one CALLOUT
+naming QoS as the family it belongs to and saying it does not matter here — so
+nothing in this module is misleading.
+
+The gap is the curriculum's, not Module 6's. Searching §9 of
+`ROS2_COURSE_DESIGN.md`: QoS is not in Module 2 (explicitly excluded by the
+depth ceiling recorded in `module-2-dds-depth-decision.md`), not in Module 9
+(Parameters, Messages, and Interfaces), not in Module 12 (Lifecycle Nodes), and
+not anywhere else. **No module teaches it.**
+
+That matters because QoS incompatibility is one of the most common real
+failures in production ROS 2: a subscriber that receives nothing from a
+correctly-named, correctly-typed, actively-publishing topic. A learner who
+finishes this course cannot diagnose it, and — worse — has been trained by
+Module 6 Lesson 4 to conclude that name and type matching is sufficient, which
+is true for everything they will meet in this course and not true in general.
+
+**To close:** assign it. Module 9 is the most natural home (it already owns
+messages and interfaces, and QoS is the other half of "what governs whether two
+endpoints connect"), but Module 13 (RQt and development tools) is defensible if
+it is framed as a diagnostic subject. Whichever module takes it should also
+revisit Module 6 Lesson 2's contract diagram, which currently draws name and
+type as the complete matching condition.
+
 ---
 
 ## Closed items, for reference

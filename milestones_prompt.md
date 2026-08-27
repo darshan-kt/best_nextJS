@@ -160,3 +160,36 @@ Use Playwright to screenshot: quiz question screen, submission, and results scre
 §24 (Accessibility) applies here too — keyboard navigation through questions and clear focus states matter for a graded flow, don't let this one slip the way captions did in Milestone 6.
 
 Wait for my go-ahead on the plan before implementing — especially the attempt-policy and client/server scoring split, since both are product decisions with real implications, not just implementation details.
+
+
+
+Completed
+
+Four lessons, 46 blocks (10/10/16/10), four diagrams, a downloadable starter script, three GUIDED exercises plus DEBUGGING and INDEPENDENT, five-question quiz. No video, as designed.
+
+All four design flags implemented as specified. Lesson 3's node is a standalone python3 script with no packaging, and the lesson opens by saying why rather than leaving the learner wondering what's being withheld. The three-stage progression stands in for live coding. "Lifecycle" appears nowhere — init/create/spin/shutdown is "the shape of a node program" in the prose, the diagram title and the alt text, keeping the word free for Module 12.
+
+Drift from the approved design — both additive
+
+- Lesson 3 is 16 blocks, not the 12 the design implied. Each CODE stage needed a TEXT after it explaining what running it just proved. The design folded those into the stage descriptions, but on the page a code block followed immediately by another code block loses the progression entirely — which is the whole point of staging it.
+- The C++ block gained a following TEXT tying it back to Lesson 2's language-independence argument, rather than leaving the comparison to stand alone.
+
+Caught by checking rather than assuming
+
+Two apparent defects in the exercise reveal were both my own automation. The hint button relabels from "Show a hint" to "Show another hint" after the first click, so my selector silently stopped matching and my next click landed on the other exercise's button — the same class of error as Module 3's pass, which I should have anticipated. Re-run scoped correctly: all three debugging hints reveal in order, then root cause and solution with its captioned CODE visual; all three independent-exercise hints reveal alongside the success criteria. No product defect.
+
+The starter script is syntax-checked with py_compile rather than assumed valid, since it ships as a download learners will diff against.
+
+Validation
+
+Typecheck, lint, unit (177 passed, 3 self-retired), integration (41), and production build all pass. Seeded twice, no duplication. Playwright walkthrough: zero console errors, all four diagrams at the 704px box, every authored-output block carrying a path D caption, correct python/bash/cpp language labels, the .py serving at 2270 bytes, quiz at 100%, progress 18/21. Restored to DRAFT.
+
+Cross-reference confirmed
+
+open-items.md item 5 now points Module 10's design pass at three specific things: the design flag with its reasoning, the seed lesson slug writing-your-first-node whose first block makes the promise "Module 10 will explain why that stops being good enough", and module-5-first-node.py as the concrete artefact to convert into a package.
+
+Still open, unchanged
+
+Path C built but paused and never run; Module 4's CODE blocks unwired to fixtures; the WSL2/VM display branch with no automated coverage; the signing-key risk currently unmonitored. All tracked in open-items.md.
+
+Module 6 — topics, publishers and subscribers — is the one the design calls "one of the strongest modules," and Modules 4 and 5 have both left promises pointing at it. Ready when you are.
