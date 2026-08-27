@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="64" font-size="34" font-weight="800" fill="#134e4a">Hardware to ROS 2: the pipeline</text>
+  <text x="64" y="96" font-size="19" fill="#64748b">Six stages from a spinning laser to a picture on screen.</text>
+
+  <!-- row 1: three stages -->
+  <g font-size="17" font-weight="700" fill="#134e4a">
+    <rect x="64" y="160" width="336" height="130" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="232" y="215" text-anchor="middle">1. Hardware</text>
+    <text x="232" y="242" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">RPLIDAR A2</text>
+    <text x="232" y="264" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">spins, measures distance</text>
+
+    <rect x="472" y="160" width="336" height="130" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="640" y="215" text-anchor="middle">2. Driver</text>
+    <text x="640" y="242" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">rplidar_ros</text>
+    <text x="640" y="264" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">reads the serial port</text>
+
+    <rect x="880" y="160" width="336" height="130" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1048" y="215" text-anchor="middle">3. ROS 2 Node</text>
+    <text x="1048" y="242" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">rplidar_node</text>
+    <text x="1048" y="264" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">packages one sweep</text>
+  </g>
+
+  <!-- row 2: three stages -->
+  <g font-size="17" font-weight="700" fill="#134e4a">
+    <rect x="64" y="380" width="336" height="130" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="232" y="435" text-anchor="middle">4. Topic</text>
+    <text x="232" y="462" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">/scan</text>
+    <text x="232" y="484" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">RELIABLE QoS</text>
+
+    <rect x="472" y="380" width="336" height="130" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="640" y="435" text-anchor="middle">5. Message</text>
+    <text x="640" y="462" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">sensor_msgs/msg/</text>
+    <text x="640" y="484" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">LaserScan</text>
+
+    <rect x="880" y="380" width="336" height="130" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1048" y="435" text-anchor="middle">6. Visualization</text>
+    <text x="1048" y="462" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">RViz2</text>
+    <text x="1048" y="484" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">no QoS override needed</text>
+  </g>
+
+  <!-- arrows: row 1 left-to-right, wrap down, row 2 left-to-right -->
+  <g stroke="#0d9488" stroke-width="4.5" marker-end="url(#arrow)" fill="none">
+    <line x1="404" y1="225" x2="468" y2="225"/>
+    <line x1="812" y1="225" x2="876" y2="225"/>
+    <path d="M 1048 294 C 1048 340, 1048 340, 640 340 C 400 340, 300 340, 232 376"/>
+    <line x1="404" y1="445" x2="468" y2="445"/>
+    <line x1="812" y1="445" x2="876" y2="445"/>
+  </g>
+
+  <text x="640" y="580" text-anchor="middle" font-size="18" fill="#475569">Every arrow above is a real, verified hop —</text>
+  <text x="640" y="608" text-anchor="middle" font-size="18" fill="#475569"><tspan font-weight="700" fill="#0f172a">topic name, message type and QoS confirmed from the driver's own source</tspan>, not assumed.</text>
+</svg>

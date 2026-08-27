@@ -1,6 +1,12 @@
 import { prisma } from "@/db/client";
 import type { ContentBlockType } from "@/db/generated/enums";
 import { exerciseConfigSchema, type ExerciseConfig } from "@/features/exercises/schemas";
+import type { HardwareDeviceDetail } from "@/features/hardware/queries";
+import {
+  deviceCardBlockDataSchema,
+  specTableBlockDataSchema,
+  type SpecTableBlockData,
+} from "@/features/hardware/schemas";
 import {
   calloutBlockSchema,
   codeBlockSchema,
@@ -17,6 +23,36 @@ import {
   type TextBlockData,
   type VideoBlockData,
 } from "./schemas";
+
+const hardwareDeviceSelect = {
+  id: true,
+  slug: true,
+  name: true,
+  manufacturer: true,
+  category: true,
+  summary: true,
+  heroImageSrc: true,
+  heroImageAlt: true,
+  supportStatus: true,
+  supportStatusNote: true,
+  driverPackage: true,
+  driverRepoUrl: true,
+  rosDistroCompat: true,
+  specs: {
+    orderBy: { sortOrder: "asc" as const },
+    select: {
+      key: true,
+      label: true,
+      value: true,
+      unit: true,
+      whyItMatters: true,
+    },
+  },
+  topics: {
+    orderBy: { sortOrder: "asc" as const },
+    select: { topicName: true, messageType: true, description: true },
+  },
+} as const;
 
 /**
  * Lesson content (application layer, §5).
@@ -62,6 +98,14 @@ export type RenderableBlock =
         config: ExerciseConfig;
       };
     }
+  | {
+      id: string;
+      position: number;
+      kind: "SPEC_TABLE";
+      device: HardwareDeviceDetail;
+      data: SpecTableBlockData;
+    }
+  | { id: string; position: number; kind: "DEVICE_CARD"; device: HardwareDeviceDetail }
   /** JSON present but did not match its type's schema — a bad row, not a
    *  bad request; rendered as an inline notice rather than failing the
    *  whole lesson (§28). */
@@ -82,6 +126,7 @@ export async function getLessonContentBlocks(
       data: true,
       quiz: { select: { id: true, title: true, description: true } },
       exercise: { select: { title: true, instructions: true, config: true } },
+      hardwareDevice: { select: hardwareDeviceSelect },
     },
   });
 
@@ -160,6 +205,30 @@ export async function getLessonContentBlocks(
                 config: parsedConfig.data,
               },
             }
+          : { id, position, kind: "INVALID", blockType: block.type };
+      }
+
+      case "SPEC_TABLE": {
+        if (!block.hardwareDevice) {
+          return { id, position, kind: "INVALID", blockType: block.type };
+        }
+
+        const parsedData = specTableBlockDataSchema.safeParse(block.data ?? {});
+        return parsedData.success
+          ? {
+              id,
+              position,
+              kind: "SPEC_TABLE",
+              device: block.hardwareDevice,
+              data: parsedData.data,
+            }
+          : { id, position, kind: "INVALID", blockType: block.type };
+      }
+
+      case "DEVICE_CARD": {
+        const parsedData = deviceCardBlockDataSchema.safeParse(block.data ?? {});
+        return block.hardwareDevice && parsedData.success
+          ? { id, position, kind: "DEVICE_CARD", device: block.hardwareDevice }
           : { id, position, kind: "INVALID", blockType: block.type };
       }
 

@@ -76,6 +76,11 @@ enum ContentBlockType {
   CALLOUT
   FILE
   EMBED
+  /// Robotics Hardware & Sensors course (Stage 1). Reference a
+  /// `HardwareDevice` rather than duplicating spec text — see that
+  /// model's own comment.
+  SPEC_TABLE
+  DEVICE_CARD
 }
 
 /// §18. CODE / MATCHING / ORDERING / DRAG_DROP / SIMULATION are future
@@ -322,6 +327,12 @@ model Section {
   course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons Lesson[]
 
+  /// Robotics Hardware & Sensors course (Stage 1): the section(s) that
+  /// teach a device, per `HardwareDevice.homeSection` — not the same
+  /// relation as blocks embedding that device elsewhere (see
+  /// `LessonContentBlock.hardwareDevice`).
+  hardwareDevices HardwareDevice[]
+
   @@index([courseId, position])
 }
 
@@ -404,15 +415,155 @@ model LessonContentBlock {
   quizId     String? @unique
   exerciseId String? @unique
 
+  /// Robotics Hardware & Sensors course (Stage 1): backs SPEC_TABLE and
+  /// DEVICE_CARD blocks. Deliberately *not* `@unique`, unlike quiz/exercise
+  /// above — the same device legitimately backs several blocks across
+  /// several lessons (its own module's spec table, a card referenced from
+  /// a later module, a comparison view), so this is a plain many-to-one FK
+  /// rather than the 1:1 shape quiz/exercise use.
+  hardwareDeviceId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  lesson   Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  quiz     Quiz?     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  exercise Exercise? @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  lesson         Lesson          @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  quiz           Quiz?           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  exercise       Exercise?       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  /// Restrict, not Cascade (§10, §41): deleting a device that a published
+  /// lesson still references should fail loudly, the same reasoning as
+  /// `Course.instructorId`'s existing Restrict.
+  hardwareDevice HardwareDevice? @relation(fields: [hardwareDeviceId], references: [id], onDelete: Restrict)
 
   @@index([lessonId, position])
   @@index([type])
+  @@index([hardwareDeviceId])
+}
+
+// ---------------------------------------------------------------------------
+// Hardware devices (Robotics Hardware & Sensors course, Stage 1)
+//
+// A catalog entity, not a content block: the design doc (§3, §21) requires
+// this to scale to an unbounded number of devices across sensor categories
+// that share almost no fields with each other, and to be referenced from
+// multiple places (its own teaching module, a DEVICE_CARD elsewhere, a
+// comparison view) without duplicating spec text in each one. Specs and
+// topics are their own one-row-per-item tables rather than rigid columns
+// or a JSON blob, so they stay genuinely structured and comparable (§20)
+// while remaining open to device types nobody has modeled yet.
+// ---------------------------------------------------------------------------
+
+enum HardwareCategory {
+  RGB_D_CAMERA
+  LIDAR_2D
+}
+
+/// Drives the legacy/deprecated warning surface (non-negotiables: never
+/// present outdated drivers without warning, and drive it from the model,
+/// not hand-written per lesson). `COMMUNITY_MAINTAINED` is distinct from
+/// `LEGACY`: the Astra Pro's confirmed Jazzy path (Stage 0 §2.2a) is a
+/// small, working, unofficial fork — genuinely usable, but not the same
+/// claim as an official upstream release, and not yet "flag this as
+/// risky" the way an unmaintained/deprecated driver is.
+enum HardwareSupportStatus {
+  ACTIVELY_MAINTAINED
+  COMMUNITY_MAINTAINED
+  LEGACY
+  DEPRECATED
+}
+
+model HardwareDevice {
+  id           String           @id @default(cuid())
+  /// Addressed as /hardware/<slug>.
+  slug         String           @unique
+  name         String
+  manufacturer String
+  category     HardwareCategory
+
+  /// One paragraph, "what problem does this solve" (§7) — stored once so
+  /// SPEC_TABLE, DEVICE_CARD and the comparison view all show identical
+  /// text rather than three hand-copied versions drifting apart.
+  summary String
+
+  /// Card/comparison-view visual, independent of any lesson's own IMAGE
+  /// blocks — a DEVICE_CARD must render correctly outside lesson context
+  /// entirely (the /hardware catalog), so it cannot borrow an image from
+  /// whichever lesson happens to embed the device.
+  heroImageSrc String?
+  heroImageAlt String?
+
+  driverPackage     String
+  driverRepoUrl     String
+  /// Postgres native array (e.g. ["jazzy"]) — a new supported distro is a
+  /// data change, not a migration.
+  rosDistroCompat   String[]
+  supportStatus     HardwareSupportStatus
+  /// Required in practice whenever status is LEGACY or DEPRECATED —
+  /// enforced by a Zod refinement at the write boundary (§9), the same
+  /// place `embedBlockSchema`'s start/end-seconds check lives, rather than
+  /// a DB CHECK constraint.
+  supportStatusNote String?
+
+  /// The section that owns this device's full teaching content. Nullable:
+  /// a catalog row can exist before Stage 7 writes its lesson (the
+  /// opposite direction — which lessons *embed* this device via
+  /// SPEC_TABLE/DEVICE_CARD — is `LessonContentBlock.hardwareDevice`,
+  /// unrelated to this field).
+  homeSectionId String?
+  homeSection   Section? @relation(fields: [homeSectionId], references: [id], onDelete: SetNull)
+
+  specs         HardwareDeviceSpec[]
+  topics        HardwareDeviceTopic[]
+  contentBlocks LessonContentBlock[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([homeSectionId])
+  @@index([category])
+}
+
+/// One row per (device, spec) rather than dedicated columns — a LiDAR's
+/// range and a depth camera's field of view don't share a column, and
+/// forcing every future device family (IMUs, motors, arms) into one wide
+/// spec table would mean a migration per device type, exactly what §21's
+/// "unlimited devices" requirement rules out. `key` is a stable slug used
+/// to match the same spec across devices for comparison (§20); `label`,
+/// `value` and `unit` are display strings because specs are not uniformly
+/// numeric ("115200 baud" vs "0.15 m – 12 m" vs "MJPEG, 640x480").
+model HardwareDeviceSpec {
+  id       String         @id @default(cuid())
+  deviceId String
+  device   HardwareDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  key   String
+  label String
+  value String
+  unit  String?
+
+  /// Required, not optional (§7, non-negotiables: never present a spec
+  /// without explaining why it matters). A required String column, not a
+  /// validated-elsewhere String? — the same reasoning `textBlockSchema`
+  /// already applies to every other required piece of authored content.
+  whyItMatters String
+  sortOrder    Int
+
+  @@index([deviceId, sortOrder])
+}
+
+/// One row per topic the device's driver publishes or subscribes to.
+/// Same reasoning as `HardwareDeviceSpec`: a camera has five or more
+/// topics, a 2D LiDAR has one, and forcing a fixed shape would not scale.
+model HardwareDeviceTopic {
+  id       String         @id @default(cuid())
+  deviceId String
+  device   HardwareDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  topicName   String
+  messageType String
+  description String
+  sortOrder   Int
+
+  @@index([deviceId, sortOrder])
 }
 
 // ---------------------------------------------------------------------------

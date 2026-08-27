@@ -91,7 +91,14 @@ type SeedContentBlock =
   | {
       type: "EXERCISE";
       exercise: { title: string; instructions?: string; config: SeedExerciseConfig };
-    };
+    }
+  /// Robotics Hardware & Sensors course (Stage 1). Like QUIZ/EXERCISE,
+  /// these reference a relational row rather than owning JSON — but the
+  /// row is looked up by slug rather than created inline, since the same
+  /// `HardwareDevice` is seeded once (see `HARDWARE_DEVICES` below) and
+  /// referenced from several blocks/lessons.
+  | { type: "SPEC_TABLE"; deviceSlug: string; specKeys?: string[] }
+  | { type: "DEVICE_CARD"; deviceSlug: string };
 
 /// Mirrors `exerciseConfigSchema` in `features/exercises/schemas.ts` —
 /// kept as a separate, looser type here rather than importing the Zod
@@ -160,6 +167,167 @@ const MDN_SAMPLE_IMAGE =
   "https://interactive-examples.mdn.mozilla.net/media/cc0-images/grapefruit-slice-332-332.jpg";
 const MDN_SAMPLE_VIDEO =
   "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+
+/// Robotics Hardware & Sensors course (Stage 1, `docs/hardware/
+/// STAGE_1_SCHEMA_PLAN.md`). Every spec/topic value below is traceable to
+/// something actually fetched and cited in `docs/hardware/
+/// JAZZY_DEVICE_VERIFICATION.md` — deliberately a short, conservative
+/// list rather than padded with plausible-sounding numbers pulled from
+/// memory (the same Verification Rule the findings doc itself follows).
+/// These are Stage 1 schema-validation fixtures, not the final device
+/// profiles — Stage 4 replaces this with the full researched spec set
+/// (range, FOV, resolution, sample rate) from manufacturer datasheets.
+interface SeedHardwareSpec {
+  key: string;
+  label: string;
+  value: string;
+  unit?: string;
+  whyItMatters: string;
+  sortOrder: number;
+}
+
+interface SeedHardwareTopic {
+  topicName: string;
+  messageType: string;
+  description: string;
+}
+
+interface SeedHardwareDevice {
+  slug: string;
+  name: string;
+  manufacturer: string;
+  category: "RGB_D_CAMERA" | "LIDAR_2D";
+  summary: string;
+  heroImageSrc?: string;
+  heroImageAlt?: string;
+  driverPackage: string;
+  driverRepoUrl: string;
+  rosDistroCompat: string[];
+  supportStatus:
+    | "ACTIVELY_MAINTAINED"
+    | "COMMUNITY_MAINTAINED"
+    | "LEGACY"
+    | "DEPRECATED";
+  supportStatusNote?: string;
+  /// Resolved to a real `homeSectionId` in a deferred pass after
+  /// `seedCurricula` has created the section — see `seed()`.
+  homeCourseSlug: string;
+  homeSectionTitle: string;
+  specs: SeedHardwareSpec[];
+  topics: SeedHardwareTopic[];
+}
+
+const HARDWARE_DEVICES: SeedHardwareDevice[] = [
+  {
+    slug: "rplidar-a2",
+    name: "RPLIDAR A2",
+    manufacturer: "Slamtec",
+    category: "LIDAR_2D",
+    summary:
+      "A 360° 2D laser scanner that measures distance to surrounding objects, publishing a live LaserScan a robot uses for obstacle detection, mapping and localization.",
+    driverPackage: "rplidar_ros",
+    driverRepoUrl: "https://github.com/Slamtec/rplidar_ros",
+    rosDistroCompat: ["jazzy", "humble"],
+    supportStatus: "ACTIVELY_MAINTAINED",
+    homeCourseSlug: "robotics-hardware-and-sensors",
+    homeSectionTitle: "RPLIDAR A2",
+    specs: [
+      {
+        key: "serial_baudrate",
+        label: "Serial Baud Rate (A2M8)",
+        value: "115200",
+        unit: "baud",
+        whyItMatters:
+          "Must match exactly for the driver to read valid data. Wrong baud rate is a classic real symptom: the device shows up in lsusb and the port opens, but scan data is garbled or absent — and it's model-specific (the A3 launch file defaults to 256000).",
+        sortOrder: 0,
+      },
+      {
+        key: "usb_bridge_chip",
+        label: "USB-Serial Bridge",
+        value: "Silicon Labs CP2102",
+        whyItMatters:
+          "This is the chip udev rules match on (vendor 10c4, product ea60) to give the device a stable /dev/rplidar symlink instead of a shifting /dev/ttyUSBn.",
+        sortOrder: 1,
+      },
+      {
+        key: "publisher_qos",
+        label: "Publisher QoS Reliability",
+        value: "RELIABLE",
+        whyItMatters:
+          "Confirmed directly from the driver's source, not assumed: RViz2's default LaserScan subscription is also RELIABLE, so no QoS override is needed to visualize this device's data.",
+        sortOrder: 2,
+      },
+    ],
+    topics: [
+      {
+        topicName: "/scan",
+        messageType: "sensor_msgs/msg/LaserScan",
+        description:
+          "One full 360° sweep per message — ranges, angles and intensities for everything the laser detected that rotation.",
+      },
+    ],
+  },
+  {
+    slug: "orbbec-astra-pro",
+    name: "Orbbec Astra Pro",
+    manufacturer: "Orbbec",
+    category: "RGB_D_CAMERA",
+    summary:
+      "An RGB-D camera reporting color video and per-pixel depth from two separate sensing paths — a UVC RGB camera and an OpenNI2 structured-light depth engine — that a robot combines into a 3D view of what's in front of it.",
+    driverPackage: "astra_camera",
+    driverRepoUrl: "https://github.com/yosefl20/ros2_astra_camera",
+    rosDistroCompat: ["jazzy"],
+    supportStatus: "LEGACY",
+    supportStatusNote:
+      "The manufacturer's actively-maintained driver (OrbbecSDK_ROS2) does not support this exact device — only newer, similarly-named models like the Astra Pro Plus. This Jazzy path comes from a small, independently-confirmed-working community fork of the legacy OpenNI2 driver, not an official release. Full verification record: docs/hardware/JAZZY_DEVICE_VERIFICATION.md §2.",
+    homeCourseSlug: "robotics-hardware-and-sensors",
+    homeSectionTitle: "Orbbec Astra Pro",
+    specs: [
+      {
+        key: "usb_identity_depth",
+        label: "USB Identity — Depth Engine",
+        value: "2bc5:0403",
+        whyItMatters:
+          "The depth/OpenNI2 half of this camera enumerates as its own USB device, separate from the RGB camera below — expect two lines in lsusb for one physical unit, not one.",
+        sortOrder: 0,
+      },
+      {
+        key: "usb_identity_rgb",
+        label: "USB Identity — RGB (UVC)",
+        value: "2bc5:0501",
+        whyItMatters:
+          "Confirmed from two independent sources (the udev rules file and the launch file's uvc_vendor_id/uvc_product_id defaults) — the RGB camera is a UVC device sharing this id with several other Orbbec models, which is why a learner must not assume one lsusb line means one identity.",
+        sortOrder: 1,
+      },
+      {
+        key: "color_format",
+        label: "Default Color Format",
+        value: "MJPEG, 640x480 @ 30fps",
+        whyItMatters:
+          "The launch file's own defaults — worth knowing before assuming a different resolution or format is required just to get a first image.",
+        sortOrder: 2,
+      },
+    ],
+    topics: [
+      {
+        topicName: "/camera/color/camera_info",
+        messageType: "sensor_msgs/msg/CameraInfo",
+        description: "Intrinsics for the RGB (UVC) sensor.",
+      },
+      {
+        topicName: "/camera/depth/camera_info",
+        messageType: "sensor_msgs/msg/CameraInfo",
+        description: "Intrinsics for the OpenNI2 depth sensor.",
+      },
+      {
+        topicName: "/camera/depth_registered/points",
+        messageType: "sensor_msgs/msg/PointCloud2",
+        description:
+          "Depth aligned to the color frame — confirmed from the launch file's own remap of depth/color/points to this name.",
+      },
+    ],
+  },
+];
 
 /// Curriculum for a couple of courses (§11: Course → Section → Lesson).
 /// Not every seeded course gets one — a course with an empty curriculum is
@@ -3589,6 +3757,66 @@ const CURRICULA: Record<string, SeedSection[]> = {
       ],
     },
   ],
+  /// Robotics Hardware & Sensors course (Stage 1 schema validation — see
+  /// docs/hardware/STAGE_1_SCHEMA_PLAN.md). One lesson per device,
+  /// deliberately thin: real curriculum design is Stage 3/4/5's job. This
+  /// exists so SPEC_TABLE/DEVICE_CARD have somewhere real to render, with
+  /// specs pulled from HARDWARE_DEVICES above rather than invented here.
+  "robotics-hardware-and-sensors": [
+    {
+      title: "RPLIDAR A2",
+      summary:
+        "A 360° 2D laser scanner and its verified path onto ROS 2 Jazzy.",
+      lessons: [
+        {
+          slug: "rplidar-a2-overview",
+          title: "RPLIDAR A2 — Device Overview",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The RPLIDAR A2 is a 360° 2D laser scanner from Slamtec. It spins a laser rangefinder continuously, publishing one reading per angle for a full sweep — the raw material almost every wheeled robot uses for obstacle detection, mapping and localization.\n\nThis page is a schema and integration check, not the full lesson — the complete device module, with working principle, physical setup and guided exercises, is designed in Stage 5.",
+              },
+            },
+            { type: "DEVICE_CARD", deviceSlug: "rplidar-a2" },
+            { type: "SPEC_TABLE", deviceSlug: "rplidar-a2" },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-data-pipeline.svg",
+                alt: "A six-stage horizontal pipeline: Hardware (RPLIDAR A2) to Driver (rplidar_ros) to ROS 2 Node (rplidar_node) to Topic (/scan, RELIABLE QoS) to Message (sensor_msgs/msg/LaserScan) to Visualization (RViz2, no QoS override needed), connected by arrows.",
+                caption:
+                  "Every hop confirmed from the driver's own source (Stage 0), not assumed. SVG, not a PNG capture — validates dangerouslyAllowSVG end to end.",
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Orbbec Astra Pro",
+      summary:
+        "An RGB-D camera with a confirmed but unofficial path onto ROS 2 Jazzy.",
+      lessons: [
+        {
+          slug: "orbbec-astra-pro-overview",
+          title: "Orbbec Astra Pro — Device Overview",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The Orbbec Astra Pro is an RGB-D camera: a standard color camera and a structured-light depth sensor in one housing, reporting color video and per-pixel distance as two related but genuinely separate data streams.\n\nThis page is a schema and integration check, not the full lesson — the complete device module is designed in Stage 5. The legacy status below is real, not a placeholder: this device's Jazzy path depends on a small community fork, documented in full in the Stage 0 findings.",
+              },
+            },
+            { type: "DEVICE_CARD", deviceSlug: "orbbec-astra-pro" },
+            { type: "SPEC_TABLE", deviceSlug: "orbbec-astra-pro" },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 interface SeedCourse {
@@ -3691,6 +3919,16 @@ const COURSES: SeedCourse[] = [
       "From \"I've heard of ROS 2\" to building, running, and debugging a real multi-node robotic system.",
     description:
       "A beginner-to-intermediate ROS 2 course pinned to Jazzy Jalisco on Ubuntu 24.04, teaching nodes, topics, services, actions, and simulation through real robotics problems, hands-on practice, and deliberate debugging exercises — not a command-reference tutorial.",
+    status: "DRAFT",
+    visibility: "PUBLIC",
+  },
+  {
+    slug: "robotics-hardware-and-sensors",
+    title: "Robotics Hardware & Sensors: From Components to ROS 2 Integration",
+    subtitle:
+      "Real robotics hardware — evaluated, connected, configured, and integrated with ROS 2, not just described.",
+    description:
+      "A scalable robotics hardware knowledge library and practical lab, starting with the RPLIDAR A2 and Orbbec Astra Pro on ROS 2 Jazzy and Ubuntu 24.04. Every driver claim is verified against upstream sources rather than assumed, and legacy hardware is taught openly rather than hidden.",
     status: "DRAFT",
     visibility: "PUBLIC",
   },
@@ -3806,7 +4044,13 @@ async function seed(prisma: PrismaClient): Promise<void> {
     },
   });
 
+  // Devices must exist before seedCurricula, since SPEC_TABLE/DEVICE_CARD
+  // blocks reference them by slug; homeSectionId is resolved in a second
+  // pass afterward, since the section a device lives in doesn't exist
+  // until seedCurricula creates it.
+  await seedHardwareDevices(prisma);
   await seedCurricula(prisma);
+  await seedHardwareDeviceHomeSections(prisma);
 
   const listed = COURSES.filter(
     (course) => course.status === "PUBLISHED" && course.visibility === "PUBLIC"
@@ -3817,6 +4061,95 @@ async function seed(prisma: PrismaClient): Promise<void> {
       `${COURSES.length - listed} intentionally hidden) for ${INSTRUCTOR_EMAIL}, ` +
       `curricula for ${Object.keys(CURRICULA).length}, and ${STUDENT_EMAIL}.`
   );
+}
+
+/**
+ * Hardware devices (Robotics Hardware & Sensors course, Stage 1). Upserts
+ * the device row plus its specs/topics as a full replace-on-update — specs
+ * and topics have no independent identity worth preserving across reseeds
+ * (unlike, say, `LessonProgress`), so `deleteMany` + `createMany` is
+ * simpler and safer than diffing than trying to match old rows to new
+ * ones by content.
+ */
+async function seedHardwareDevices(prisma: PrismaClient): Promise<void> {
+  for (const device of HARDWARE_DEVICES) {
+    const record = await prisma.hardwareDevice.upsert({
+      where: { slug: device.slug },
+      update: {
+        name: device.name,
+        manufacturer: device.manufacturer,
+        category: device.category,
+        summary: device.summary,
+        heroImageSrc: device.heroImageSrc ?? null,
+        heroImageAlt: device.heroImageAlt ?? null,
+        driverPackage: device.driverPackage,
+        driverRepoUrl: device.driverRepoUrl,
+        rosDistroCompat: device.rosDistroCompat,
+        supportStatus: device.supportStatus,
+        supportStatusNote: device.supportStatusNote ?? null,
+      },
+      create: {
+        slug: device.slug,
+        name: device.name,
+        manufacturer: device.manufacturer,
+        category: device.category,
+        summary: device.summary,
+        heroImageSrc: device.heroImageSrc ?? null,
+        heroImageAlt: device.heroImageAlt ?? null,
+        driverPackage: device.driverPackage,
+        driverRepoUrl: device.driverRepoUrl,
+        rosDistroCompat: device.rosDistroCompat,
+        supportStatus: device.supportStatus,
+        supportStatusNote: device.supportStatusNote ?? null,
+      },
+      select: { id: true },
+    });
+
+    await prisma.hardwareDeviceSpec.deleteMany({ where: { deviceId: record.id } });
+    await prisma.hardwareDeviceSpec.createMany({
+      data: device.specs.map((spec) => ({ ...spec, deviceId: record.id })),
+    });
+
+    await prisma.hardwareDeviceTopic.deleteMany({ where: { deviceId: record.id } });
+    await prisma.hardwareDeviceTopic.createMany({
+      data: device.topics.map((topic, index) => ({
+        ...topic,
+        deviceId: record.id,
+        sortOrder: index,
+      })),
+    });
+  }
+}
+
+/**
+ * Second pass, after `seedCurricula` has created the sections: point each
+ * device's `homeSectionId` at the section that actually teaches it. Split
+ * from `seedHardwareDevices` because of that ordering dependency, not
+ * because it's conceptually a separate step.
+ */
+async function seedHardwareDeviceHomeSections(prisma: PrismaClient): Promise<void> {
+  for (const device of HARDWARE_DEVICES) {
+    const course = await prisma.course.findUnique({
+      where: { slug: device.homeCourseSlug },
+      select: { id: true },
+    });
+    if (!course) {
+      continue;
+    }
+
+    const section = await prisma.section.findFirst({
+      where: { courseId: course.id, title: device.homeSectionTitle },
+      select: { id: true },
+    });
+    if (!section) {
+      continue;
+    }
+
+    await prisma.hardwareDevice.update({
+      where: { slug: device.slug },
+      data: { homeSectionId: section.id },
+    });
+  }
 }
 
 /**
@@ -3962,6 +4295,36 @@ async function seedContentBlock(
     } else {
       await prisma.lessonContentBlock.create({
         data: { lessonId, position, type: "EXERCISE", exerciseId: exercise.id },
+      });
+    }
+    return;
+  }
+
+  if (block.type === "SPEC_TABLE" || block.type === "DEVICE_CARD") {
+    const device = await prisma.hardwareDevice.findUnique({
+      where: { slug: block.deviceSlug },
+      select: { id: true },
+    });
+    if (!device) {
+      throw new Error(
+        `seedContentBlock: no HardwareDevice with slug "${block.deviceSlug}" — ` +
+          `seedHardwareDevices must run before seedCurricula.`
+      );
+    }
+
+    const data: Prisma.InputJsonValue | typeof Prisma.JsonNull =
+      block.type === "SPEC_TABLE" && block.specKeys
+        ? { specKeys: block.specKeys }
+        : Prisma.JsonNull;
+
+    if (existing) {
+      await prisma.lessonContentBlock.update({
+        where: { id: existing.id },
+        data: { type: block.type, hardwareDeviceId: device.id, data },
+      });
+    } else {
+      await prisma.lessonContentBlock.create({
+        data: { lessonId, position, type: block.type, hardwareDeviceId: device.id, data },
       });
     }
     return;

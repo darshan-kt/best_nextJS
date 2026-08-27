@@ -73,6 +73,12 @@ function extractBlockText(block: RenderableBlock): string | null {
           : config.goal.body;
       return `This lesson includes a ${config.type.toLowerCase()} exercise titled "${block.exercise.title}": ${summary}`;
     }
+    case "SPEC_TABLE":
+    case "DEVICE_CARD":
+      // Same reasoning as IMAGE: give the assistant the device's name and
+      // summary, not the full spec table — enough to answer "what does
+      // this lesson cover" without dumping a data table into the prompt.
+      return `Hardware device: ${block.device.name}. ${block.device.summary}`;
     case "INVALID":
     case "UNSUPPORTED":
       return null;

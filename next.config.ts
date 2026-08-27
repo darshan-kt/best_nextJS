@@ -39,6 +39,18 @@ const nextConfig: NextConfig = {
         pathname: "/media/cc0-images/**",
       },
     ],
+
+    // SVG is the default format for course diagrams (Robotics Hardware &
+    // Sensors course, Stage 1 — annotated diagrams, flowcharts, data
+    // pipelines all need to stay crisp at any size). `next/image` refuses
+    // SVG sources unless this is set, because SVG can carry
+    // `<script>`/`<foreignObject>`. Every SVG this app serves is authored
+    // by us into `public/`, never learner-uploaded, so the risk here is
+    // theoretical — but `contentSecurityPolicy` neutralizes it anyway as
+    // defense-in-depth rather than relying on "we trust our own files"
+    // alone (§29).
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
   // Security response headers (§29, Milestone 12). Content-Security-Policy

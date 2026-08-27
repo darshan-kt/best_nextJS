@@ -9,13 +9,18 @@ import { EmbedBlock } from "./blocks/embed-block";
 import { CalloutBlock } from "./blocks/callout-block";
 import { FileBlock } from "./blocks/file-block";
 import { ExerciseBlock } from "./blocks/exercise-block";
+import { SpecTableBlock } from "./blocks/spec-table-block";
+import { DeviceCardBlock } from "./blocks/device-card-block";
 import { UnsupportedBlock } from "./blocks/unsupported-block";
 
 /**
  * The one place that switches on content-block kind (§11). All nine of
- * §11's content types (TEXT, IMAGE, VIDEO, CODE, EMBED, CALLOUT, FILE,
- * QUIZ, EXERCISE) render for real as of ROS 2 course Stage 0 — EXERCISE
- * was the last placeholder.
+ * §11's original content types (TEXT, IMAGE, VIDEO, CODE, EMBED, CALLOUT,
+ * FILE, QUIZ, EXERCISE) render for real as of ROS 2 course Stage 0 —
+ * EXERCISE was the last placeholder. SPEC_TABLE and DEVICE_CARD were added
+ * for the Robotics Hardware & Sensors course (Stage 1) — both reference a
+ * `HardwareDevice` row rather than owning their own data, the same
+ * relational shape QUIZ/EXERCISE already use.
  *
  * Adding a tenth block type is: one new schema in `schemas.ts`, one new
  * component in `blocks/`, one new case here. No other file in the app
@@ -79,6 +84,12 @@ export function BlockRenderer({
       return (
         <ExerciseBlock title={block.exercise.title} config={block.exercise.config} />
       );
+
+    case "SPEC_TABLE":
+      return <SpecTableBlock device={block.device} data={block.data} />;
+
+    case "DEVICE_CARD":
+      return <DeviceCardBlock device={block.device} />;
 
     case "INVALID":
       return <UnsupportedBlock blockType={block.blockType} invalid />;
