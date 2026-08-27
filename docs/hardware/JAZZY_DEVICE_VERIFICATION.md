@@ -126,6 +126,37 @@ Fetched `Slamtec/rplidar_ros` at commit `24cc9b6` (2025-04-27, `ros2` branch):
     small, concrete point in favor of `rplidar_ros` as the cleaner path, and
     a good "read the script before running it as root" teaching moment.
 
+### 1.3a Verified setup sequence (Stage 4/5: lift this directly)
+
+```bash
+# 1. Install the officially released Jazzy package — no source build needed.
+sudo apt install ros-jazzy-rplidar-ros
+
+# 2. udev rule, so the device gets a stable /dev/rplidar symlink instead of
+#    a shifting /dev/ttyUSBn. Do this once, not as a build step.
+#    Vendor 10c4 / product ea60 = the CP2102 USB-UART bridge on the A-series
+#    adapter cable — confirmed at scripts/rplidar.rules in the package source.
+echo 'KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE:="0777", SYMLINK+="rplidar"' \
+  | sudo tee /etc/udev/rules.d/rplidar.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# 3. Confirm A2 sub-model before launching — this determines which launch
+#    file and baud rate are correct. Check the label on the unit itself
+#    (A2M7 / A2M8 / A2M12), or use dmesg after plugging in.
+dmesg | grep -i "cp210\|ttyUSB"
+
+# 4. Launch with RViz2, using the correct SKU (A2M8 shown; swap a2m8 for
+#    a2m7 or a2m12 to match the actual unit):
+ros2 launch rplidar_ros view_rplidar_a2m8_launch.py
+```
+
+Expected: `/scan` (`sensor_msgs/msg/LaserScan`) publishing at the driver's
+scan rate, RViz2 opens with the bundled `rviz/rplidar_ros.rviz` config and
+subscribes without any QoS changes (§1.3 confirmed the publisher already
+uses RELIABLE, matching RViz2's default). If scan data looks garbled rather
+than absent, re-check step 4's launch file against the unit's actual SKU —
+§1.3's baud-rate mismatch is the most likely cause.
+
 ### 1.4 Confidence rating
 
 **HIGH** that `ros-jazzy-rplidar-ros` installs and the A2 driver builds and
@@ -232,6 +263,69 @@ last commit March 2025. This is not "officially maintained" by any
 reasonable definition. The confidence here comes from the issue thread's real
 user reports of it working on real hardware, not from the fork's popularity.
 
+### 2.2a Verified setup sequence (Stage 4/5: lift this directly)
+
+This is not a troubleshooting appendix — every step below is required for a
+first-time success on Jazzy/24.04, sourced from the two real users in
+[issue #15](https://github.com/orbbec/ros2_astra_camera/issues/15) who
+actually ran it (`yosefl20`'s fork itself; `AndreasKunar`'s confirmation
+comment, 2025-07-05). Treat steps 1, 4, and 6 as mandatory, not optional
+hardening — skipping any one of them reproduces a real failure mode a real
+user hit, not a hypothetical one.
+
+```bash
+# 1. Clone the FORK, and the jazzy BRANCH specifically. The upstream repo's
+#    master branch is the unfixed original from §2.2 and will not build.
+cd ~/ros2_ws/src
+git clone -b jazzy https://github.com/yosefl20/ros2_astra_camera.git
+
+# 2. Native dependencies the upstream README documents (libuvc built from
+#    source, OpenNI2) — unchanged by the fork, still required.
+sudo apt install libgflags-dev libusb-1.0-0-dev libeigen3-dev libgoogle-glog-dev
+
+# 3. ROS 2 dependencies. The fork's package.xml correctly declares
+#    cv_bridge and image_geometry (§2.2's fix for the reported build
+#    failure) — rosdep pulls them from Jazzy's own official release,
+#    confirmed present in jazzy/distribution.yaml (vision_opencv 4.1.0-1).
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -y
+colcon build --event-handlers console_direct+ --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+# 4. udev rules — two separate USB identities for one physical device
+#    (§2.3). Both entries are required; the depth engine and the RGB
+#    camera enumerate independently.
+cd ~/ros2_ws/src/ros2_astra_camera/astra_camera/scripts
+sudo bash install.sh
+sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# 5. Confirm both USB identities are visible before launching anything.
+#    Expect TWO lines at vendor 2bc5 — product 0403 (depth/OpenNI2) and
+#    product 0501 (RGB/UVC). One line means a cable or hub problem, not a
+#    driver problem — check that first.
+lsusb | grep 2bc5
+
+# 6. Grant real-time priority to your own user BEFORE first launch. Stock
+#    Ubuntu 24.04 blocks rtprio for non-root processes by default, and the
+#    launch fails without this — confirmed by AndreasKunar's real run.
+echo "$USER    -   rtprio   99" | sudo tee /etc/security/limits.d/99-ros2-rt.conf
+# Log out and back in (or reboot) for the limit to take effect.
+
+# 7. If this is not the first launch attempt and a previous one was
+#    killed uncleanly, clear the semaphore hang (§2.4) before launching —
+#    this is silent and produces no error, only a hang.
+ros2 run astra_camera cleanup_shm_node
+
+# 8. Launch, using the plain Astra Pro's own launch file — not
+#    astro_pro_plus.launch.xml, which targets a different, newer product.
+ros2 launch astra_camera astra_pro.launch.xml
+```
+
+Expected: an `astra_camera_node` under namespace `/camera`, publishing color,
+depth, IR and a registered point cloud per §2.3's parameter defaults. In
+RViz2, "Fixed Frame" must be set to `camera_link` manually — it does not
+default there, and a learner leaving it on the wrong frame will see nothing
+render and no error explaining why (§AndreasKunar's confirmed real gotcha).
+
 ### 2.3 The UVC/RGB vs OpenNI2/depth split — confirmed with exact device IDs
 
 Central to how this device must be taught (per the kickoff prompt). Confirmed
@@ -278,9 +372,10 @@ Ordered per the kickoff prompt's fallback priority:
 
 1. **(a) Patch the build — recommended.** Use `yosefl20/ros2_astra_camera`,
    branch `jazzy`, targeting the plain Astra Pro via `astra_pro.launch.xml`.
-   Document the three real gotchas from §2.2 (branch name, `rtprio` limit,
-   RViz2 fixed frame) as explicit setup steps, not buried troubleshooting —
-   they are the actual, confirmed reproduction path, not edge cases.
+   §2.2a is the full setup sequence — branch name, `rtprio` limit, and the
+   RViz2 fixed-frame setting are steps 1, 6, and the expected-result note
+   there, not buried troubleshooting. Stage 4/5 should lift §2.2a directly
+   rather than re-deriving it.
 2. **(b) Humble container bridging DDS to the Jazzy host** — not needed as
    the primary path given (a) has real, working evidence behind it, but worth
    keeping in reserve and mentioning briefly: if a learner's specific Astra
