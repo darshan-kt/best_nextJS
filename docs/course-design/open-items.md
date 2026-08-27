@@ -120,13 +120,15 @@ file in your home directory; here is why that does not survive a second machine
 or a second developer" — rather than introducing packaging as an unexplained
 ritual.
 
-**Strengthened by Module 6 (designed 2026-08-27).** Module 6 adds a second and
-a third standalone script — `module-6-turtle-driver.py` and
-`module-6-turtle-loop.py` — which must be started in the right combination, in
-separate terminals, alongside turtlesim. Module 6 Lesson 5's debugging exercise
-is *caused* by starting the wrong combination. The loose-script problem is
-therefore no longer hypothetical by the time Module 10 arrives, and the same
-lived experience is the motivation Module 11 (launch files) needs. Both design
+**Strengthened by Module 6 (implemented 2026-08-28).** Module 6 shipped a
+second and a third standalone script — `module-6-turtle-driver.py` and
+`module-6-turtle-loop.py`, both live in
+`public/courses/ros2-fundamentals/` — which must be started in the right
+combination, in separate terminals, alongside turtlesim. Module 6 Lesson 5's
+debugging exercise is *caused* by starting the wrong combination. The
+loose-script problem is therefore no longer hypothetical by the time Module 10
+arrives, and the same lived experience is the motivation Module 11 (launch
+files) needs. Both design
 passes should read `module-6-design.md`'s "Continuation" section.
 
 ---
