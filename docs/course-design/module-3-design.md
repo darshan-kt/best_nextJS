@@ -241,3 +241,15 @@ Checkpoint 3 (instead of an early Turtlesim peek) correctly protects Module
 4's reveal* — was implemented as designed (`demo_nodes_cpp`, no Turtlesim
 anywhere in Module 3) but has **not** been independently re-litigated. It
 should be judged against Module 4's design when that is written.
+
+**Closed (2026-08-27).** Re-litigated in
+`docs/course-design/module-4-design.md`, under *"Re-litigating the reveal."*
+The decision is upheld on three grounds — Module 3's register is
+anxiety-resolution rather than discovery, a text-only checkpoint can only
+fail for ROS 2 reasons where a GUI one confuses an install failure with a
+graphics failure, and Module 4's curiosity goal needs the reveal unspent.
+The counter-argument was accepted as real rather than dismissed: deferring
+the first GUI application also defers the VM/WSL2 graphics failure that
+Lesson 1's own WARNING callout above predicts. That debt is transferred, not
+waived — Module 4 Lesson 1 now owns a display-failure branch that this
+module's troubleshooting tree deliberately does not cover.
