@@ -2733,6 +2733,861 @@ const CURRICULA: Record<string, SeedSection[]> = {
         },
       ],
     },
+    {
+      title: "Topics, Publishers, and Subscribers",
+      summary:
+        "Publish/subscribe, message types, and the two nodes that finally drive the turtle without teleop — plus what happens once there's more than one of either.",
+      lessons: [
+        {
+          slug: "the-publish-subscribe-model",
+          title: "The Publish/Subscribe Model",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Module 4 asked you to hold on to a question rather than look it up: why does the turtle move for a moment and then stop on its own when you let go of an arrow key?\n\nIt turns out you can't answer that without explaining the whole communication model underneath it — which is why it waited. Here is the model, and the answer falls out of it for free.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A publisher sends a message to a name. Every node that has subscribed to that name gets its own copy of it. The publisher does not know who is subscribed, how many nodes are subscribed, or whether anyone is subscribed at all — and it behaves identically in every one of those cases.\n\nThat's the entire model. Everything else in this module is a consequence of it.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-6-fanout.png",
+                alt: "A publisher node on the left with three arrows fanning out to three independent subscriber boxes on the right, each arrow labelled /robot/sensor_data. A dashed region around the three subscribers is annotated \"the publisher cannot see any of this.\"",
+                caption:
+                  "The name is a rendezvous, not a place. Any number of subscribers can attach to it, and nothing about the publisher changes.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Three properties fall straight out of that one-paragraph model, and each one matters for a different reason later in this course.\n\nOne-way: there is no reply. If you send something and need an answer back, you don't want a topic — you want a service, which is Module 7.\n\nAnonymous: the publisher never learns who received anything, or whether anyone did.\n\nMany-to-many: any number of publishers and any number of subscribers can share one name. You'll meet what that actually means, including the case where it goes wrong, in Lesson 5.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "A topic is not a function call",
+                body: "publish() returns immediately, returns nothing, and succeeds in exactly the same way whether ten nodes are listening or none. Nothing waits, and nothing confirms delivery.\n\nIf part of your mental model involves waiting for an answer, you're reaching for the wrong mechanism — that's a service, not a topic.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "And it is not a server either, which is easy to assume once you've ruled out a function call.\n\nThere is no process anywhere called /turtle1/cmd_vel. Nothing is \"running the topic.\" What actually happened, back in Module 5 Lesson 4, is that two nodes independently announced the same name with the same message type, and the middleware matched them — after which data goes directly from one process to the other. The name is a rendezvous two nodes agreed to use, not a place either of them lives.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Nothing to start, nothing to blame",
+                body: "Because there's no process in the middle, when data stops flowing there are exactly two places the fault can be: the publisher, or the subscriber. Nothing third-party can be down.\n\nThat's why ros2 topic info — Lesson 2 — is worth learning properly. It's also why ros2 topic list showing a name only tells you someone is publishing or subscribing to it right now. Topics don't persist on their own; the name only exists while something is using it.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Time to collect evidence for Module 4's question, using a command you already own.\n\nStart turtlesim and teleop as usual, then open a third terminal and run echo on the steering topic. Press one arrow key, once, and let go immediately.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "watch-one-keypress.sh",
+                code: "ros2 topic echo /turtle1/cmd_vel\n\n# press one arrow key, once, and release it:\n\nlinear:\n  x: 2.0\n  y: 0.0\n  z: 0.0\nangular:\n  x: 0.0\n  y: 0.0\n  z: 0.0\n---\n\n# ...then nothing. No second message follows.",
+                caption:
+                  "Illustrative output. The exact numbers depend on which key you pressed. What matters: exactly one message, then silence — not a stream that continues while the key is down.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That's half the answer: teleop publishes exactly one message per keypress. It is not streaming while the key is held — the echo output proves it, one block and then a gap.\n\nThe other half is turtlesim's side, and it isn't visible in this output at all: turtlesim discards a command more than one second old and sets the velocity to zero. One message therefore buys up to one second of motion. After that, with nothing new arriving, the turtle stops itself.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-6-timeline.png",
+                alt: "A horizontal timeline from a keypress event at t=0, through one message published and the turtle moving, to a marker at t=1s labelled \"turtlesim: last command is now stale, velocity to zero here,\" with the axis continuing empty afterward.",
+                caption:
+                  "The stop is caused by silence, not by anything anyone sent.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That's not a turtlesim quirk — it's a safety pattern, and it's worth seeing why.\n\nIf a subscriber kept obeying the last command it ever received, a publisher crashing or a network link dropping would leave a real robot driving at its last commanded speed with nobody steering it. Building continuous-command topics so that silence means stop is what prevents that. The cost is real too: driving a robot means publishing repeatedly, for as long as you want it to move — a fact about your own code that lands squarely in Lesson 3, the moment you write a publisher yourself.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Measure the one-second window yourself",
+                instructions:
+                  "Three observations, no new commands — everything you need is echo, which you've been running since Module 4.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "With turtlesim, teleop and ros2 topic echo /turtle1/cmd_vel all running, confirm both halves of this lesson's claim for yourself: one keypress is one message, and one message buys about a second of motion.",
+                  },
+                  steps: [
+                    {
+                      title: "Count the messages for one keypress",
+                      content: {
+                        body: "Press an arrow key once and let go immediately. Count how many message blocks appear in the echo terminal. It should be exactly one — not a burst, and not zero.",
+                      },
+                    },
+                    {
+                      title: "Watch the turtle, not the terminal",
+                      content: {
+                        body: "Press once more, but this time watch the simulator window instead of the terminal. The turtle should move for roughly a second and then stop on its own, with no second command visible in echo.",
+                      },
+                    },
+                    {
+                      title: "Hold the key down and compare",
+                      content: {
+                        body: "Now hold an arrow key down. The echo terminal fills with messages continuously — that's your terminal's own key-repeat generating real keypresses, not teleop streaming on its own — and the turtle moves the whole time you hold it, stopping about a second after you release. Compare this against step 2: continuous input produces continuous messages; a single input produces exactly one.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You know what a topic is, and you've watched the silence-means-stop rule catch the turtle in the act.\n\nWhat you don't know yet is what actually travels over one — why those six numbers in the echo output, and not some other shape entirely. That's next.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "message-types-and-reading-a-topic",
+          title: "Message Types and Reading a Topic",
+          durationMinutes: 22,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Module 4 showed you the shape of a cmd_vel message — a linear group, an angular group, six numbers — and told you roughly what it meant. It never showed you where that shape comes from, or how you'd find out for a topic nobody had explained to you first.\n\nBoth are one command away, and by the end of this lesson you'll be able to walk up to any topic in any ROS 2 system and read it cold.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "topic-census-with-types.sh",
+                code: "ros2 topic list -t\n\n/parameter_events [rcl_interfaces/msg/ParameterEvent]\n/rosout [rcl_interfaces/msg/Log]\n/turtle1/cmd_vel [geometry_msgs/msg/Twist]\n/turtle1/color_sensor [turtlesim/msg/Color]\n/turtle1/pose [turtlesim/msg/Pose]",
+                caption:
+                  "Illustrative output. The same census as Module 4's ros2 topic list, with each topic's type now shown in brackets.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Read a type name like a path: geometry_msgs/msg/Twist is package, then kind, then type.\n\ngeometry_msgs is not turtlesim's package — it's a standard interface package shared across the entire ROS 2 ecosystem, which is exactly why Module 4 could truthfully tell you the command you ran works unchanged on a real robot. turtlesim/msg/Pose, by contrast, belongs to turtlesim alone; nothing else uses it.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "show-the-definition.sh",
+                code: "ros2 interface show geometry_msgs/msg/Twist\n\n# This expresses velocity in free space broken into its linear and angular parts.\n\nVector3  linear\n\tfloat64 x\n\tfloat64 y\n\tfloat64 z\nVector3  angular\n\tfloat64 x\n\tfloat64 y\n\tfloat64 z",
+                caption:
+                  "Illustrative output. The definition itself, including its own comment — this doesn't vary between machines the way live data does.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Join it up with what you already saw in Module 4: those six numbers in the echo output were linear.x, linear.y, linear.z, angular.x, angular.y, angular.z, and the arrow key changed exactly one of them. The definition is where that shape is decided. echo is just where you watch it filled in with real values.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Reading a definition, not writing one",
+                body: "You're looking something up here, not authoring it. Where message definitions actually come from, what the .msg file format looks like, and how to build your own custom interface are Module 9's job — along with the wider landscape of standard interfaces beyond these two.\n\nWhat matters right now is narrower and immediately useful: every topic has a type, and you can always look it up.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "topic-info.sh",
+                code: "ros2 topic info /turtle1/cmd_vel\n\nType: geometry_msgs/msg/Twist\nPublisher count: 1\nSubscription count: 1",
+                caption:
+                  "Illustrative output. Publisher and subscription counts will change as you add your own nodes later in this module.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Those counts are the point, and they're a genuinely new kind of question. Module 4's habit was is data flowing?, answered by echo. This one is is anyone actually connected?, answered by info — and the two failure modes look identical from the outside while having completely different causes.\n\nA topic with one publisher and zero subscribers is a node shouting into an empty room. Zero publishers and one subscriber is a node waiting for something that will never come. echo can't tell you which; info can.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-6-contract.png",
+                alt: "Three candidate publisher boxes on the left, each labelled with a topic name and message type, connecting or failing to connect to one subscriber box on the right. The first, with matching name and type, connects with a solid arrow. The second, same name but a mismatched type, and the third, a mismatched name but matching type, both show broken dashed arrows annotated \"no error, no warning, no connection.\"",
+                caption:
+                  "The name is the address; the type is part of that same address, not a detail to check later.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Which is the point this diagram makes concrete: the name alone is not enough. Two nodes using the same topic name with different message types do not connect to each other, and nothing announces this anywhere. As far as the system is concerned, they're two unrelated conversations that happen to share a name.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "One more direction worth noticing before you move on — everything so far has been commands going into turtlesim. /turtle1/pose is turtlesim reporting its own state back out, continuously, many times a second, whether or not anything happens to be subscribed.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "the-other-direction.sh",
+                code: "ros2 interface show turtlesim/msg/Pose\n\nfloat32 x\nfloat32 y\nfloat32 theta\n\nfloat32 linear_velocity\nfloat32 angular_velocity\n\n---\n\nros2 topic echo /turtle1/pose\n\nx: 5.544444561004639\ny: 5.544444561004639\ntheta: 0.0\nlinear_velocity: 0.0\nangular_velocity: 0.0\n---",
+                caption:
+                  "Illustrative output. x/y/theta describe where the turtle is and which way it's facing; the two velocities describe its current motion. Your own numbers will differ — turtlesim starts each session at the same point, but any prior driving changes them.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "The general shape of every robot",
+                body: "Commands in on one topic, state out on another. Swap turtlesim for a real mobile base and the names barely change — you'd still expect a /cmd_vel in and an /odom or a /pose out.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Profile a topic you were told nothing about",
+                instructions:
+                  "/turtle1/color_sensor hasn't been mentioned anywhere in this course. Use only the commands from this lesson.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Find out everything this lesson's commands can tell you about /turtle1/color_sensor: its message type, that type's fields, and how many publishers and subscribers it currently has.",
+                  },
+                  steps: [
+                    {
+                      title: "Find its type",
+                      content: {
+                        body: "Run the census with types and find the line for /turtle1/color_sensor.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "ros2 topic list -t" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Look up the definition",
+                      content: {
+                        body: "Now show the type you found. It's turtlesim's own — not a standard interface — so expect fields specific to a colour reading.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 interface show turtlesim/msg/Color",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Check who's connected",
+                      content: {
+                        body: "Confirm the publisher and subscriber counts, same as you did for cmd_vel.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 topic info /turtle1/color_sensor",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Watch it, and notice what doesn't happen",
+                      content: {
+                        body: "Echo it and drive the turtle around the window for a bit. The three r/g/b values report the canvas colour directly underneath the turtle — and turtlesim's default background is a flat, uniform blue, so driving through open space changes nothing at all. The values only move if the turtle crosses a line it has already drawn with its own pen. If you expected the numbers to change just from moving, that expectation — not the sensor — was the thing worth correcting.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You can now read any topic in any system: its name, its type, what that type's fields are, and who's actually connected to it.\n\nNext, you write to one.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "writing-a-publisher",
+          title: "Writing a Publisher",
+          durationMinutes: 22,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Module 5 ended on a promise: \"by the end of it your node will be driving the turtle itself, with teleop removed entirely.\" This is that lesson.\n\nSame shape of file as Module 5's node: a plain Python script, run with python3, no workspace and no package — for exactly the reasons Module 5 Lesson 3 gave, and Module 10 will pick up.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Before writing a line, assemble what you already know into a plan. Publish to the same name turtlesim subscribes to — Lesson 2's topic info proved which one. Use the same type, geometry_msgs/msg/Twist. And publish more often than once a second, because of Lesson 1's timeout.\n\nThree facts, all already earned, none of them new information in this lesson.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "turtle_driver.py",
+                code: "import rclpy\nfrom rclpy.node import Node\nfrom geometry_msgs.msg import Twist\n\n\nclass TurtleDriver(Node):\n    def __init__(self):\n        super().__init__(\"turtle_driver\")\n        self.publisher_ = self.create_publisher(Twist, \"/turtle1/cmd_vel\", 10)\n        self.create_timer(0.5, self.on_timer)\n\n    def on_timer(self):\n        msg = Twist()\n        msg.linear.x = 2.0\n        msg.angular.z = 1.8\n        self.publisher_.publish(msg)\n\n\ndef main():\n    rclpy.init()\n    node = TurtleDriver()\n    try:\n        rclpy.spin(node)\n    except KeyboardInterrupt:\n        pass\n    finally:\n        node.destroy_node()\n        rclpy.shutdown()\n\n\nif __name__ == \"__main__\":\n    main()",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Close teleop entirely before you run this. Then run it alongside turtlesim, with nothing else steering.\n\nThe turtle drives a steady circle — and it's worth stopping on what just happened. Nothing is reading a keyboard. The only thing steering the turtle is a file you wrote, and turtlesim cannot tell the difference, because from turtlesim's side there is no difference. That's Lesson 1's anonymity property, demonstrated instead of asserted.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "What the 10 actually is",
+                body: "That third argument to create_publisher is a send queue — how many outgoing messages ROS 2 will hold for you if a subscriber or the network can't keep up. 10 is the conventional default, and it's the right choice here.\n\nIt belongs to a family of delivery settings called QoS, which matters enormously for high-rate sensor data and not at all for driving a turtle. If you go looking, that's what you'll find — you aren't missing a prerequisite. Module 9 is where you actually learn what this number does and how to choose a different one; for now, treat 10 as a safe default that needs no justification.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The rate isn't arbitrary, either. At 2 Hz — every 0.5 seconds — a message arrives comfortably inside turtlesim's one-second window.\n\nSlow the timer past one second and the turtle stutters: moving, stopping, moving, stopping. Each command expires before its replacement arrives. That's not a bug in the code — it's Lesson 1's safety rule doing exactly what it's for, seen for the first time from the side that has to satisfy it rather than the side that enforces it.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "Measuring the rate you actually got",
+                body: "ros2 topic hz /turtle1/cmd_vel reports the rate that actually reached the topic. You chose a rate in your code; this measures what really arrived — and on a busy machine, or with slow work inside a callback, those two numbers aren't always the same.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Write it, run it, then break it on purpose",
+                instructions:
+                  "The stutter is the most convincing demonstration in this module that a topic carries discrete messages, not a continuous connection. Cause it yourself rather than reading about it.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Get turtle_driver.py running with a steady circle, then deliberately slow it past the one-second window and watch the turtle stutter.",
+                  },
+                  steps: [
+                    {
+                      title: "Run it as written",
+                      content: {
+                        body: "Close teleop first. Run the driver alongside turtlesim and confirm the turtle traces a steady, continuous circle.",
+                      },
+                    },
+                    {
+                      title: "Slow the timer past the window",
+                      content: {
+                        body: "Stop the driver, change 0.5 to 2.0 in the create_timer call, and run it again.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "python",
+                              code: "self.create_timer(2.0, self.on_timer)",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Explain what you see",
+                      content: {
+                        body: "The turtle should now move, stop, move, stop — in a visible rhythm. In one sentence, using Lesson 1's one-second number, say why. Then change the timer back to 0.5 before moving on.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-6-publisher-anatomy.png",
+                alt: "A node box labelled turtle_driver containing three parameter tags — type, name, queue — feeding into a create_publisher call, then spin, then a timer branch to timer_callback which builds and publishes a Twist. An arrow labelled /turtle1/cmd_vel exits the node box and trails off into open space with no destination box.",
+                caption:
+                  "create_publisher only declares intent. Nothing leaves the node until timer_callback actually calls publish().",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now look at your own node from the outside. With the driver running, ros2 topic info /turtle1/cmd_vel reports Publisher count: 1 — and that publisher is your script. The tooling doesn't mark it as different from teleop, because there is nothing to mark. Every inspection command from Module 4 and Lesson 2 now works on code you wrote yourself.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "cpp",
+                filename: "the same publisher in C++ (read only)",
+                code: "#include \"rclcpp/rclcpp.hpp\"\n#include \"geometry_msgs/msg/twist.hpp\"\n\nusing namespace std::chrono_literals;\n\nclass TurtleDriver : public rclcpp::Node {\npublic:\n  TurtleDriver() : Node(\"turtle_driver\") {\n    publisher_ = create_publisher<geometry_msgs::msg::Twist>(\"/turtle1/cmd_vel\", 10);\n    timer_ = create_wall_timer(500ms, [this]() { on_timer(); });\n  }\n\nprivate:\n  void on_timer() {\n    auto msg = geometry_msgs::msg::Twist();\n    msg.linear.x = 2.0;\n    msg.angular.z = 1.8;\n    publisher_->publish(msg);\n  }\n  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;\n  rclcpp::TimerBase::SharedPtr timer_;\n};\n\nint main(int argc, char ** argv) {\n  rclcpp::init(argc, argv);\n  rclcpp::spin(std::make_shared<TurtleDriver>());\n  rclcpp::shutdown();\n}",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Not something you're expected to write, and this course stays in Python throughout. Read it for one reason: create_publisher, a message object, a timer, and a publish call are all there, in the same order, with the same arguments. The concept transfers completely; only the syntax changes.\n\nThat's Module 5 Lesson 2's language independence, seen from the inside this time — a Python node and a C++ node talk over the same topic with no bridge, because neither one is calling the other's functions.",
+              },
+            },
+            {
+              type: "FILE",
+              data: {
+                href: "/courses/ros2-fundamentals/module-6-turtle-driver.py",
+                label: "turtle_driver.py — the finished script",
+                description:
+                  "The complete driver from this lesson. If you fought a typo, diff against this rather than starting over. Run it with python3, not ros2 run.",
+                sizeLabel: "2 KB",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Your node can talk now. It still can't hear anything — it drives the exact same circle whether the turtle is in open space or wedged against the wall.\n\nNext: giving it ears.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "writing-a-subscriber-and-closing-the-loop",
+          title: "Writing a Subscriber, and Closing the Loop",
+          durationMinutes: 22,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Module 5 set this up explicitly: a timer says \"call this every second.\" A subscription says \"call this every time a message arrives on this name.\" Same machinery, same spin doing the calling — only the trigger differs. This lesson is that idea, cashed in.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "listener.py",
+                code: "import rclpy\nfrom rclpy.node import Node\nfrom turtlesim.msg import Pose\n\n\nclass Listener(Node):\n    def __init__(self):\n        super().__init__(\"listener\")\n        self.subscription = self.create_subscription(\n            Pose, \"/turtle1/pose\", self.pose_callback, 10\n        )\n\n    def pose_callback(self, msg):\n        self.get_logger().info(f\"x={msg.x:.2f} y={msg.y:.2f} theta={msg.theta:.2f}\")\n\n\ndef main():\n    rclpy.init()\n    node = Listener()\n    try:\n        rclpy.spin(node)\n    except KeyboardInterrupt:\n        pass\n    finally:\n        node.destroy_node()\n        rclpy.shutdown()\n\n\nif __name__ == \"__main__\":\n    main()",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Two things worth noticing before you run it. The callback takes the message as its one argument — you never call pose_callback yourself, ROS 2 hands it the message when one arrives. And log lines only appear while turtlesim is actually running: close turtlesim and the listener goes quiet, with no error, no warning, no exit.\n\nA subscriber with nothing publishing to it is a completely valid, completely silent program — and that silence is indistinguishable from a bug. You're about to cause that exact silence on purpose, so you meet it under controlled conditions rather than the first time it happens by accident.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Cause the silence, then rule it out",
+                instructions:
+                  "This walks a real failure deliberately rather than presenting it as a mystery — the skill is establishing whether data exists before you doubt your own code, which Module 4's echo habit already taught you once.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Introduce a one-character typo into listener.py's topic name, watch it go silent, diagnose it using only the tools from this module, then fix it and confirm the fix.",
+                  },
+                  steps: [
+                    {
+                      title: "Cause the silence on purpose",
+                      content: {
+                        body: "Change the subscribed name from /turtle1/pose to /turtle/pose — drop the 1. Run it alongside turtlesim. Confirm: no error, no warning, no exit. It just sits there, silent.",
+                      },
+                    },
+                    {
+                      title: "Establish whether the data exists at all",
+                      content: {
+                        body: "In a second terminal, before touching your own code, check whether turtlesim is actually publishing anything.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 topic echo /turtle1/pose",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Interrogate your own node, not the topic",
+                      content: {
+                        body: "You should have seen a steady stream in step 2, which rules out the publisher. Now check what your node believes it's subscribed to, and compare that string character by character against ros2 topic list.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "ros2 node info /listener" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Fix it and confirm the fix, not just the symptom",
+                      content: {
+                        body: "Correct the string back to /turtle1/pose, restart, and use ros2 node info again to confirm the name it lists now matches ros2 topic list exactly — rather than relying on log lines resuming as your only evidence, which would be checking the symptom instead of the cause.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-6-two-triggers.png",
+                alt: "A spin() box at the top with two symmetric branches below it: one labelled \"every 0.5 seconds\" leading to timer_callback(), the other labelled \"message arrives on /turtle1/pose\" leading to pose_callback(msg).",
+                caption:
+                  "A timer firing and a message arriving are both just triggers — spin() is the thing that notices either one and calls your code.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "Keep callbacks fast",
+                body: "rclpy.spin runs your callbacks one at a time by default, so a callback that takes a second stops everything else in that node for a second — including a timer that was supposed to be publishing on schedule. The symptom is a node that mysteriously stops sending; the cause is almost never where people look first.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now combine both halves, and name what the combination actually is: a node with both a subscription and a publisher is the standard shape of nearly every real ROS 2 node. Read something, decide something, write something. Sensor in, command out. A battery monitor and a full path planner are both this same shape, just at very different scales.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "turtle_loop.py",
+                code: "import rclpy\nfrom rclpy.node import Node\nfrom geometry_msgs.msg import Twist\nfrom turtlesim.msg import Pose\n\n\nclass TurtleLoop(Node):\n    LEFT_EDGE = 1.5\n    RIGHT_EDGE = 9.5\n\n    def __init__(self):\n        super().__init__(\"turtle_loop\")\n        self.direction = 1.0\n        self.publisher_ = self.create_publisher(Twist, \"/turtle1/cmd_vel\", 10)\n        self.subscription = self.create_subscription(\n            Pose, \"/turtle1/pose\", self.on_pose, 10\n        )\n\n    def on_pose(self, msg):\n        if msg.x < self.LEFT_EDGE or msg.x > self.RIGHT_EDGE:\n            self.direction *= -1.0\n\n        cmd = Twist()\n        cmd.linear.x = 2.0\n        cmd.angular.z = 1.0 * self.direction\n        self.publisher_.publish(cmd)\n\n\ndef main():\n    rclpy.init()\n    node = TurtleLoop()\n    try:\n        rclpy.spin(node)\n    except KeyboardInterrupt:\n        pass\n    finally:\n        node.destroy_node()\n        rclpy.shutdown()\n\n\nif __name__ == \"__main__\":\n    main()",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Run this one alone — no driver, no teleop, nothing else. The turtle patrols back and forth near the left and right edges on its own, reversing direction each time on_pose decides it's gotten close enough.\n\nHere's what makes this different from every program you've written so far in this course, or possibly at all: the node's behaviour is now determined by data it did not produce and cannot predict in advance. Nothing in the file says which way the turtle will turn next — that's a control loop, at the smallest size one can be.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-6-closed-loop.png",
+                alt: "Two boxes, /turtlesim and your node turtle_loop, joined by two curved arrows forming a ring — /turtle1/pose flowing from turtlesim to your node, /turtle1/cmd_vel flowing back — with the decision \"past the wall? turn the other way\" marked inside your node.",
+                caption:
+                  "turtlesim only reports position. Your node only decides, based on what it was just told. The patrolling behaviour belongs to the cycle, not to either half of it.",
+              },
+            },
+            {
+              type: "FILE",
+              data: {
+                href: "/courses/ros2-fundamentals/module-6-turtle-loop.py",
+                label: "turtle_loop.py — the finished script",
+                description:
+                  "The subscribe-decide-publish loop from this lesson, reversing near the left and right edges only. Staying inside all four edges is the independent exercise below — there's deliberately no answer key for that part.",
+                sizeLabel: "2.5 KB",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Keep the turtle inside a box",
+                instructions:
+                  "Goal only, no procedure. Every element you need is already in this lesson.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Extend turtle_loop.py so the turtle stays inside all four edges of the window, not just the left and right ones — turning away as it approaches any edge, not only two of them.",
+                  },
+                  successCriteria: [
+                    "The turtle never reaches any of the four edges of the turtlesim window, left and right, top and bottom.",
+                    "The decision still lives entirely in the pose callback — no timer, no second subscription.",
+                    "You can explain in one sentence what \"approaching an edge\" means in terms of x, y and theta.",
+                  ],
+                  hints: [
+                    "turtlesim's window is roughly 11 units square. You already have thresholds for x — you need the same idea for y.",
+                    "Reversing angular.z alone was enough for left/right, because the turtle was already travelling mostly along x. Approaching a top or bottom edge needs the turtle to actually turn toward the centre, not just flip its spin.",
+                    "You don't need theta to detect an edge — only to decide which way is \"toward the middle.\" Comparing the turtle's x and y against the window's centre point is enough to pick a turn direction.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Every diagram in this module so far has had exactly one publisher and one subscriber. Real systems don't — and the difference is not a detail. That's next.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "many-publishers-many-subscribers",
+          title: "Many Publishers, Many Subscribers",
+          durationMinutes: 24,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Every diagram in this module has had one publisher and, mostly, one subscriber. A real robot has a dozen nodes, and topics with several of each. Both directions scale — but they do not scale the same way, and only one of them is safe by default.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Many subscribers is the easy case. Each one receives its own copy. The publisher's code, cost and behaviour never change, and adding a subscriber can't break an existing one.\n\nYou've actually been doing this since Module 4 without being told: ros2 topic echo /turtle1/cmd_vel was a second subscriber on that topic, running alongside turtlesim, and neither one ever noticed the other.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "You tested this by accident, twice",
+                body: "That's Lesson 1's fan-out claim, and every time you've run echo on a live topic you've added a subscriber to a running system and changed nothing about it. That's exactly why echo is safe to run against a robot that's actually working — it can only ever be one more copy, never a second voice.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-6-fanout-echo.png",
+                alt: "The publisher turtle_driver with two arrows to two subscribers of equal standing — /turtlesim and a terminal running ros2 topic echo — both labelled /turtle1/cmd_vel, with an annotation that neither subscriber is aware of the other.",
+                caption:
+                  "echo is not a special debugging channel. It's an ordinary subscriber, which is precisely why attaching one to a running system is safe.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Many publishers is the case that bites. ROS 2 permits it and does not arbitrate between them. Messages from every publisher arrive at a subscriber interleaved in arrival order, and the subscriber has no way to tell which publisher any given message came from — a message doesn't carry a sender.\n\nOn a command topic like cmd_vel, that means two things are steering one robot, and whichever message arrived most recently simply wins.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "publish-from-the-command-line.sh",
+                code: "ros2 topic pub --rate 2 /turtle1/cmd_vel geometry_msgs/msg/Twist \"{linear: {x: 2.0}, angular: {z: 1.8}}\"\n\npublishing #1: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=2.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=1.8))\npublishing #2: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=2.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=1.8))",
+                caption:
+                  "Illustrative output. A publisher with no code behind it at all — the command line is publishing directly. --rate 2 matters here: at exactly --rate 1 the publish interval and turtlesim's one-second expiry are the same number, and whether the turtle glides or stutters would come down to scheduling luck rather than anything you can reason about.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "This earns its place beyond a demonstration: ros2 topic pub lets you exercise a subscriber before the node meant to feed it even exists. Bringing a robot up one link at a time — drive the motors from the command line, confirm they respond, then connect the real planner — is standard practice, and this is the command that does the first part.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "two-publishers.sh",
+                code: "# with turtle_driver.py still running from Lesson 3, in another terminal:\nros2 topic info /turtle1/cmd_vel\n\nType: geometry_msgs/msg/Twist\nPublisher count: 2\nSubscription count: 1",
+                caption:
+                  "Illustrative output. The count is the whole diagnostic here — nothing else about the system looks unusual.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Debugging challenge: the fight over cmd_vel",
+                instructions:
+                  "Nothing is broken here, and no program is misconfigured — read the hints in order rather than jumping to the answer.",
+                config: {
+                  type: "DEBUGGING",
+                  scenario: {
+                    body: "Your driver from Lesson 3 is running, and the turtle is tracing its steady circle. You decide to steer manually as well, so you start turtle_teleop_key in another terminal without stopping the driver.\n\nNow the turtle moves erratically — mostly still circling, occasionally jerking in the direction you pressed, largely ignoring the arrow keys. Both terminals look completely healthy. Neither has printed anything unusual.\n\nWhat's happening, and how would you confirm it before changing anything?",
+                  },
+                  hints: [
+                    "Don't restart anything and don't edit any code yet. Ask the narrowest possible question first — how many things are currently publishing to that topic?",
+                    "Publisher count: 2, and ROS 2 considers both of them entirely legitimate. So what does turtlesim do when two independent streams of commands arrive on the same name?",
+                    "Run ros2 topic echo /turtle1/cmd_vel and read the sequence rather than the individual values — your driver's identical message, twice a second, forever, with an occasional keypress dropped in between. Now recall how long a single command survives from Lesson 1, and work out how long your keypress stays in effect against a publisher sending every half-second.",
+                  ],
+                  rootCause: {
+                    body: "Two publishers are sending to one topic with no arbitration between them. turtlesim simply acts on whichever message arrived most recently, and it has no way to tell the two publishers apart — a message carries no sender.\n\nYour driver publishes every half-second, so any keypress you make gets overwritten within 500 milliseconds — which is exactly why the arrow keys feel mostly ignored rather than completely dead. The symptom is a precise, predictable consequence of the rate you chose back in Lesson 3, not a malfunction.",
+                  },
+                  solution: {
+                    body: "Decide which node should own the topic, and stop the other one. A real alternative exists too — remapping one publisher onto a different topic name so both can run without conflicting — and remapping in general belongs to Module 9.",
+                    visuals: [
+                      {
+                        kind: "CODE",
+                        data: {
+                          language: "bash",
+                          code: "# stop turtle_teleop_key, then confirm:\nros2 topic info /turtle1/cmd_vel\n\nType: geometry_msgs/msg/Twist\nPublisher count: 1\nSubscription count: 1",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Here's the rule worth carrying past this module: many subscribers is free. Many publishers on a command topic is a design decision that needs a reason.\n\nReal systems that genuinely need several sources of motion commands — teleoperation, autonomous navigation, an emergency stop — don't just let them all publish freely. They put one node in front that chooses between the sources and publishes the winner, so exactly one thing is ever writing to the topic the robot actually obeys.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Run a three-node system and account for every count",
+                instructions:
+                  "Goal only, no procedure. Every command you need appeared earlier in this module.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Run turtlesim, your Lesson 3 driver, and your Lesson 4 listener all at the same time. Then, using ros2 topic info on both /turtle1/cmd_vel and /turtle1/pose, account for every publisher and subscriber count the system reports — naming which of the three nodes is responsible for each one — and predict what each number will become before you stop any given node.",
+                  },
+                  successCriteria: [
+                    "You can name, for /turtle1/cmd_vel, exactly which node is the publisher and which is the subscriber, and the counts match what you predicted.",
+                    "You can name, for /turtle1/pose, exactly which node is the publisher and which is the subscriber, and the counts match what you predicted.",
+                    "Stopping the listener changes /turtle1/pose's subscription count and nothing else — you predicted that before doing it, not after.",
+                    "Stopping the driver changes /turtle1/cmd_vel's publisher count and nothing else — same requirement.",
+                  ],
+                  hints: [
+                    "Three nodes, two topics — but not every node touches every topic. Start by listing, for each node, which topics it actually publishes or subscribes to, before you touch ros2 topic info at all.",
+                    "ros2 topic info on both topics gives you four numbers total. All four are explainable from the three nodes' code — nothing in this exercise is coincidental.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 6 Check: Topics, Publishers, and Subscribers",
+                description:
+                  "Six questions on the model, the type contract, and what happens with more than one of either. The explanations carry the teaching — read them even when you're confident.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You press an arrow key in teleop once and release it. The turtle moves for about a second and stops, even though nothing sent a stop command. Why?",
+                    options: [
+                      { id: "silence", label: "Teleop published one message; turtlesim discards a command older than one second and zeroes the velocity" },
+                      { id: "explicit-stop", label: "Teleop published a second message telling the turtle to stop" },
+                      { id: "friction", label: "Turtlesim simulates friction, so the turtle naturally slows down" },
+                      { id: "bug", label: "This is a bug in turtlesim that happens to look intentional" },
+                    ],
+                    correctOptionIds: ["silence"],
+                    explanation:
+                      "Silence means stop. One message buys up to one second of motion; after that turtlesim treats the last command as stale and zeroes the velocity itself. That's a safety property, not an accident — a subscriber that kept obeying a stale command forever would drive a real robot on after its publisher crashed or a link dropped.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Your node calls publish() on a topic that no other node has subscribed to. What happens?",
+                    options: [
+                      { id: "succeeds", label: "It returns immediately and succeeds, exactly as it would with ten subscribers" },
+                      { id: "errors", label: "It raises an error, since there's nothing to receive the message" },
+                      { id: "blocks", label: "It blocks until a subscriber appears" },
+                      { id: "queues", label: "It queues the message until someone subscribes, then delivers it" },
+                    ],
+                    correctOptionIds: ["succeeds"],
+                    explanation:
+                      "Publishing is one-way and returns nothing — it never tells you whether anyone was listening, because a topic is not a function call. If you need to know whether something happened and get an answer back, you need a service, which is Module 7.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "A node you wrote is subscribed to a topic and logging nothing at all. Which command tells you whether anything is publishing to that topic in the first place?",
+                    options: [
+                      { id: "topic-info", label: "ros2 topic info <topic> — read the publisher count" },
+                      { id: "topic-echo", label: "ros2 topic echo <topic>" },
+                      { id: "node-list", label: "ros2 node list" },
+                      { id: "topic-list", label: "ros2 topic list" },
+                    ],
+                    correctOptionIds: ["topic-info"],
+                    explanation:
+                      "topic info's publisher count answers exactly this. echo answers a related but different question — is data flowing right now — and a topic can have a perfectly healthy publisher that simply hasn't sent anything yet, so the two commands aren't interchangeable. node info is the third piece: it tells you what your own node believes it subscribed to, which is where a typo like Lesson 4's shows up.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Two nodes are both publishing Twist messages to /turtle1/cmd_vel at the same time. The turtle moves erratically. Whose commands is turtlesim actually following?",
+                    options: [
+                      { id: "most-recent", label: "Whichever message arrived most recently — there's no arbitration and no way to tell the publishers apart" },
+                      { id: "first-started", label: "Whichever node started publishing first" },
+                      { id: "averaged", label: "ROS 2 averages the two commands together" },
+                      { id: "higher-rate", label: "Whichever node is publishing at the higher rate, exclusively" },
+                    ],
+                    correctOptionIds: ["most-recent"],
+                    explanation:
+                      "ROS 2 permits multiple publishers on one topic and does not merge, queue, or prioritise between them — a message carries no sender, so the subscriber can't distinguish where any given message came from. Systems that genuinely need several legitimate command sources put one node in front to choose between them, rather than letting all of them publish freely.",
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "Two nodes using the same topic name will exchange data as long as the name matches, regardless of the message types they each use.",
+                    correctAnswer: false,
+                    explanation:
+                      "False. Name and type must both match, and a mismatch produces no error, no warning, and no connection whatsoever — which is why ros2 topic list -t and ros2 interface show both matter. The type is part of a topic's identity, exactly as much as the name is.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Your publisher uses a timer with a 2-second period instead of the 0.5 seconds from Lesson 3. The turtle now moves in short bursts with visible pauses between them. Is this a bug in your code?",
+                    options: [
+                      { id: "not-a-bug", label: "No — the publish rate is slower than turtlesim's one-second command timeout, so each command expires before its replacement arrives" },
+                      { id: "race-condition", label: "Yes — this indicates a race condition between the timer and spin" },
+                      { id: "queue-full", label: "Yes — the publisher's send queue has filled up and is dropping messages" },
+                      { id: "network", label: "No — this is normal network jitter and can be ignored" },
+                    ],
+                    correctOptionIds: ["not-a-bug"],
+                    explanation:
+                      "This is Lesson 1's timeout, met again from the publishing side: the rate is a design decision your code has to satisfy, not an incantation to copy. Stuttering at anything slower than one second isn't a malfunction — it's the exact behaviour the timeout is supposed to produce, and the fix is choosing a faster rate, not debugging the node.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That's the module. A topic is a name carrying one-way, many-to-many streams of discrete messages, with nothing in the middle to start or blame — and silence means stop (Lesson 1). Every topic has a type as well as a name, both must match, and any topic can be interrogated cold from the terminal (Lesson 2). You wrote a publisher and drove the turtle with teleop closed, and learned the publish rate is a design decision (Lesson 3). A subscription is a callback with a different trigger, and a node doing both is a control loop (Lesson 4). Many subscribers is free; many publishers on a command topic is a conflict with no arbitration (this lesson).\n\nEverything in this module was one-way. You published and hoped; you subscribed and waited. Nothing you wrote could ever ask a question and get an answer back.\n\nNow think about /spawn, which you met back in Module 4 without using it: put a second turtle on the screen, at these coordinates, with this name — and tell me whether it worked. That's not a stream. Doing it over a topic would mean publishing a request and then subscribing to some other topic hoping a reply turns up, with no way to know which request the reply even belonged to. Module 7 is services: the mechanism for asking and actually being answered.",
+              },
+            },
+          ],
+        },
+      ],
+    },
   ],
 };
 
