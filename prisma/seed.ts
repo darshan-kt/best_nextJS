@@ -400,8 +400,8 @@ const CURRICULA: Record<string, SeedSection[]> = {
   ],
 
   /// ROS 2 Fundamentals — real course content, not a demo fixture like the
-  /// courses above (see the COURSES entry for this slug). Modules 0-1 so
-  /// far; modules 2-15 land module-by-module per
+  /// courses above (see the COURSES entry for this slug). Modules 0-2 so
+  /// far; modules 3-15 land module-by-module per
   /// ROS2_COURSE_KICKOFF_PROMPTS.md's own sequencing, each carrying its own
   /// quality review before implementation. The approved per-module designs
   /// these are built from live in `docs/course-design/`.
@@ -743,6 +743,234 @@ const CURRICULA: Record<string, SeedSection[]> = {
                     correctOptionIds: ["camera-node"],
                     explanation:
                       "Just the Camera node. It keeps publishing images in the same shape, so everything downstream carries on without knowing anything changed. This is the whole reason for dividing the system into independent nodes — and it is the direct answer to Lesson 2's complaint that swapping a sensor in a monolith means touching unrelated code.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "ROS 2 Ecosystem and Fundamental Architecture",
+      summary:
+        "The graph, the stack beneath it, and how ROS 2 code is packaged — the mental model Module 3 makes real.",
+      lessons: [
+        {
+          slug: "the-ros-2-graph",
+          title: "The ROS 2 Graph",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "You've seen the shape of a ROS 2 system: a camera node, a perception node, a planning node, a control node — each a separate program, each doing one job, passing results along.\n\nThis module gives that shape a name. It's called the ROS 2 graph, and it's the vocabulary the rest of this course is built on.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Here's the part that makes it a graph rather than just a list of programs.\n\nEvery node you start joins one shared, live structure. It announces what it produces and what it wants to receive, and the nodes that care find it — automatically, with nothing coordinating them centrally and no configuration file listing who talks to whom.\n\nStart a node, and it wires itself in. Stop it, and the others notice it's gone. The graph is not a diagram someone drew once; it's the live, current state of what's running and who's connected to whom, changing as you start and stop things.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-2-ros-graph.png",
+                alt: "The camera, perception, planning and control nodes drawn as ellipses connected by labelled directed edges: /camera publishes /image_raw to /perception, which publishes /obstacles to /planning, which publishes /plan to /control, which publishes /cmd_vel to the robot hardware. An /odom edge loops back from the robot to /planning, making the structure a graph rather than a straight line.",
+                caption:
+                  "Module 1's pipeline, redrawn as it actually is — a connected graph. Nodes are drawn as ellipses here to match what rqt_graph shows you in Module 13.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Look at the labels on the connections: /image_raw, /obstacles, /cmd_vel. Those are topics — named channels carrying a continuous flow of data from whoever publishes to whoever is listening. Most of what happens in a ROS 2 system happens over topics.\n\nTopics aren't the only way nodes talk. There are two others, and it's worth knowing they exist before you meet them properly:\n\nServices are request and response — ask a question, wait for an answer, get on with your life. Useful when you need a result rather than a stream.\n\nActions are for longer jobs that take real time to finish and that you might want to monitor or cancel partway — \"drive to the kitchen\" rather than \"here's the current wheel speed.\"\n\nHow any of this actually works in code is Module 6's job, with services and actions getting Modules 7 and 8 to themselves. For now, just know these are the three ways the graph's connections carry data.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "\"Automatically\" reaches further than you might expect",
+                body: "By default, ROS 2 nodes discover each other over the local network — not just within one program, and not just on one machine. On a shared network (a university lab, an office Wi-Fi), your nodes may unexpectedly \"see\" someone else's robot, and theirs may see yours. This is configurable, via a setting called ROS_DOMAIN_ID, and it's covered at the point where it actually starts to matter.",
+              },
+            },
+            {
+              type: "EMBED",
+              data: {
+                provider: "youtube",
+                videoId: "8aoFndU7jos",
+                title: "Getting Started with ROS 2",
+                creator: "Mike Likes Robots",
+                durationLabel: "20 min",
+                whySelected:
+                  "A second, differently-voiced walk through the same ideas you just met — nodes, the graph, and the three ways they communicate. It also gives an early, deliberate glimpse of services, actions and packages before their own modules arrive, which is exactly why it sits here rather than earlier: everything it names has now been named in this lesson first. Watch it as reinforcement, not as new material — nothing in it is assessed before its own module.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You know what the graph is and roughly how nodes talk across it.\n\nNext: what's actually running underneath to make that discovery and communication possible — because \"the nodes just find each other\" is a description of the behaviour, not an explanation of it.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "the-ros-2-stack",
+          title: "The ROS 2 Stack",
+          durationMinutes: 16,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "When two nodes talk, something has to carry the data across the network, notice a node crashing mid-conversation, and figure out who's currently running.\n\nYou don't write any of that. There's a whole stack underneath the graph handling it, and you never call into most of it directly.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "From the top down, here's what sits between your code and the wire.\n\nYour ROS 2 application is the node you write — your perception logic, your control loop.\n\nThe client library is the API you actually call: rclpy in Python, rclcpp in C++. When you write \"publish this message,\" this is what you're talking to.\n\nThe ROS middleware interface, usually written RMW, is a translation layer. It exists so that the layer below it can be swapped without your code changing.\n\nDDS is the real networking and discovery engine — the thing that genuinely finds other nodes and moves bytes between them.\n\nThe network is the wire: Ethernet, Wi-Fi, or just loopback when everything is on one machine.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-2-stack.png",
+                alt: "A vertical five-layer stack with downward arrows: ROS 2 Application (the node you write) labelled \"your code\", then ROS 2 Client Library (rclpy, rclcpp) labelled \"the API you call\", then ROS Middleware Interface (RMW) labelled \"translation layer\", then DDS labelled \"networking / discovery\", then Network labelled \"the wire\". The top layer is highlighted as the only one you write against.",
+                caption:
+                  "Five layers, one of which is yours. The top box is the only place your code lives.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "DDS is the industry-standard technology that actually finds other nodes and moves data between them. It isn't a ROS invention — it's used in aerospace, defence and industrial systems that have nothing to do with robotics, which is a large part of why ROS 2 chose it.\n\nYou don't need its internals to use ROS 2 well. This course won't go deeper than this paragraph on DDS itself.\n\nThat's a deliberate boundary, not an omission. Almost everything a beginner reads about DDS is written for people tuning a production system, and reading it early tends to convince learners that ROS 2 is far more complicated than it is to actually use.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "When you see unfamiliar acronyms",
+                body: "If a tutorial or an error message mentions \"RMW\" or a specific DDS vendor — Fast DDS, Cyclone DDS — that's this middleware layer talking. You're not missing something fundamental if you don't recognise those names yet. Note where you saw it and carry on.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You know what's underneath one node.\n\nNext: how many nodes get organised into distributable, reusable units — and where ROS 2 itself actually comes from when you install it.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "distributions-packages-and-workspaces",
+          title: "Distributions, Packages, and Workspaces",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "ROS 2 isn't one download.\n\nIt's released in named distributions — this course uses Jazzy Jalisco. Your code lives inside packages, and those packages are organised inside a workspace.\n\nModule 10 covers the mechanics of building and managing all this. This lesson is just the map, so that Module 3's install makes sense while you're doing it.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A distribution is a tested, compatible bundle of ROS 2 itself plus thousands of community packages, released on a schedule, with a name and a support window.\n\nThe comparison that usually lands: it's the same idea as an Ubuntu release. \"Ubuntu 24.04\" isn't a program, it's a versioned collection of software that's been tested together. Jazzy Jalisco is that, for ROS 2.\n\nThis is why Module 1 told you to check the version on every tutorial you read, and why Module 0's checklist pinned you to Ubuntu 24.04 — Jazzy targets that release specifically.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A package bundles one or more related nodes together with everything they need to run: the code, the configuration, the message definitions, the declared dependencies.\n\nPackages are the unit of reuse, and that matters more than it sounds. When Module 1 said an engineer can install someone else's camera driver instead of writing one, this is the mechanism. That driver is a package. You install it, and its nodes become things you can run.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A workspace is where your own packages live while you're developing them.\n\nIt's kept deliberately separate from the distribution's pre-built packages. The distribution's packages sit in a system directory you don't edit; your workspace is a folder you own, containing the packages you're actively writing.\n\nThe separation is what lets you build and break your own code without ever putting the working ROS 2 installation underneath it at risk.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-2-scopes.png",
+                alt: "Two containers side by side. On the left, a solid box labelled Jazzy Jalisco — a distribution installed at /opt/ros/jazzy — holding package chips including rclpy, rclcpp, turtlesim, rviz2, demo_nodes_cpp, tf2, sensor_msgs, geometry_msgs, nav2_bringup, image_transport, and a dashed chip reading plus thousands more. On the right, a dashed box labelled Your workspace holding two chips, my_first_package and my_robot_bringup.",
+                caption:
+                  "Three different scopes, not three levels of difficulty: what ROS 2 ships with, versus what you're building.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "This is the map, not the territory",
+                body: "Module 10 is where all of this becomes hands-on — a real workspace, a real package you create and build yourself. If the words colcon or rosdep mean nothing to you yet, that is exactly where you should be right now. Nothing in this lesson needs to be memorised; it needs to be recognised later.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That's the whole architecture, in three pieces.\n\nNodes connect on a graph (Lesson 1). A stack underneath makes that connection possible (Lesson 2). Packages inside a distribution organise and share the code (this lesson).\n\nModule 3 makes all of it real: installing ROS 2 Jazzy on Ubuntu 24.04, and understanding exactly what that puts on your machine and why you have to source it before it works.",
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 2 Check: The Graph, the Stack, and the Packaging",
+                description:
+                  "Four questions on the architecture you've just built a mental model of. As always, the explanation matters more than the score.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt: "What is a ROS 2 distribution most similar to?",
+                    options: [
+                      { id: "release-bundle", label: "A tested, versioned release bundle — the same idea as an Ubuntu release" },
+                      { id: "one-program", label: "A single downloadable robot program you run" },
+                      { id: "company", label: "The company that maintains ROS 2" },
+                      { id: "language", label: "A programming language used to write robot code" },
+                    ],
+                    correctOptionIds: ["release-bundle"],
+                    explanation:
+                      "A distribution — Jazzy Jalisco, here — is a bundle of ROS 2 plus thousands of community packages that have been tested together, released on a schedule with a name and a support window. Exactly like \"Ubuntu 24.04\" naming a tested collection rather than a single program. Not a company (that's Open Robotics), and not a language: ROS 2 code is written in Python or C++. Review Lesson 3.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You need a driver for a common LIDAR sensor, and someone has already written and released one. What ROS 2 concept lets you use theirs instead of writing your own?",
+                    options: [
+                      { id: "package", label: "Install their package" },
+                      { id: "topic", label: "Subscribe to their topic" },
+                      { id: "distro", label: "Switch to the distribution they used" },
+                      { id: "copy", label: "Copy their node's source file into your own node" },
+                    ],
+                    correctOptionIds: ["package"],
+                    explanation:
+                      "The package is ROS 2's unit of reuse — nodes bundled with their code, config and dependencies into something installable. Subscribing to a topic is how you'd read data from a node that's already running; it doesn't get you the driver. And copying source into your own node throws away exactly the reuse a package exists to provide. Review Lesson 3.",
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "DDS is something every ROS 2 developer needs to configure by hand before their code will work.",
+                    correctAnswer: false,
+                    explanation:
+                      "False. DDS runs underneath the client library by default, and most ROS 2 developers never touch it directly — you write against rclpy or rclcpp at the top of the stack and the layers below already work. There are production situations where DDS gets tuned deliberately, but that is a long way from \"needed before your code will work.\" Review Lesson 2.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Your node calls a function from rclpy to publish a message. Looking at the stack diagram, which layer is that call landing in?",
+                    options: [
+                      { id: "client-library", label: "The ROS 2 Client Library" },
+                      { id: "rmw", label: "The ROS Middleware Interface (RMW)" },
+                      { id: "dds", label: "DDS" },
+                      { id: "network", label: "The network" },
+                    ],
+                    correctOptionIds: ["client-library"],
+                    explanation:
+                      "rclpy is the client library — the API you actually call. Your request then travels down through RMW, which translates it, to DDS, which does the real discovery and data transport, and finally onto the network. All three of those lower layers are involved in delivering the message, but the call you wrote lands in the client library. Review Lesson 2's stack diagram.",
                   },
                 ],
               },
