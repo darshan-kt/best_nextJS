@@ -204,6 +204,40 @@ describe("enrollment-gated course content", () => {
     expect(mayLearn(anonymous, null)).toBe(false);
   });
 
+  it("lets an enrolled learner still view a course that has gone back to DRAFT", () => {
+    const draft = FIXTURES.find((f) => f.name === "draft + public")!.course;
+
+    // The regression this guards: a course an actively-enrolled learner is
+    // partway through must not vanish from under them the moment it goes
+    // back to DRAFT mid-authoring — `getCourseWithCurriculum` used to gate
+    // on `course:view` alone, which had no enrollment branch, so this
+    // returned a 404 for a learner with real progress on the course (§12 —
+    // "students can access enrolled courses").
+    expect(
+      can(learner, { type: "course:view", course: draft, enrollment: enrolled })
+    ).toBe(true);
+    expect(
+      can(learner, { type: "course:view", course: draft, enrollment: completed })
+    ).toBe(true);
+
+    // A cancelled enrollment, or no enrollment at all, still gets nothing —
+    // this is not a general "any enrollment ever" bypass.
+    expect(
+      can(learner, { type: "course:view", course: draft, enrollment: cancelled })
+    ).toBe(false);
+    expect(can(learner, { type: "course:view", course: draft })).toBe(false);
+
+    // And it must be *this* actor's own enrollment — someone else's row on
+    // the same course is not a key that opens it for you.
+    expect(
+      can(otherInstructor, {
+        type: "course:view",
+        course: draft,
+        enrollment: enrolled,
+      })
+    ).toBe(false);
+  });
+
   it("still admits a learner who has completed the course", () => {
     // Finishing a course must not lock someone out of material they earned.
     expect(mayLearn(learner, completed)).toBe(true);

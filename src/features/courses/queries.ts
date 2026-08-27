@@ -1,9 +1,11 @@
 import { prisma } from "@/db/client";
 import {
   can,
+  isPubliclyVisible,
   type Actor,
   type CourseSubject,
 } from "@/features/auth/policy";
+import { getEnrollment } from "@/features/enrollment/queries";
 import { CATALOG_VISIBILITY, isListableInCatalog } from "./visibility";
 import { PAGE_SIZE } from "./search-params";
 
@@ -205,7 +207,27 @@ export async function getCourseWithCurriculum(
     },
   });
 
-  if (!course || !can(actor, { type: "course:view", course })) {
+  if (!course) {
+    return null;
+  }
+
+  const courseSubject: CourseSubject = {
+    instructorId: course.instructorId,
+    status: course.status,
+    visibility: course.visibility,
+  };
+
+  // Enrollment only changes the outcome once the cheap checks (public
+  // course, instructor, moderator) have already failed — the common case
+  // is a published public course or an anonymous visitor, and `getEnrollment`
+  // would otherwise run a needless query on every one of those (§26).
+  const enrollment = isPubliclyVisible(courseSubject)
+    ? null
+    : await getEnrollment(actor?.id ?? null, course.id);
+
+  if (
+    !can(actor, { type: "course:view", course: courseSubject, enrollment })
+  ) {
     return null;
   }
 
@@ -219,11 +241,7 @@ export async function getCourseWithCurriculum(
     description: course.description,
     publishedAt: course.publishedAt,
     instructor: course.instructor,
-    policySubject: {
-      instructorId: course.instructorId,
-      status: course.status,
-      visibility: course.visibility,
-    },
+    policySubject: courseSubject,
     sections: course.sections,
     lessonCount: lessons.length,
     totalDurationMinutes: lessons.reduce(

@@ -101,7 +101,11 @@ export function isOpenForSelfEnrollment(course: CourseSubject): boolean {
 
 export type PolicyAction =
   | { type: "course:create" }
-  | { type: "course:view"; course: CourseSubject }
+  | {
+      type: "course:view";
+      course: CourseSubject;
+      enrollment?: EnrollmentSubject | null;
+    }
   | { type: "course:enroll"; course: CourseSubject }
   | {
       type: "course:learn";
@@ -161,15 +165,25 @@ export function can(actor: Actor | null, action: PolicyAction): boolean {
 
     case "course:view":
       // Publicly visible courses were already granted above, so anything
-      // reaching here is unpublished, PRIVATE, or both: readable only by
-      // its author and moderators. Note that a PUBLISHED but PRIVATE
-      // course is therefore *not* readable by an arbitrary signed-in user
-      // — publication and audience are separate questions (§14).
+      // reaching here is unpublished, PRIVATE, or both: readable by its
+      // author, moderators, or a learner with a live enrollment (mirrors
+      // `course:learn` below). Note that a PUBLISHED but PRIVATE course is
+      // therefore *not* readable by an arbitrary signed-in user —
+      // publication and audience are separate questions (§14).
       //
-      // Enrollment-based access arrives with the Enrollment model in
-      // Milestone 5 and belongs in this branch.
+      // The enrollment branch matters specifically for a course that goes
+      // back to DRAFT mid-authoring (§11's curriculum hierarchy is built
+      // incrementally, module by module) while a learner is still actively
+      // progressing through it: enrollment, not publish status, is what
+      // makes a course "theirs" (§12 — "students can access enrolled
+      // courses"), so losing access to material with real progress on it
+      // would be a worse failure than an early preview leaking out.
       return (
-        action.course.instructorId === actor.id || hasRole(actor, "MODERATOR")
+        action.course.instructorId === actor.id ||
+        hasRole(actor, "MODERATOR") ||
+        (action.enrollment?.userId === actor.id &&
+          (action.enrollment.status === "ACTIVE" ||
+            action.enrollment.status === "COMPLETED"))
       );
 
     case "course:enroll":
