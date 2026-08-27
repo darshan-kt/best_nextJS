@@ -99,9 +99,36 @@ export const embedBlockSchema = z.object({
   title: z.string().min(1),
   creator: z.string().min(1),
   whySelected: z.string().optional(),
-  /** Display label only, e.g. "12 min" — not used for playback. */
+  /** Display label only, e.g. "12 min" — not used for playback. When a
+   *  segment is set below, this describes the *segment*, not the source
+   *  video, since that is the commitment the learner is being asked for. */
   durationLabel: z.string().optional(),
-});
+  /**
+   * An optional clip of the source video, in whole seconds.
+   *
+   * §14 prefers short explanation videos, but the best available curated
+   * video for a topic is often a longer survey with one chapter that
+   * actually matches the lesson. Playing that chapter rather than the
+   * whole thing keeps the citation honest (same creator, same video, full
+   * attribution) without asking for twenty minutes where nine will do.
+   *
+   * These are passed to YouTube's player as `start`/`end`, so they are
+   * playback hints, not access control — the learner can always scrub
+   * outside the range, and the renderer deliberately offers the full
+   * video alongside rather than pretending the rest doesn't exist.
+   */
+  startSeconds: z.int().nonnegative().optional(),
+  endSeconds: z.int().positive().optional(),
+}).refine(
+  (data) =>
+    data.startSeconds === undefined ||
+    data.endSeconds === undefined ||
+    data.endSeconds > data.startSeconds,
+  {
+    message: "endSeconds must be greater than startSeconds",
+    path: ["endSeconds"],
+  }
+);
 export type EmbedBlockData = z.infer<typeof embedBlockSchema>;
 
 export const calloutVariants = ["INFO", "TIP", "WARNING", "DANGER"] as const;

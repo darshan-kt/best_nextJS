@@ -1,6 +1,5 @@
-import Image from "next/image";
-
 import type { ImageBlockData } from "../../schemas";
+import { ZoomableImage } from "./zoomable-image";
 
 /**
  * `next/image` rather than a plain `<img>` — optimized delivery is a
@@ -10,19 +9,18 @@ import type { ImageBlockData } from "../../schemas";
  * A fixed aspect-ratio box rather than intrinsic width/height: content
  * authors won't know a fixed pixel size in advance, and `fill` inside a
  * ratio-locked container avoids layout shift without requiring one.
+ *
+ * Both of those now live in `ZoomableImage`, which adds click-to-enlarge —
+ * course diagrams are authored at roughly twice the lesson column's width,
+ * so the inline render is an overview and the dialog is the readable copy.
+ * This component stays a Server Component and keeps the `"use client"`
+ * boundary down at the one piece that genuinely needs state (§7); the
+ * caption never needed to cross it.
  */
 export function ImageBlock({ data }: { data: ImageBlockData }) {
   return (
     <figure className="flex flex-col gap-2">
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
-        <Image
-          src={data.src}
-          alt={data.alt}
-          fill
-          sizes="(min-width: 768px) 640px, 100vw"
-          className="object-cover"
-        />
-      </div>
+      <ZoomableImage data={data} />
 
       {data.caption ? (
         <figcaption className="text-caption text-muted-foreground">

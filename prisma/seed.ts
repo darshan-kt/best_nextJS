@@ -63,6 +63,9 @@ type SeedContentBlock =
         creator: string;
         whySelected?: string;
         durationLabel?: string;
+        /** Optional clip bounds, in whole seconds — see `embedBlockSchema`. */
+        startSeconds?: number;
+        endSeconds?: number;
       };
     }
   | {
@@ -803,9 +806,18 @@ const CURRICULA: Record<string, SeedSection[]> = {
                 videoId: "8aoFndU7jos",
                 title: "Getting Started with ROS 2",
                 creator: "Mike Likes Robots",
-                durationLabel: "20 min",
+                durationLabel: "9 min",
+                // The source video is 19:49. Its "What is ROS 2?" and
+                // "Message Passing" chapters run 0:24-9:48 and cover
+                // exactly this lesson's ground; the chapters after that
+                // are Module 3's, 10's and 13's material. Playing the
+                // matching span keeps §14's short-video preference
+                // without discarding a video that was verified against
+                // §15 (see docs/course-design/module-2-design.md).
+                startSeconds: 24,
+                endSeconds: 588,
                 whySelected:
-                  "A second, differently-voiced walk through the same ideas you just met — nodes, the graph, and the three ways they communicate. It also gives an early, deliberate glimpse of services, actions and packages before their own modules arrive, which is exactly why it sits here rather than earlier: everything it names has now been named in this lesson first. Watch it as reinforcement, not as new material — nothing in it is assessed before its own module.",
+                  "A second, differently-voiced walk through the same ideas you just met — nodes, the graph, and the three ways they communicate. This plays the two chapters that match this lesson; the rest of the video moves on to packages, tooling and installation, which are Modules 3, 10 and 13's ground. Watch it as reinforcement, not as new material — nothing in it is assessed before its own module.",
               },
             },
             {

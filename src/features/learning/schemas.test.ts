@@ -193,6 +193,53 @@ describe("embedBlockSchema", () => {
       embedBlockSchema.safeParse({ ...valid, provider: "vimeo" }).success
     ).toBe(false);
   });
+
+  it("accepts clip bounds where the end follows the start", () => {
+    expect(
+      embedBlockSchema.safeParse({
+        ...valid,
+        startSeconds: 24,
+        endSeconds: 588,
+      }).success
+    ).toBe(true);
+  });
+
+  it("accepts a start with no end, and an end with no start", () => {
+    expect(
+      embedBlockSchema.safeParse({ ...valid, startSeconds: 24 }).success
+    ).toBe(true);
+    expect(
+      embedBlockSchema.safeParse({ ...valid, endSeconds: 588 }).success
+    ).toBe(true);
+  });
+
+  it("rejects an end at or before the start", () => {
+    // An inverted range would silently produce a player that stops before
+    // it begins, which looks like a broken video rather than bad data.
+    expect(
+      embedBlockSchema.safeParse({
+        ...valid,
+        startSeconds: 588,
+        endSeconds: 24,
+      }).success
+    ).toBe(false);
+    expect(
+      embedBlockSchema.safeParse({
+        ...valid,
+        startSeconds: 100,
+        endSeconds: 100,
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects negative or fractional clip bounds", () => {
+    expect(
+      embedBlockSchema.safeParse({ ...valid, startSeconds: -5 }).success
+    ).toBe(false);
+    expect(
+      embedBlockSchema.safeParse({ ...valid, startSeconds: 12.5 }).success
+    ).toBe(false);
+  });
 });
 
 describe("calloutBlockSchema", () => {
