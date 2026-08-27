@@ -50,3 +50,6 @@ next-env.d.ts
 
 # prisma — generated client is rebuilt by `pnpm install` (postinstall)
 /src/db/generated
+
+# Agent worktrees — full nested checkouts, never part of this tree.
+.claude/worktrees/

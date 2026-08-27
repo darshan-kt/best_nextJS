@@ -113,38 +113,44 @@ Module 2's ROS Graph on the learner's own machine.
 6. **TEXT** — **the observation the whole module turns on**: `turtlesim_node` started first, knowing nothing about teleop. `turtle_teleop_key` started second, knowing nothing about Turtlesim. Neither was given an address, a port, or a config file. They found each other anyway.
 7. **IMAGE** — the invisible link (below)
 8. **CALLOUT** (INFO) — the Module 2 callback: "Module 2 called this automatic discovery and drew it as a diagram. This is the same thing, on your machine, with your two terminals."
-9. **EMBED** — the Turtlesim walkthrough video (below)
-10. **TEXT** — a detail deliberately left unresolved: press an arrow key and the turtle moves briefly, then stops on its own, even though you never told it to stop. "That is not a bug, and the explanation is genuinely interesting. It's Module 6's."
-11. **TEXT** — bridge to Lesson 3.
+9. **TEXT** — a detail deliberately left unresolved: press an arrow key and the turtle moves briefly, then stops on its own, even though you never told it to stop. "That is not a bug, and the explanation is genuinely interesting. It's Module 6's."
+10. **TEXT** — bridge to Lesson 3.
 
 **Visual requirements:**
 - **Purpose:** make the connection between two independent programs visible, since the entire point is that it is invisible in practice · **Concept:** two nodes exchanging data over something neither of them configured · **Format:** side-by-side panel diagram — Terminal A, Terminal B, and the Turtlesim window · **What should be shown:** an arrow from teleop to Turtlesim labelled `/turtle1/cmd_vel`, drawn as a **dashed** line with the caption "you haven't met this yet — Module 6," plus explicit "not configured" annotations on both terminals · **What the learner should understand:** the link is real, has a name, and was created without them.
 
-**Video requirements:**
+**Video requirements: none — the candidate was verified and dropped.**
+
 ```
 VIDEO TITLE: Easily Learn ROS2 Jazzy Using Turtlesim Simulation :
   Step-by-step tutorial for Learning ROS2 Jazzy
 CREATOR / CHANNEL: Aleksandar Haber PhD
 LINK: https://www.youtube.com/watch?v=k3NHSOq64xc
-APPROXIMATE DURATION: NOT YET VERIFIED. Title, creator and platform are
-  confirmed via YouTube's oEmbed metadata; publication date (18 Feb 2025,
-  post-dating Jazzy's May 2024 release) via search metadata. Duration must
-  be confirmed at implementation time, exactly as Module 3's video was —
-  and the video dropped if it turns out to be long enough to violate §14's
-  "do not overload learners with long videos."
-COURSE MODULE: Module 4 — Your First ROS 2 System
-LESSON: Lesson 2 — Two Programs, One System
-ROS 2 VERSION RELEVANCE: Explicit Jazzy match in the title, published
-  after the Jazzy release — not a re-tagged Foxy/Humble tutorial
-WHY SELECTED: Turtlesim is the one topic where a still image genuinely
-  underperforms; the learner needs to see motion respond to keystrokes
-  before trusting their own setup. A different creator from Module 3's
-  video deliberately — the course should not read as one channel's
-  playlist, and §8 favours breadth of credible sources.
-WHAT THE LEARNER WILL GAIN: Confirmation of what a working two-terminal
-  Turtlesim session looks and behaves like, so a learner whose own setup
-  misbehaves can tell "mine is broken" from "this is normal."
+VERIFIED DURATION: PT20M18S (1218s), read from the video's own player
+  metadata — not estimated, and not taken from the creator's description
+PUBLISHED: 2025-02-18, post-dating the Jazzy release
+ROS 2 VERSION RELEVANCE: Exact Jazzy match, confirmed
+DECISION: DROPPED — §14 ("do not overload learners with long videos")
 ```
+
+Twenty minutes is too long to embed whole in a beginner module whose own
+lessons run 15–20 minutes each. The obvious alternative was clip bounds, which
+this course already uses in Module 2 — but **the video has no chapter markers**,
+so choosing a start and end would mean guessing at timestamps and publishing
+them as though they were verified. That is precisely the authored-as-if-captured
+failure this pass is elsewhere correcting, and it is not worth committing here
+to save a diagram.
+
+No shorter Jazzy-specific Turtlesim video was found that could be
+version-verified, so none was substituted rather than lowering the §15 bar.
+
+The pedagogical loss is smaller here than it would have been in Module 3, and
+that is not a rationalisation after the fact — it is a real asymmetry. Module 3's
+install is one-shot, risky and hard to undo, so seeing someone else do it first
+has genuine value. Module 4's demonstration is something **the learner performs
+themselves, in this very lesson**, seconds later, and can repeat freely at no
+cost. The learner is the demonstration. The diagrams in Lessons 2 and 3 carry the part
+their own screen cannot show them — the connection they cannot see.
 
 **Practical exercise — GUIDED:** open the second terminal → confirm `ros2` is available in it → run `turtle_teleop_key` → arrange windows so both are visible with the teleop terminal focused → drive the turtle into a closed shape. The window-arrangement step is a real step, not stage direction: it is where the focus rule is learned by doing rather than by being warned.
 
@@ -219,7 +225,7 @@ actions; the "one program = one node" misconception (§21).
 7. **FILE** — a Turtlesim command cheat sheet PDF (§17): every command used in this module on one page — `ros2 run`, the four `list` subcommands, `ros2 topic echo`, `ros2 pkg executables` — with the display-troubleshooting checks on the reverse. The first course-supplied reference the learner will plausibly keep open on a second screen.
 8. **TEXT** — recap and connection to Module 5.
 
-**Visual requirements:** None additional. The module's three diagrams are spent, and this lesson's content is a debugging narrative plus a naming table — both of which read better as prose and a QUIZ than as a fourth image. Adding a diagram here would be filling a quota.
+**Visual requirements:** None additional. The module's four diagrams are spent, and this lesson's content is a debugging narrative plus a naming table — both of which read better as prose and a QUIZ than as a fifth image. Adding a diagram here would be filling a quota.
 
 **Video requirements:** None. Lesson 2's video already demonstrates the working case; this lesson is about the broken one, which is better practised than watched.
 
@@ -299,9 +305,17 @@ independent of which verification route is chosen:
   including one containing `cmd_vel`"), and the prose must lean on the shape,
   never on an exact count.
 
-The verification options themselves are being decided separately and are not
-assumed here. This document should not be marked implementation-ready until
-that decision lands.
+**Path D is applied as of implementation.** `codeBlockSchema` gained an optional
+`caption`, rendered inside the block's own frame by `CodeBlock` — which serves
+both content blocks and exercise visuals, so one change covers every surface.
+Every block in Modules 3 and 4 that renders a *transcript* now carries a caption
+saying the output is illustrative and naming what actually varies. Blocks that
+show only commands the learner types carry no caption, since input does not vary.
+
+**Path C is being built in parallel** — a weekly `ubuntu-24.04` GitHub Actions
+job performing the real Jazzy install and diffing captured output against
+fixtures extracted from the course content. Until that job has run green once,
+every output string in both modules remains authored.
 
 ---
 

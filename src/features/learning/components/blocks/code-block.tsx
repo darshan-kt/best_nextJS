@@ -34,6 +34,17 @@ export function CodeBlock({ data }: { data: CodeBlockData }) {
           {data.code}
         </code>
       </pre>
+
+      {/* Inside the bordered figure rather than below it, unlike
+          `ImageBlock`'s caption: this text qualifies what is *in* the
+          block ("yours will differ"), so separating it from the frame
+          would let a skimming reader take the transcript at face value
+          and miss the qualification entirely. */}
+      {data.caption ? (
+        <figcaption className="border-t border-border bg-muted/40 px-4 py-2 text-caption text-muted-foreground">
+          {data.caption}
+        </figcaption>
+      ) : null}
     </figure>
   );
 }

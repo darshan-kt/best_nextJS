@@ -69,6 +69,26 @@ export const codeBlockSchema = z.object({
    *  installed, so this does not yet select a grammar. */
   language: z.string().optional(),
   filename: z.string().optional(),
+  /**
+   * An optional note rendered below the block — deliberately the same word,
+   * shape and visual treatment as `imageBlockSchema.caption`, so authors
+   * reach for one concept rather than two (§21, §34).
+   *
+   * It exists for a specific, recurring need in this course's content.
+   * Terminal output shown in lessons is *authored* — written from the
+   * official documentation rather than captured from a real machine — and
+   * even genuinely captured output varies per machine: package counts,
+   * node ids, point-release numbers and path usernames all differ
+   * legitimately. A block that renders a transcript has to say so, or a
+   * learner will compare their screen against ours line by line and read
+   * an ordinary difference as a broken install. That misread is most
+   * likely in exactly the modules where trust is lowest (installation,
+   * first-run verification), which is where the cost is highest.
+   *
+   * Optional, so blocks that show only *commands* — input the learner
+   * types, which does not vary — carry no caption and no visual noise.
+   */
+  caption: z.string().optional(),
 });
 export type CodeBlockData = z.infer<typeof codeBlockSchema>;
 

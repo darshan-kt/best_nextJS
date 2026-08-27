@@ -2,6 +2,15 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 import { Prisma, PrismaClient } from "../src/db/generated/client";
 import { hashPassword } from "../src/features/auth/password";
+import type {
+  CalloutBlockData,
+  CodeBlockData,
+  EmbedBlockData,
+  FileBlockData,
+  ImageBlockData,
+  TextBlockData,
+  VideoBlockData,
+} from "../src/features/learning/schemas";
 
 /**
  * Development seed data.
@@ -46,36 +55,26 @@ const STUDENT_PASSWORD = "seed-password-123";
 /// real for `next/image` and `<video>` to load. This is seed data, not
 /// application logic — the renderers themselves are provider-agnostic
 /// (§32) and know nothing about where these particular URLs live.
+///
+/// Block payloads are `z.infer`red from the Zod schemas in
+/// `src/features/learning/schemas.ts` rather than restated here. They were
+/// restated once, and the copies silently drifted the moment a field was
+/// added to a schema — seed data that typechecks against a stale local copy
+/// but fails validation at render is the exact failure that duplication
+/// invites (§4, §34). The schemas are the boundary contract (§9); this file
+/// is one of the things being contracted.
 type SeedContentBlock =
-  | { type: "TEXT"; data: { body: string } }
-  | { type: "IMAGE"; data: { src: string; alt: string; caption?: string } }
-  | { type: "VIDEO"; data: { src: string; title: string; posterSrc?: string } }
-  | {
-      type: "CODE";
-      data: { code: string; language?: string; filename?: string };
-    }
-  | {
-      type: "EMBED";
-      data: {
-        provider: "youtube";
-        videoId: string;
-        title: string;
-        creator: string;
-        whySelected?: string;
-        durationLabel?: string;
-        /** Optional clip bounds, in whole seconds — see `embedBlockSchema`. */
-        startSeconds?: number;
-        endSeconds?: number;
-      };
-    }
-  | {
-      type: "CALLOUT";
-      data: { variant: "INFO" | "TIP" | "WARNING" | "DANGER"; title?: string; body: string };
-    }
-  | {
-      type: "FILE";
-      data: { href: string; label: string; description?: string; sizeLabel?: string };
-    }
+  | { type: "TEXT"; data: TextBlockData }
+  | { type: "IMAGE"; data: ImageBlockData }
+  | { type: "VIDEO"; data: VideoBlockData }
+  | { type: "CODE"; data: CodeBlockData }
+  | { type: "EMBED"; data: EmbedBlockData }
+  | { type: "CALLOUT"; data: CalloutBlockData }
+  | { type: "FILE"; data: FileBlockData }
+  /// QUIZ and EXERCISE stay hand-written: they own relational rows
+  /// (`Quiz`, `Exercise`) rather than a JSON payload, so there is no
+  /// block-data schema to derive them from — see the note at the top of
+  /// `features/learning/schemas.ts`.
   | {
       type: "QUIZ";
       quiz: {
@@ -104,8 +103,8 @@ type SeedContentBlock =
 type SeedRichText = {
   body: string;
   visuals?: (
-    | { kind: "IMAGE"; data: { src: string; alt: string; caption?: string } }
-    | { kind: "CODE"; data: { code: string; language?: string; filename?: string } }
+    | { kind: "IMAGE"; data: ImageBlockData }
+    | { kind: "CODE"; data: CodeBlockData }
   )[];
 };
 type SeedExerciseConfig =
@@ -1094,7 +1093,9 @@ const CURRICULA: Record<string, SeedSection[]> = {
                             kind: "CODE",
                             data: {
                               language: "text",
-                              code: "Distributor ID: Ubuntu\nDescription:    Ubuntu 24.04.1 LTS\nRelease:        24.04\nCodename:       noble",
+                              code: "No LSB modules are available.\nDistributor ID: Ubuntu\nDescription:    Ubuntu 24.04.1 LTS\nRelease:        24.04\nCodename:       noble",
+                              caption:
+                                "Illustrative output. The first line is a harmless notice, not an error. Your point release will differ — 24.04.2, 24.04.3 and so on are all fine. The Release line reading 24.04 and the Codename reading noble are what matter.",
                             },
                           },
                         ],
@@ -1254,7 +1255,9 @@ const CURRICULA: Record<string, SeedSection[]> = {
               data: {
                 language: "bash",
                 filename: "before-and-after.sh",
-                code: "# --- Before ---------------------------------------------------------\n$ ros2 --help\nros2: command not found\n\n$ echo $ROS_DISTRO          # empty: nothing has told this shell about ROS 2\n\n\n# --- Source it ------------------------------------------------------\n$ source /opt/ros/jazzy/setup.bash\n\n\n# --- After ----------------------------------------------------------\n$ echo $ROS_DISTRO\njazzy\n\n$ ros2 --help\nusage: ros2 [-h] Call `ros2 <command> -h` for more detailed usage. ...\n\nros2 is an extensible command-line tool for ROS 2.\n\noptional arguments:\n  -h, --help            show this help message and exit\n\nCommands:\n  action     Various action related sub-commands\n  bag        Various rosbag related sub-commands\n  node       Various node related sub-commands\n  param      Various param related sub-commands\n  pkg        Various package related sub-commands\n  run        Run a package specific executable\n  topic      Various topic related sub-commands\n  ...",
+                caption:
+                  "Illustrative output, abridged at the ellipses. The exact help text changes between Jazzy patch releases and the command list is longer than shown. What matters is the shape: the same command fails before sourcing and works after it.",
+                code: "# --- Before ---------------------------------------------------------\n$ ros2 --help\nbash: ros2: command not found\n\n$ echo $ROS_DISTRO          # empty: nothing has told this shell about ROS 2\n\n\n# --- Source it ------------------------------------------------------\n$ source /opt/ros/jazzy/setup.bash\n\n\n# --- After ----------------------------------------------------------\n$ echo $ROS_DISTRO\njazzy\n\n$ ros2 --help\nusage: ros2 [-h] Call `ros2 <command> -h` for more detailed usage. ...\n\nros2 is an extensible command-line tool for ROS 2.\n\noptions:\n  -h, --help            show this help message and exit\n\nCommands:\n  action     Various action related sub-commands\n  bag        Various rosbag related sub-commands\n  node       Various node related sub-commands\n  param      Various param related sub-commands\n  pkg        Various package related sub-commands\n  run        Run a package specific executable\n  topic      Various topic related sub-commands\n  ...",
               },
             },
             {
@@ -1396,6 +1399,8 @@ const CURRICULA: Record<string, SeedSection[]> = {
               data: {
                 language: "bash",
                 filename: "fix-locale.sh",
+                caption:
+                  "Illustrative output. Real locale output is a dozen or so lines and your values may differ — en_GB.UTF-8 is just as good as en_US.UTF-8. The only thing being checked is whether they end in UTF-8 at all.",
                 code: "# Diagnose: is this shell using a UTF-8 locale?\nlocale\n#   LANG=C           <- the problem\n#   LANG=en_US.UTF-8 <- what you want\n\n# Fix it, then re-check.\nsudo apt update && sudo apt install -y locales\nsudo locale-gen en_US en_US.UTF-8\nsudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8\nexport LANG=en_US.UTF-8\n\nlocale   # confirm LANG and LC_ALL now end in UTF-8",
               },
             },
@@ -1423,6 +1428,8 @@ const CURRICULA: Record<string, SeedSection[]> = {
                         data: {
                           language: "text",
                           code: "$ ros2 run demo_nodes_cpp talker\n[ERROR] [rcl]: Failed to create log directory: /home/you/.ros/log\n  Permission denied\n[ros2run]: Process exited with failure 1",
+                          caption:
+                            "Illustrative output. Your username replaces \"you\" in the path, and the exact wording varies between releases. The shape to recognise is a permission error on a path under ~/.ros.",
                         },
                       },
                     ],
@@ -1553,6 +1560,542 @@ const CURRICULA: Record<string, SeedSection[]> = {
               type: "TEXT",
               data: {
                 body: "That's the module.\n\nUbuntu confirmed (Lesson 1), ROS 2 physically installed and located (Lesson 2), your terminal connected to it permanently (Lesson 3), and three checkpoints passed — with five real failure modes either fixed or now understood well enough to diagnose (this lesson).\n\nEvery checkpoint you just ran used a plain demo node, deliberately not Turtlesim. That's next. Module 4 is the first time you'll run and control an actual simulated robot — and everything that makes ros2 run work today is what makes that possible.",
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Your First ROS 2 System",
+      summary:
+        "Run and control an actual simulated robot, then look inside the running system — and come out with four questions the rest of the course answers.",
+      lessons: [
+        {
+          slug: "meet-turtlesim",
+          title: "Meet Turtlesim",
+          durationMinutes: 16,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Your last checkpoint in Module 3 was ros2 run demo_nodes_cpp talker, and it printed lines of text.\n\nThis lesson runs a command of exactly the same shape. One package name and one executable name are different. This time, something opens.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Turtlesim is a deliberately trivial simulator: a coloured square, and a turtle that leaves a line behind it as it moves.\n\nThat triviality is the point, and it isn't a compromise. A realistic robot at this stage would hide the thing you're actually here to see. Every minute spent understanding its joints, its sensors and its physics would be a minute not spent on the architecture around it — and the architecture is what transfers.\n\nSo the turtle is not the subject. The system around the turtle is the subject. Keep that in mind when it looks too simple to be worth your time; by Lesson 3 you'll be inspecting a live distributed system, and the fact that it happens to be driving a cartoon is what makes that possible this early.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "First, confirm you already have it.\n\nIn Module 3 you installed ros-jazzy-desktop, and turtlesim is part of that bundle. So for most people this is a confirmation rather than an install.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "check-turtlesim.sh",
+                code: "# What can I actually run from the turtlesim package?\nros2 pkg executables turtlesim\n\n# turtlesim draw_square\n# turtlesim mimic\n# turtlesim turtle_teleop_key\n# turtlesim turtlesim_node\n\n# Nothing listed? You installed a smaller variant than ros-jazzy-desktop:\nsudo apt update && sudo apt install -y ros-jazzy-turtlesim",
+                caption:
+                  "Illustrative output. The executables shown are the ones this module uses; your list may include others depending on your install variant. If turtlesim_node and turtle_teleop_key are both there, you have everything this module needs.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "run-turtlesim.sh",
+                code: "ros2 run turtlesim turtlesim_node",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-4-turtlesim-window.png",
+                alt: "A terminal running ros2 run turtlesim turtlesim_node, with an arrow labelled \"draws into\" pointing to a separate TurtleSim window containing a green turtle on a blue background. The terminal is annotated \"the node is here — this terminal is still busy\"; the window is annotated \"the window is just output — there is no control in it\".",
+                caption:
+                  "The program and the picture are two different things. The terminal holds the running node; the window is only what it draws.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "If no window appears, this is almost certainly not ROS 2",
+                body: "This is the first program in the course that opens a window, which makes it the first time your graphics setup matters. If you're on a virtual machine or WSL2, this is the moment the warning from Module 3 Lesson 1 becomes real.\n\nThe tell is a healthy-looking terminal — log lines appear, no errors, the command doesn't exit — with nothing on screen. That combination means the node started fine and had nowhere to draw. Module 3's troubleshooting tree deliberately didn't cover this, because nothing before now needed a display. The checks below are that missing branch.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "check-display.sh",
+                code: "# Does this shell have a display to draw on at all?\necho $DISPLAY\n#   :0        <- fine\n#   :1        <- also fine\n#   (empty)   <- this is your problem\n\n# WSL2: WSLg provides the display. Windows 11 has it built in;\n# on Windows 10 you need an X server running on the Windows side.\nwsl.exe --version   # run this from Windows, not from inside Ubuntu\n\n# Virtual machine: install guest additions and enable 3D acceleration\n# in the VM's display settings, then reboot the guest.\n\n# Connected over SSH? Forward X11 explicitly:\n# ssh -X user@host",
+                caption:
+                  "Illustrative output. Display values vary by setup and none of these commands is ROS 2 — that is the point. A missing window is a host-environment problem, and fixing it happens outside ROS 2 entirely.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Get the turtle on screen",
+                instructions:
+                  "Short, and more important than it looks. Everything in this module assumes this window exists.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Start turtlesim_node and confirm — visually, on your actual screen — that a window with a turtle in it is open. Not \"the command ran without errors\": a window you can see.",
+                  },
+                  steps: [
+                    {
+                      title: "Confirm the package is there",
+                      content: {
+                        body: "Check what turtlesim gives you to run. You're looking for turtlesim_node and turtle_teleop_key in the list:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 pkg executables turtlesim",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Start the simulator",
+                      content: {
+                        body: "Run it, and leave this terminal alone afterwards — the program lives in it. Don't close it, and don't press Ctrl+C until you're finished with the whole lesson:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 run turtlesim turtlesim_node",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Look at your screen, not at the terminal",
+                      content: {
+                        body: "A window titled TurtleSim should be open, with a blue background and a turtle near the middle. If the terminal looks healthy but no window appeared, work through the display checks above before continuing — the rest of this module depends on being able to see the turtle move.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Look at what you actually typed:\n\nros2 run turtlesim turtlesim_node\n\nAnd what you typed in Module 3:\n\nros2 run demo_nodes_cpp talker\n\nSame command, same shape: ros2 run, then a package, then an executable inside it. Nothing about the command got more advanced. The program it started did.\n\nThat shape is worth holding on to, because it doesn't change. Every node you run for the rest of this course — including ones you write yourself — starts the same way.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The turtle is sitting still, and nothing in that window will move it. Click it, press the arrow keys in it, and nothing happens.\n\nThat's not a missing feature. Controlling the turtle is a different program's job — and running it is Lesson 2.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "two-programs-one-system",
+          title: "Two Programs, One System",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Leave turtlesim running. Open a second terminal.\n\nThe turtle needs something to tell it where to go, and that something is a completely separate program — one that knows how to read your arrow keys and turn them into movement commands.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "This is a brand new terminal",
+                body: "If you skipped the ~/.bashrc step in Module 3 Lesson 3, ros2 will be missing here — same failure, same fix, and this is exactly why making it permanent was worth the extra thirty seconds.\n\nCheck with echo $ROS_DISTRO. It should print jazzy. An empty line means source /opt/ros/jazzy/setup.bash first.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "drive-the-turtle.sh",
+                code: "ros2 run turtlesim turtle_teleop_key\n\n# Reading from keyboard\n# ---------------------------\n# Use arrow keys to move the turtle.\n# Use G|B|V|C|D|E|R|T keys to rotate to absolute orientations.\n# 'F' to cancel a rotation.",
+                caption:
+                  "Illustrative output. The exact banner wording varies between releases. What matters is that it prints something and then sits there waiting — that means it started correctly.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now arrange your windows so you can see the TurtleSim window and the teleop terminal at the same time.\n\nThen the one rule that catches almost everybody: the teleop terminal must have keyboard focus. Not the TurtleSim window — the terminal.\n\nThis feels wrong, because the window you're watching is the turtle. But turtle_teleop_key reads keystrokes from the terminal it's running in, and the TurtleSim window has no keyboard handling at all. Click the window you're watching and your arrow keys go nowhere. The official ROS 2 tutorial gives the same instruction in its own words, for the same reason.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Drive the turtle",
+                instructions:
+                  "Both programs need to be running at once. Keep the first terminal untouched.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Move the turtle around deliberately, and draw a closed shape — a square or a triangle — with the line it leaves behind.",
+                  },
+                  steps: [
+                    {
+                      title: "Check the new terminal knows about ROS 2",
+                      content: {
+                        body: "A new terminal is a new shell. Prove it's sourced before assuming anything else is wrong:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "echo $ROS_DISTRO   # expect: jazzy",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Start the teleop node",
+                      content: {
+                        body: "Leave turtlesim_node running in the first terminal. In this second one:",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: {
+                              language: "bash",
+                              code: "ros2 run turtlesim turtle_teleop_key",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Arrange the windows, then click the terminal",
+                      content: {
+                        body: "Position them so the TurtleSim window is visible while the teleop terminal is the one you've clicked into. This is a real step, not stage direction — get it wrong and nothing will move, and you'll spend ten minutes looking for a fault that isn't there.",
+                      },
+                    },
+                    {
+                      title: "Draw something on purpose",
+                      content: {
+                        body: "Use the arrow keys to trace a closed shape. Up moves forward, left and right rotate. You'll notice the turtle moves a short distance and then stops by itself, so a straight edge takes several presses — that behaviour is deliberate and it comes up again at the end of this lesson.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now stop and look at what just happened, because it's easy to miss.\n\nTurtlesim started first. At that moment, teleop did not exist. Turtlesim was not told that anything would ever want to drive it.\n\nTeleop started second, in a different terminal, as a separate program with its own process. It was never given an address, a port number, a socket, or a configuration file. Nothing you typed connected the two.\n\nAnd yet your arrow keys move the turtle.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-4-invisible-link.png",
+                alt: "Two terminals side by side — one running turtlesim_node labelled \"started first, knows nothing about teleop\", the other running turtle_teleop_key labelled \"started second, knows nothing about turtlesim\" — joined by a dashed arrow labelled /turtle1/cmd_vel, with a tag reading \"this link has a name — you meet it properly in Module 6\".",
+                caption:
+                  "Neither program was configured to find the other. The connection between them is real, has a name, and was made without you.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "You've already seen this, as a diagram",
+                body: "Module 2 called this automatic discovery and drew it as part of the ROS Graph. At the time it was a claim on a slide — something you were asked to accept.\n\nThis is the same mechanism, running on your machine, with your two terminals. Nothing was faked for the demonstration: this is genuinely how ROS 2 nodes find each other, and it works the same way whether the two programs are in adjacent terminals or on different computers on the same network.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "One more thing to notice before you move on, and then deliberately not explain.\n\nPress an arrow key and let go. The turtle moves a short distance and stops on its own — even though you never told it to stop.\n\nThat is not a bug, and it isn't Turtlesim being simplistic. It's a direct consequence of how the two programs communicate, and the explanation is genuinely interesting. It's also Module 6's, so hold on to the question rather than looking it up. Lesson 3 gives you a way to see the evidence for yourself.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Two programs. One system. No configuration.\n\nNext: opening a third terminal and interrogating that system from the outside, while it's still running.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "inspecting-a-running-system",
+          title: "Inspecting a Running System",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Both programs are still running. Leave them that way and open a third terminal.\n\nYou are about to interrogate a live system from the outside. No code changes, no restart, no special debug mode, no flag you had to remember to pass at startup. The system is simply inspectable while it runs.\n\nThat is worth pausing on, because it isn't how most software works. In ROS 2 it's ordinary, everyday practice — and it is one of the genuinely unusual things the framework gives you.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "inspect.sh",
+                code: "ros2 node list\n# /turtlesim\n# /teleop_turtle\n\nros2 topic list\n# /parameter_events\n# /rosout\n# /turtle1/cmd_vel\n# /turtle1/color_sensor\n# /turtle1/pose\n\nros2 service list\n# /clear\n# /kill\n# /reset\n# /spawn\n# /turtle1/set_pen\n# /turtle1/teleport_absolute\n# ...\n\nros2 action list\n# /turtle1/rotate_absolute",
+                caption:
+                  "Illustrative output, abridged. Service and topic lists are longer than shown and include per-node parameter entries; exact names and ordering vary with your ROS 2 version. Match the shape — several entries per command, including one named /turtle1/cmd_vel — not the exact characters.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Read those four results at the level of \"what kind of thing is this\", and no deeper.\n\nNodes are the separate programs. Two of them: the simulator and the teleop program you started. Each one is a running process doing one job.\n\nTopics are streams of data flowing between them. One of them is /turtle1/cmd_vel — the name from the diagram in Lesson 2. Another, /turtle1/pose, is the turtle continuously reporting where it is.\n\nServices are things you can ask for and get an answer back. /spawn adds another turtle. /turtle1/teleport_absolute puts the turtle somewhere instantly.\n\nActions are long-running goals you can track while they happen and cancel partway through. Turtlesim offers one: rotating to a specific angle, which takes real time to complete.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "You are not expected to understand these yet",
+                body: "That was four paragraphs for four concepts that each get an entire module. It's deliberately thin, and you should read it as thin rather than as something you failed to absorb.\n\nThis lesson's job is to make sure you have seen these things exist, in a real system, with your own two programs. Nodes are Module 5. Topics are Module 6. Services are Module 7. Actions are Module 8. Every question this raises has a scheduled answer.\n\nIf you finish this module able to say \"I've seen a topic, and I know roughly what kind of thing it is\", that is exactly the intended outcome.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-4-inspection-map.png",
+                alt: "A four-row map. ros2 node list shows the separate programs running now, explained in Module 5. ros2 topic list shows continuous streams of data, Module 6. ros2 service list shows ask-and-get-an-answer requests, Module 7. ros2 action list shows long-running goals you can track and cancel, Module 8.",
+                caption:
+                  "A map, not a test. Each command has a module with its name on it.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A list tells you what exists. It doesn't tell you what's actually happening.\n\nFor that there's echo, which attaches to a topic and prints every message flowing through it, live. This is the single most useful command in this lesson — it turns an abstract claim about two programs communicating into something you can watch.\n\nRun it, then press an arrow key in your teleop terminal and watch this third terminal.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "watch-the-data.sh",
+                code: "ros2 topic echo /turtle1/cmd_vel\n\n# ... nothing, until you press an arrow key in the teleop terminal:\n\nlinear:\n  x: 2.0\n  y: 0.0\n  z: 0.0\nangular:\n  x: 0.0\n  y: 0.0\n  z: 0.0\n---",
+                caption:
+                  "Illustrative output. The numbers depend on which key you pressed and how the teleop node is configured; newer releases may print additional message fields. The shape — a linear group, an angular group, and a --- between messages — is what to match.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-4-cmd-vel-anatomy.png",
+                alt: "An annotated breakdown of one cmd_vel message. The linear group's x value is highlighted at 2.0 while all five other values are zero. Annotations explain that linear is straight-line speed and angular is turning speed, that the arrow key changed exactly one number, and that the --- separator means this is a stream of messages rather than a single event.",
+                caption:
+                  "Pressing a key set exactly one number. Everything else stayed at zero.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Here is the part that stops this being a toy.\n\nA topic named /cmd_vel, carrying a message with a linear part and an angular part, is not something Turtlesim invented for teaching. It is the standard way mobile robots are driven in ROS 2. Real wheeled robots — warehouse robots, delivery robots, research platforms — subscribe to a topic with that name and that message shape, and drive their motors from it.\n\nWhich means the command you just ran works, unchanged, on a real robot. So do all four list commands. You are not learning a simplified teaching version that gets replaced later.\n\nThe turtle is a toy. The interface is not.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Answer four questions using only the command line",
+                instructions:
+                  "No steps this time — just the goal. Every command you need was in this lesson; work from memory or scroll back, but don't expect to be walked through it.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "With turtlesim and teleop both still running, answer these four questions using nothing but the terminal:\n\n1. How many separate ROS 2 programs are running right now?\n2. Which topic carries your steering commands?\n3. Roughly how many services does turtlesim offer?\n4. Name one action it offers.\n\nThis is the first exercise in this course that gives you a goal instead of a procedure. That's on purpose.",
+                  },
+                  successCriteria: [
+                    "You found the number of running nodes without being told which command to use.",
+                    "You identified /turtle1/cmd_vel as the topic carrying steering commands, and can say how you knew.",
+                    "You listed turtlesim's services and can name at least two of them.",
+                    "You named the action turtlesim offers, and noticed there is only one.",
+                  ],
+                  hints: [
+                    "All four answers come from the same family of commands, and you ran every one of them earlier in this lesson. The pattern is ros2 <thing> list.",
+                    "For question 2: you saw the topic name in Lesson 2's diagram before you ever ran a command. Cross-check it against ros2 topic list rather than trusting your memory.",
+                    "For question 4: ros2 action list returns a single line here. If you expected more, that's a reasonable expectation — turtlesim is small, and most real systems offer several.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You can now look inside a running ROS 2 system from the outside, and watch real data move through it.\n\nNext: what to do when what you see is nothing at all — and names for everything you just looked at.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "when-it-doesnt-work",
+          title: "When It Doesn't Work, and What You Just Saw",
+          durationMinutes: 22,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Those four commands in Lesson 3 weren't a sightseeing tour.\n\nThey are the debugger. In ROS 2, \"why isn't this working\" is answered by inspecting the live system, not by adding print statements and restarting — and the tools you use to be curious are the same tools you use to diagnose.\n\nHere is the first time you need them.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Debugging challenge: the turtle won't move",
+                instructions:
+                  "Work the symptom before revealing anything. The hints come one at a time deliberately — the habit being taught here is the order you check things in, not the answer.",
+                config: {
+                  type: "DEBUGGING",
+                  scenario: {
+                    body: "The TurtleSim window is open and the turtle is clearly visible.\n\nturtle_teleop_key is running in a second terminal. It printed its usage banner without errors, so it started correctly — which also tells you that terminal is sourced properly, since ros2 was found and ran.\n\nYou press the arrow keys. Nothing moves. No error appears in either terminal.\n\nWhat's happened, and how would you confirm it before changing anything?",
+                  },
+                  hints: [
+                    "Don't start at the keyboard, and don't restart anything yet. Ask a narrower question first: is anything being published at all? Open a third terminal and run ros2 topic echo /turtle1/cmd_vel, then press the arrow keys again. Messages, or silence?",
+                    "Silence. That rules out a whole half of the system: turtlesim isn't ignoring commands, because no commands are being sent. The problem is upstream of the topic entirely, on the teleop side.",
+                    "Teleop is running, healthy and sourced — so it isn't broken. What else would stop a running program from ever noticing your keystrokes? Look at which window your window manager has highlighted right now.",
+                  ],
+                  rootCause: {
+                    body: "The TurtleSim window had keyboard focus, not the teleop terminal.\n\nturtle_teleop_key reads raw keystrokes from the terminal it is running in. When the TurtleSim window is focused, your arrow keys go to the simulator — and the simulator has no keyboard handling whatsoever, so it silently discards them. Teleop never sees a keypress, so it never publishes a message, so nothing reaches the turtle.\n\nNothing was broken. The input never reached the publisher. That's why there was no error anywhere: from every program's point of view, absolutely nothing happened.",
+                  },
+                  solution: {
+                    body: "Click the teleop terminal to give it focus, keeping the TurtleSim window visible but unfocused, then drive again. Confirm with echo still running in the third terminal — messages should now appear on every keypress:",
+                    visuals: [
+                      {
+                        kind: "CODE",
+                        data: {
+                          language: "bash",
+                          code: "# Terminal 3, still watching:\nros2 topic echo /turtle1/cmd_vel\n\n# Click Terminal 2 (teleop), press an arrow key, and messages appear here.",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The specific answer matters less than the order you arrived at it.\n\nYou did not start by guessing. You asked one narrow question — is anything being sent? — and the answer to that one question cut the problem in half. Silence meant the fault was on the sending side, so you never wasted a minute investigating the receiver.\n\nAsk whether anything is being published before asking why nothing is arriving.\n\nAlmost every communication bug in ROS 2 splits along that line, and you now have a command that tests it directly. This was the easiest possible case to practise on: both programs healthy, no error messages, and a cause that has nothing to do with ROS 2 at all. The cases in later modules are harder. The first question stays the same.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "So: names for the four things you've been looking at.\n\nNodes are the separate programs that make up a system. You ran two. Real robots run dozens, each with one job. That's Module 5, and you'll write your own.\n\nTopics are continuous one-way streams of data. /turtle1/cmd_vel carried your steering; /turtle1/pose carries the turtle's position back out. That's Module 6 — including why the turtle stops on its own when you let go of a key.\n\nServices are request-and-response: you ask, something happens, you get an answer. /spawn and /turtle1/teleport_absolute are both services. That's Module 7.\n\nActions are for goals that take time — you can watch progress and cancel partway. Turtlesim's single action rotates the turtle to an absolute angle. That's Module 8.\n\nYou now have a question for each of the next four modules. That was the goal of this one.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "A common assumption worth correcting now",
+                body: "It's natural to assume one program equals one ROS 2 application — that a robot runs \"the robot software\", singular.\n\nYou just ran two separate programs that formed one system, and neither was in charge of the other. That's the normal shape. A real robot runs dozens of nodes at once: one reading a laser scanner, one planning a path, one driving the motors, one watching the battery. Any of them can be restarted, replaced or inspected without stopping the rest.\n\nThat's why Module 5 spends its time on why systems get split up, not just on what the word \"node\" means.",
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 4 Check: Running and Inspecting Your First System",
+                description:
+                  "Five questions about what you actually observed. The explanations matter more than the answers — each one points at the module that goes deeper.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You started turtlesim_node and turtle_teleop_key in separate terminals. You never gave either one an address, a port, or a config file — yet the arrow keys drive the turtle. What made that connection possible?",
+                    options: [
+                      { id: "discovery", label: "Automatic discovery — the nodes found each other on their own" },
+                      { id: "same-terminal", label: "They were started from the same machine, so they share memory" },
+                      { id: "bashrc", label: "The source line in ~/.bashrc connected them" },
+                      { id: "turtlesim-special", label: "Turtlesim is a special case, wired to accept teleop specifically" },
+                    ],
+                    correctOptionIds: ["discovery"],
+                    explanation:
+                      "This is Module 2's automatic discovery, seen working on your own machine. Nodes announce what they publish and subscribe to, and the middleware matches them up — which is why start order didn't matter and why no configuration was needed. It also works across different computers on a network, not just between terminals. Sourcing (~/.bashrc) only makes the ros2 command available in a shell; it connects nothing. And nothing about turtlesim is special here — the same thing happens between any two nodes.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Which single command tells you how many separate ROS 2 programs are currently running?",
+                    options: [
+                      { id: "node-list", label: "ros2 node list" },
+                      { id: "topic-list", label: "ros2 topic list" },
+                      { id: "pkg-list", label: "ros2 pkg list" },
+                      { id: "run", label: "ros2 run" },
+                    ],
+                    correctOptionIds: ["node-list"],
+                    explanation:
+                      "Nodes are the running programs, so ros2 node list is the one that counts them — it returned /turtlesim and /teleop_turtle for you. ros2 topic list shows the data streams between them, which is a different question. ros2 pkg list shows what is installed on the machine, which is not the same as what is running — several hundred packages are installed and two nodes are running. ros2 run starts a node rather than listing any.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "ros2 topic echo /turtle1/cmd_vel prints nothing at all while you press the arrow keys, and the turtle doesn't move. Where is the problem?",
+                    options: [
+                      { id: "publisher", label: "On the publishing side — nothing is being sent, so turtlesim is not at fault" },
+                      { id: "subscriber", label: "In turtlesim — it's receiving messages but ignoring them" },
+                      { id: "topic-name", label: "The topic doesn't exist, so it must be recreated" },
+                      { id: "reinstall", label: "The ROS 2 install is broken and should be reinstalled" },
+                    ],
+                    correctOptionIds: ["publisher"],
+                    explanation:
+                      "Silence from echo means no messages exist on that topic, which puts the fault before the topic, not after it. That single check cuts the problem in half and saves you from investigating a receiver that is working perfectly — the habit is to ask whether anything is being published before asking why nothing is arriving. In this module's debugging exercise the cause was keyboard focus, but the same reasoning applies whatever the specific cause turns out to be. If the topic genuinely didn't exist it wouldn't appear in ros2 topic list, which is the next thing to check.",
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "Turtlesim is a learning tool, so the commands you used on it don't transfer to real robots.",
+                    correctAnswer: false,
+                    explanation:
+                      "False, and this is the point of using turtlesim at all. A topic named /cmd_vel carrying a message with linear and angular parts is the standard velocity interface for real mobile robots — warehouse robots and research platforms are driven exactly this way. The four list commands and topic echo work unchanged on any ROS 2 system, real or simulated. What's simplified here is the robot, not the interface, so nothing you learned in this module gets replaced later.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Of the four things you listed in Lesson 3, which would you expect to handle a long-running task that you could monitor while it happens and cancel partway through?",
+                    options: [
+                      { id: "actions", label: "Actions" },
+                      { id: "topics", label: "Topics" },
+                      { id: "services", label: "Services" },
+                      { id: "nodes", label: "Nodes" },
+                    ],
+                    correctOptionIds: ["actions"],
+                    explanation:
+                      "Actions. You aren't expected to know this from experience yet — it's answerable from the map in Lesson 3, which glosses actions as long-running goals you can track and cancel. The distinction matters and Module 8 develops it: a service is request-and-response, so you ask and wait with no visibility while it runs and no way to change your mind. A topic is a one-way stream with no notion of a goal being complete. An action gives you progress updates and a cancel option, which is what you want for something like \"drive to that location\" that takes thirty seconds and might need to be abandoned.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "FILE",
+              data: {
+                href: "/courses/ros2-fundamentals/module-4-turtlesim-cheatsheet.pdf",
+                label: "Turtlesim & system inspection — quick reference (PDF)",
+                description:
+                  "Every command from this module on one page, with the two troubleshooting paths — nothing moves, and no window appears — on the same sheet. Worth keeping open on a second screen from here on; the inspection commands come back in every remaining module.",
+                sizeLabel: "60 KB",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "That's the module.\n\nA window and a robot (Lesson 1). Two independent programs cooperating with no configuration between them (Lesson 2). The running system inspected from outside, with names for what you found (Lesson 3). Those same tools used to diagnose a real failure (this lesson).\n\nYou ran two nodes without knowing what a node is. That worked — and it stops working the moment you want to write your own.\n\nModule 5 answers the first of your four questions: what a node actually is, why robotics systems are split into many of them rather than one big program, and how to build one yourself.",
               },
             },
           ],
