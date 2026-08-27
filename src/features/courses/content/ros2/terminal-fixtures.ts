@@ -164,7 +164,7 @@ const ROS2_HELP_OUTPUT = `usage: ros2 [-h] Call \`ros2 <command> -h\` for more d
 
 ros2 is an extensible command-line tool for ROS 2.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
 
 Commands:
@@ -182,15 +182,19 @@ const MODULE_3_FIXTURES: readonly TerminalFixture[] = [
     id: "m3-l1-ubuntu-release",
     source: "Module 3 · Lesson 4 · troubleshooting branch 'Wrong Ubuntu version'",
     command: "lsb_release -a",
-    expectedOutput: `Distributor ID:\tUbuntu
+    expectedOutput: `No LSB modules are available.
+Distributor ID:\tUbuntu
 Description:\tUbuntu 24.04 LTS
 Release:\t24.04
 Codename:\tnoble`,
     // Regex, not exact: the point-release suffix in Description moves
     // ("24.04 LTS" -> "24.04.1 LTS") without invalidating anything the lesson
-    // says, and `lsb_release` writes an "No LSB modules are available."
-    // notice to stderr on a minimal install. The lesson's actual claim is
-    // narrow and stable: the Release line must read exactly 24.04.
+    // says. `lsb_release` also writes "No LSB modules are available." to
+    // stderr on a minimal install — that line is now part of the rendered
+    // block (corrected 2026-08-27), captioned as a notice rather than an
+    // error, but it is absent on installs that do have LSB modules. The
+    // lesson's actual claim is narrow and stable: the Release line must read
+    // exactly 24.04.
     matcher: { kind: "regex", pattern: "^Release:\\s+24\\.04$", flags: "m" },
     shell: "clean",
     ci: { status: "run" },
@@ -222,7 +226,7 @@ Codename:\tnoble`,
     id: "m3-l3-ros2-missing-before-sourcing",
     source: "Module 3 · Lesson 3 · CODE `before-and-after.sh`, 'Before' section",
     command: "ros2 --help",
-    expectedOutput: "ros2: command not found",
+    expectedOutput: "bash: ros2: command not found",
     // Regex on the invariant half only. See `note` — the prefix is shell
     // dependent and the course's rendering is not what bash prints.
     matcher: { kind: "regex", pattern: "command not found" },
@@ -230,12 +234,11 @@ Codename:\tnoble`,
     ci: { status: "run" },
     provenance: "authored-from-seed",
     note:
-      "SUSPECTED CONTENT DRIFT: bash prints 'bash: ros2: command not found' and " +
-      "zsh prints 'zsh: command not found: ros2'. No shell prints the bare " +
-      "'ros2: command not found' the seed currently shows. The matcher " +
-      "deliberately asserts only the stable substring so the job does not go red " +
-      "over a prefix, but the rendered string should be corrected once the first " +
-      "capture confirms the exact wording on Ubuntu 24.04's bash.",
+      "CORRECTED 2026-08-27: the seed rendered a bare 'ros2: command not found', " +
+      "which no shell prints — bash prefixes itself, zsh reorders. The course now " +
+      "shows bash's form, since that is the shell the module assumes throughout. " +
+      "The matcher still asserts only the stable substring, so a learner on zsh " +
+      "does not make the job red over a prefix.",
   },
   {
     id: "m3-l3-ros-distro-unset",
@@ -291,12 +294,12 @@ Codename:\tnoble`,
     ci: { status: "run" },
     provenance: "authored-from-seed",
     note:
-      "SUSPECTED CONTENT DRIFT: the rendered block says 'optional arguments:'. " +
-      "Python's argparse renamed that heading to 'options:' in 3.10, and Ubuntu " +
-      "24.04 ships Python 3.12, so Jazzy almost certainly prints 'options:'. The " +
-      "matcher deliberately does not assert either heading — a speculative " +
-      "assertion would just turn a content question into a red job. The first " +
-      "run's captured-output artifact settles it; correct the rendered string then.",
+      "CORRECTED 2026-08-27: the rendered block said 'optional arguments:'. " +
+      "Python's argparse renamed that heading to 'options:' in 3.10 and Ubuntu " +
+      "24.04 ships Python 3.12, so the course now says 'options:'. The matcher " +
+      "still asserts neither heading — the correction is a strong inference from " +
+      "the Python version, not a capture, and a speculative assertion would turn " +
+      "a content question into a red job. The first run's artifact confirms it.",
   },
   {
     id: "m3-l4-pkg-list",

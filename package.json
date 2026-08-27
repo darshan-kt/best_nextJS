@@ -24,7 +24,8 @@
     "db:reconcile": "tsx scripts/reconcile-enrollments.ts",
     "docker:up": "docker compose --profile full up --build",
     "docker:down": "docker compose --profile full down",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "verify:ros2": "tsx scripts/verify-ros2-terminal-output.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "2.11.3",

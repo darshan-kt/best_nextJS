@@ -11,6 +11,11 @@ import type {
   TextBlockData,
   VideoBlockData,
 } from "../src/features/learning/schemas";
+import {
+  ROS2_BEFORE_AND_AFTER_TRANSCRIPT,
+  ROS2_INSTALL_SCRIPT,
+  ROS2_LOCALE_FIX_SCRIPT,
+} from "../src/features/courses/content/ros2/terminal-fixtures";
 
 /**
  * Development seed data.
@@ -1135,7 +1140,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
               data: {
                 language: "bash",
                 filename: "install-ros2-jazzy.sh",
-                code: "# 1. Make sure the base system is up to date and can fetch over HTTPS.\nsudo apt update && sudo apt install -y software-properties-common curl\nsudo add-apt-repository universe\n\n# 2. Add the ROS 2 repository's signing key, then the repository itself.\nsudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \\\n  -o /usr/share/keyrings/ros-archive-keyring.gpg\n\necho \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \\\nhttp://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main\" \\\n  | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null\n\n# 3. Install the desktop bundle. This is the long step.\nsudo apt update\nsudo apt install -y ros-jazzy-desktop",
+                code: ROS2_INSTALL_SCRIPT,
               },
             },
             {
@@ -1257,7 +1262,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
                 filename: "before-and-after.sh",
                 caption:
                   "Illustrative output, abridged at the ellipses. The exact help text changes between Jazzy patch releases and the command list is longer than shown. What matters is the shape: the same command fails before sourcing and works after it.",
-                code: "# --- Before ---------------------------------------------------------\n$ ros2 --help\nbash: ros2: command not found\n\n$ echo $ROS_DISTRO          # empty: nothing has told this shell about ROS 2\n\n\n# --- Source it ------------------------------------------------------\n$ source /opt/ros/jazzy/setup.bash\n\n\n# --- After ----------------------------------------------------------\n$ echo $ROS_DISTRO\njazzy\n\n$ ros2 --help\nusage: ros2 [-h] Call `ros2 <command> -h` for more detailed usage. ...\n\nros2 is an extensible command-line tool for ROS 2.\n\noptions:\n  -h, --help            show this help message and exit\n\nCommands:\n  action     Various action related sub-commands\n  bag        Various rosbag related sub-commands\n  node       Various node related sub-commands\n  param      Various param related sub-commands\n  pkg        Various package related sub-commands\n  run        Run a package specific executable\n  topic      Various topic related sub-commands\n  ...",
+                code: ROS2_BEFORE_AND_AFTER_TRANSCRIPT,
               },
             },
             {
@@ -1401,7 +1406,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
                 filename: "fix-locale.sh",
                 caption:
                   "Illustrative output. Real locale output is a dozen or so lines and your values may differ — en_GB.UTF-8 is just as good as en_US.UTF-8. The only thing being checked is whether they end in UTF-8 at all.",
-                code: "# Diagnose: is this shell using a UTF-8 locale?\nlocale\n#   LANG=C           <- the problem\n#   LANG=en_US.UTF-8 <- what you want\n\n# Fix it, then re-check.\nsudo apt update && sudo apt install -y locales\nsudo locale-gen en_US en_US.UTF-8\nsudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8\nexport LANG=en_US.UTF-8\n\nlocale   # confirm LANG and LC_ALL now end in UTF-8",
+                code: ROS2_LOCALE_FIX_SCRIPT,
               },
             },
             {
