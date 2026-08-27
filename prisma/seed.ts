@@ -400,10 +400,11 @@ const CURRICULA: Record<string, SeedSection[]> = {
   ],
 
   /// ROS 2 Fundamentals — real course content, not a demo fixture like the
-  /// courses above (see the COURSES entry for this slug). Module 0 only;
-  /// modules 1-15 land module-by-module per ROS2_COURSE_KICKOFF_PROMPTS.md's
-  /// own sequencing, each carrying its own quality review before
-  /// implementation.
+  /// courses above (see the COURSES entry for this slug). Modules 0-1 so
+  /// far; modules 2-15 land module-by-module per
+  /// ROS2_COURSE_KICKOFF_PROMPTS.md's own sequencing, each carrying its own
+  /// quality review before implementation. The approved per-module designs
+  /// these are built from live in `docs/course-design/`.
   "ros2-fundamentals": [
     {
       title: "Course Onboarding and Roadmap",
@@ -529,6 +530,221 @@ const CURRICULA: Record<string, SeedSection[]> = {
                 label: "Environment Checklist (PDF)",
                 description: "A one-page reference to revisit before starting Module 3.",
                 sizeLabel: "1 page",
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "What Is ROS 2 and Why Do We Need It?",
+      summary:
+        "Motivation before mechanism — why robot software is built the way it is, before installing anything.",
+      lessons: [
+        {
+          slug: "why-robotics-software-is-hard",
+          title: "Why Robotics Software Is Hard",
+          durationMinutes: 16,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Imagine you're asked to write the software for a warehouse delivery robot. It needs to carry a box from one end of a building to the other, without hitting anyone, without getting lost, and without stopping every few seconds to think about it.\n\nWhere do you even start?",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Start listing what the robot actually has to do, and the list gets long fast. It has to see the world around it. It has to work out what it's looking at. It has to decide where to go next. It has to move without falling over or running into a wall. It has to read its own hardware — battery, wheel speed, motor temperature. And every one of those pieces has to share what it knows with the others.\n\nHere's the part that makes robotics genuinely different from most software: none of that happens in sequence. It all happens at once, continuously, while the robot is moving. There's no waiting for the previous step to finish.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-1-robot-concerns.png",
+                alt: "A robot at the center with six labeled concerns radiating outward: sensors (camera, LIDAR, wheel encoders), actuators (wheel motors, gripper, arm joints), perception (making sense of sensor data), planning (deciding what to do next), control (moving safely), and communication (sharing data between all the pieces).",
+                caption:
+                  "Six distinct jobs, running simultaneously on one machine — not a pipeline that runs once.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now that you've seen the shape of the problem, the names are worth having:\n\nSensors are the robot's inputs — cameras, LIDAR, wheel encoders. They produce raw data, nothing more.\n\nPerception is making sense of that data. A camera gives you pixels; perception is what turns those pixels into \"there is a person two metres ahead.\"\n\nPlanning is deciding what to do next. Given where the robot is and what's around it, what's the route?\n\nControl is actually and safely carrying that decision out — holding a speed, steering, stopping in time.\n\nActuators are the robot's outputs — the motors, grippers and joints that move real hardware in the real world.\n\nCommunication is what ties all of it together, constantly, while everything else is running.\n\nNotice the order those arrived in: you built the intuition first, and only then attached the vocabulary. That's deliberate, and it's how the rest of this course works too.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Take a moment",
+                body: "Think of a robot you've actually seen — a robot vacuum, a warehouse robot, a delivery drone. Can you spot its sensors? Its actuators? What do you think its \"planning\" looks like when it decides where to go next? You don't need a right answer here; you need the habit of seeing a robot as several jobs at once rather than one machine.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "So a robot's software isn't one job. It's at least six, all running at the same time, all needing to talk to each other.\n\nWhich raises the obvious next question: how do you fit all of that into one program? And what goes wrong when you try?",
+              },
+            },
+          ],
+        },
+        {
+          slug: "monolithic-vs-modular-robotics-software",
+          title: "Monolithic vs. Modular Robotics Software",
+          durationMinutes: 16,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Back to the delivery robot. Suppose you take the straightforward path: write perception, planning, and control as one big program. One codebase, one process, everything in the same place.\n\nIt'll work — for a while. Then ask yourself: what happens when the planning code crashes? What happens when you want to swap the camera for a better one?",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Here's what goes wrong, concretely:\n\nOne bug anywhere crashes everything. A null-pointer error deep in the planning logic doesn't just stop planning — it takes down the process, and the process is the whole robot. Perception stops. Control stops. The robot is now a very expensive box on wheels.\n\nYou can't test one piece in isolation. Want to check whether your planning logic handles a dead end correctly? In a monolith, that often means having the real camera attached and pointed at a real dead end.\n\nTwo engineers can't work in parallel comfortably. One person on perception and one on control means both editing the same program, in the same files, with conflicts to resolve every day.\n\nSwapping one sensor means touching code that has nothing to do with sensors. A new camera model shouldn't require you to think about the motor-control loop — but in one big program, everything is reachable from everything else, so it usually does.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-1-monolith-vs-modular.png",
+                alt: "Left: one large tangled box labelled Robot Software, noting that one bug anywhere stops the whole robot. Right: the same functionality split into separate connected boxes — Camera, Perception, Planning, Control — where swapping the camera changes only one piece and a crash in planning leaves perception running.",
+                caption:
+                  "The same work, restructured. Modularity doesn't reduce what the robot does — it changes what has to be touched when one part changes.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "So what if each of those concerns were its own separate program, that just... talked to the others?\n\nPerception runs on its own. Planning runs on its own. Control runs on its own. When perception has something to say, it sends it. When planning needs to know what's ahead, it listens.\n\nThat arrangement has a name: a distributed system — independent, cooperating processes rather than one big one. Each piece can crash, restart, be rewritten, or be swapped out without the others noticing. Each piece can be tested on its own, with fake data standing in for a real camera. Two engineers can work on two pieces without ever touching the same file.\n\nThe work hasn't gotten smaller. It's been divided along lines that make it manageable.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "You may already know this idea",
+                body: "This isn't unique to robotics. It's the same reasoning behind a modern website built from many small backend services instead of one giant application — same motivation, same trade-offs, different domain. If that comparison means something to you, you already have most of the intuition you need here.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Dividing robot software into cooperating pieces that talk to each other is a good idea. It's also a lot of work to build from scratch — you'd need to solve how pieces find each other, how they exchange data, what happens when one disappears, and how to inspect the whole thing while it's running.\n\nRobotics engineers didn't each solve that separately. They reached for a framework that had already solved it. That framework is what the next lesson is about.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "what-ros-2-is-and-why-not-ros-1",
+          title: "What ROS 2 Is, and Why Not ROS 1",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "ROS — the Robot Operating System — is the answer robotics engineers actually reached for, starting in 2007. It came out of a need that looked exactly like the one in the last lesson: everyone building robots was solving the same structural problem over and over, badly, in isolation.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Despite the name, ROS is not an operating system in the sense that Linux or Windows is. It doesn't manage your CPU or your filesystem. Your robot still runs Linux underneath.\n\nWhat ROS actually gives you is two things.\n\nFirst, a framework and toolset for building exactly the kind of modular, cooperating robot software from the last lesson — the plumbing for separate programs to find each other and exchange data, plus tools to inspect what's happening while the robot runs.\n\nSecond, an ecosystem. Thousands of reusable pieces of robot software that other people have already written and released — camera drivers, navigation systems, arm controllers. Needing a driver for a common LIDAR usually means installing someone's package, not writing one.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/courses/ros2-fundamentals/module-1-node-pipeline.png",
+                alt: "A horizontal pipeline of five labelled boxes: Camera Node publishing raw images, then Perception Node finding what is in them, then Planning Node choosing a safe path, then Control Node turning the path into motion, then the Robot whose wheels and motors move.",
+                caption:
+                  "Each box is a node — its own small program with one job. This is the last lesson's abstract \"cooperating pieces\" made concrete.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Walk the diagram left to right.\n\nThe Camera node does one thing: read the camera and publish the images. The Perception node reads those images and publishes what it found — obstacles, people, free space. The Planning node takes that and publishes a route. The Control node turns that route into wheel speeds. The robot moves.\n\nNow revisit the two problems from the last lesson, against this picture.\n\nSwap the camera for a better model? Only the Camera node changes. Everything downstream still receives images in the same shape and never learns that anything happened.\n\nA bug crashes the Planning node? Perception keeps running. The camera keeps publishing. You've lost route-planning, which is serious — but you haven't lost the robot, and you can restart just that piece.\n\nEach box in that diagram is called a node. That's the term for one of these small single-purpose programs, and it's the single most important word in ROS 2. Module 5 defines it properly; for now, \"one program, one job\" is exactly the right mental model.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "So why ROS 2, and not just ROS?\n\nThe original ROS was designed in the mid-2000s, for a fairly specific picture of robotics: one research robot, on a trusted lab network, with a person nearby. Within that picture it worked well, and it's still in use.\n\nBut it carried architectural assumptions that didn't survive contact with what robotics became. It relied on a single central process to help nodes find each other — meaning one process whose failure took the system with it. It had no built-in security, because a closed lab network didn't seem to need any. And it wasn't built with today's demands in mind: fleets of robots coordinating with each other, real-time control guarantees, small embedded hardware, commercial products shipping to customers.\n\nROS 2 is the response. Not a patch release and not a cleanup — a rebuilt foundation that keeps the ideas that worked (nodes, message-passing, the ecosystem) and replaces the machinery underneath. What that machinery actually is, is Module 2's subject.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Watch the version when you search",
+                body: "This course teaches ROS 2 (Jazzy Jalisco) throughout. When you go looking for help online, a tutorial that just says \"ROS\" with no \"2\" is almost certainly about ROS 1. Commands and concepts often look similar enough to be confusing but aren't identical — and following ROS 1 instructions on a ROS 2 install is a genuinely common way to lose an afternoon.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Before moving on to Module 2, answer this for yourself, in your own words: what problem does ROS 2 solve?\n\nIf the answer that comes to mind is about the structure of robot software — many specialised pieces that have to cooperate, and the machinery that lets them — then this module has done its job.",
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 1 Check: What Problem Does ROS 2 Solve?",
+                description:
+                  "Four questions on the reasoning behind ROS 2, not on terminology. Each answer explains why, and points back at the lesson to revisit.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "A delivery robot's camera-handling code has a bug that crashes it. The robot's software is written as one large program. What else stops working?",
+                    options: [
+                      { id: "everything", label: "Everything — planning and control run inside the same program, so they go down with it" },
+                      { id: "camera-only", label: "Only the camera handling; planning and control keep running" },
+                      { id: "nothing", label: "Nothing — the robot automatically restarts the failed part" },
+                      { id: "readers", label: "Only the parts that happened to be reading camera data at that moment" },
+                    ],
+                    correctOptionIds: ["everything"],
+                    explanation:
+                      "In a monolithic design there is only one process, so a crash anywhere ends all of it — the robot stops entirely. This is the central motivation from Lesson 2: modularity would have contained the failure to the camera piece alone, leaving perception and control running. Review Lesson 2 if this one didn't feel obvious.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt: "Which is the most accurate description of what ROS / ROS 2 provides?",
+                    options: [
+                      { id: "framework", label: "A framework and toolset for building modular, communicating robot software" },
+                      { id: "os", label: "An operating system that replaces Linux on the robot" },
+                      { id: "sim", label: "A robot simulator for testing code without hardware" },
+                      { id: "allinone", label: "A single all-in-one control program you configure for your robot" },
+                    ],
+                    correctOptionIds: ["framework"],
+                    explanation:
+                      "ROS 2 is a framework, a toolset, and an ecosystem of reusable packages. Despite the name it is not an operating system — your robot still runs Linux underneath. It is not a simulator (that is Gazebo, in Module 14), and it is emphatically not one program you configure: the entire point is many small cooperating programs. Review Lesson 3.",
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt: "ROS 2 was created to patch a few small bugs that had accumulated in ROS 1.",
+                    correctAnswer: false,
+                    explanation:
+                      "False. ROS 2 is a foundational redesign, not a bugfix release. It addresses things ROS 1's original mid-2000s architecture never anticipated — multi-robot fleets, real-time control, embedded hardware, security, and commercial deployment — which required replacing the machinery underneath rather than repairing it. Review Lesson 3.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Look back at the Camera → Perception → Planning → Control → Robot pipeline. You're upgrading only the camera hardware, and its driver with it. Which part of the pipeline has to change?",
+                    options: [
+                      { id: "camera-node", label: "Just the Camera node" },
+                      { id: "all-nodes", label: "Every node in the pipeline" },
+                      { id: "camera-control", label: "The Camera node and the Control node" },
+                      { id: "robot", label: "The robot hardware configuration, but none of the nodes" },
+                    ],
+                    correctOptionIds: ["camera-node"],
+                    explanation:
+                      "Just the Camera node. It keeps publishing images in the same shape, so everything downstream carries on without knowing anything changed. This is the whole reason for dividing the system into independent nodes — and it is the direct answer to Lesson 2's complaint that swapping a sensor in a monolith means touching unrelated code.",
+                  },
+                ],
               },
             },
           ],
