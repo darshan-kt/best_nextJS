@@ -17,11 +17,34 @@ name: ROS 2 terminal-output verification
 # takes 10-15 minutes, and none of it depends on the diff under review. The
 # thing being watched is the outside world, not the branch.
 
+# ---------------------------------------------------------------------------
+# PAUSED — 2026-08-27. Built, reviewed and merged, but NEVER RUN ONCE.
+#
+# Dispatching the first run is blocked pending CI credential/env configuration,
+# so the schedule below would have fired unattended with nobody watching the
+# result. That is the wrong order for a job whose first run was explicitly
+# expected to need adjustment: a red Monday morning that nobody triages teaches
+# us nothing and trains everyone to ignore the job.
+#
+# This is a pause, not an abandonment. Nothing about the harness is known to be
+# wrong — it has simply never been exercised against a real Ubuntu 24.04 +
+# Jazzy machine.
+#
+# TO RESUME: uncomment the `schedule:` block below — but run it once by hand
+# first (Actions -> Run workflow) and read the captured-output artifact before
+# letting the schedule take over.
+#
+# `workflow_dispatch` is deliberately left ENABLED. It cannot fire on its own,
+# so it creates no unattended runs; it is the button that performs that
+# supervised first run. Removing it would make resuming harder without making
+# anything safer.
+# ---------------------------------------------------------------------------
+
 on:
-  schedule:
-    # Mondays, 04:17 UTC. Off the hour on purpose — the top of the hour is
-    # when every scheduled workflow on GitHub queues at once.
-    - cron: "17 4 * * 1"
+  # schedule:
+  #   # Mondays, 04:17 UTC. Off the hour on purpose — the top of the hour is
+  #   # when every scheduled workflow on GitHub queues at once.
+  #   - cron: "17 4 * * 1"
   workflow_dispatch:
     inputs:
       fixture:

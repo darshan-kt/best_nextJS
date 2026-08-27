@@ -312,10 +312,12 @@ Every block in Modules 3 and 4 that renders a *transcript* now carries a caption
 saying the output is illustrative and naming what actually varies. Blocks that
 show only commands the learner types carry no caption, since input does not vary.
 
-**Path C is being built in parallel** — a weekly `ubuntu-24.04` GitHub Actions
-job performing the real Jazzy install and diffing captured output against
-fixtures extracted from the course content. Until that job has run green once,
-every output string in both modules remains authored.
+**Path C is built but PAUSED, and has never run** — see
+`docs/course-design/open-items.md` §1, which is now the single register for
+every open item across this course. Its `schedule:` trigger is commented out
+pending CI credential/env configuration, so no output string in either module
+is verified. Every one of them remains authored, and the captions are
+mitigation rather than verification.
 
 ---
 
