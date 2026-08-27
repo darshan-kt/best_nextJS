@@ -65,6 +65,40 @@ Known starting points, already verified as of this file's writing:
 
 ---
 
+## VISUAL STANDARD (applies to every device module, from Stage 5 onward)
+
+This course earns its first impression through visuals, not
+screenshots-and-prose. Every device module needs, per §24 of the design doc:
+
+- An annotated hardware diagram (labelled physical components)
+- A working-principle flow diagram (e.g. light → sensor → depth image;
+  laser → object → reflection → distance → scan)
+- A connection diagram (cabling, USB, power)
+- A data-pipeline diagram (hardware → driver → node → topic → message →
+  visualization)
+- A troubleshooting flowchart
+
+**SVG is the default format** for every one of these — generated
+programmatically (author as HTML+SVG, capture via Playwright, the same
+technique already used throughout the ROS 2 Fundamentals course), not
+raster. Crisp at any size, no muddy scaling, no separate high-res source to
+lose track of.
+
+**Product hero shots and RViz2/visualization screenshots are the one
+exception — these must be real, not generated, and not placeholders in the
+shipped course.** A generated diagram can faithfully represent a working
+principle; a "photo" of the actual product or a "screenshot" of actual
+sensor output cannot be faithfully generated — either is real or it's
+lying to the learner about what they're about to see. Where hardware isn't
+yet available to capture from, say so explicitly and track it as an open
+item — never ship a placeholder silently presented as final.
+
+Every stage from here forward inherits this section rather than restating
+it — Stage 5 (device module design) and Stage 7 (implementation) reference
+it by name for their own visual-asset requirements.
+
+---
+
 ## STAGE 0 — Hardware build spike (do this before anything else)
 
 No content design happens until we know what actually runs.
@@ -291,7 +325,10 @@ saying so explicitly. If no suitable video exists for a section, say so —
 do not pad.
 
 Visuals: list each with its educational purpose and its source (generated
-SVG / our own photo / needs permission). Do not silently placeholder.
+SVG / our own photo / needs permission). Do not silently placeholder. Follow
+the VISUAL STANDARD section above — SVG default for generated diagrams, real
+photography/screenshots for hero shots and RViz2 visualization, no exceptions
+folded in here.
 
 No LMS writes. Design output only. Wait for approval.
 ```
@@ -338,7 +375,9 @@ Scope:
 - Wire exercises and quizzes into progress tracking the same way existing
   course content is.
 - Flag any visual that needs generating or sourcing rather than silently
-  placeholder-ing it.
+  placeholder-ing it — see the VISUAL STANDARD section near the top of this
+  file for what's required per device and which visuals may never ship as
+  placeholders.
 - Enforce §11/§12 authorization — no special treatment for this course.
 
 Validate end-to-end with Playwright: screenshot the module flow from first
