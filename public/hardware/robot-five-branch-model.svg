@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="64" font-size="34" font-weight="800" fill="#134e4a">What makes up a robot?</text>
+  <text x="64" y="96" font-size="19" fill="#64748b">Five branches — every piece of hardware this course covers fits at least one.</text>
+
+  <!-- center: ROBOT -->
+  <circle cx="640" cy="390" r="86" fill="#ecfdf5" stroke="#0f766e" stroke-width="3"/>
+  <text x="640" y="398" text-anchor="middle" font-size="24" font-weight="800" fill="#134e4a">ROBOT</text>
+
+  <!-- five branch lines -->
+  <g stroke="#0d9488" stroke-width="3.5" marker-end="url(#arrow)" fill="none">
+    <line x1="640" y1="304" x2="640" y2="188"/>
+    <line x1="712" y1="340" x2="960" y2="220"/>
+    <line x1="726" y1="440" x2="1030" y2="470"/>
+    <line x1="554" y1="440" x2="250" y2="470"/>
+    <line x1="568" y1="340" x2="320" y2="220"/>
+  </g>
+
+  <g font-size="17" font-weight="700" fill="#134e4a">
+    <rect x="520" y="70" width="240" height="110" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="640" y="106" text-anchor="middle">SENSORS</text>
+    <text x="640" y="132" text-anchor="middle" font-size="14" font-weight="400" fill="#0f766e">measures the world</text>
+    <text x="640" y="152" text-anchor="middle" font-size="13" font-weight="400" fill="#0f766e">e.g. camera, LiDAR</text>
+
+    <rect x="960" y="130" width="240" height="110" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1080" y="166" text-anchor="middle">ACTUATORS</text>
+    <text x="1080" y="192" text-anchor="middle" font-size="14" font-weight="400" fill="#0f766e">acts on the world</text>
+    <text x="1080" y="212" text-anchor="middle" font-size="13" font-weight="400" fill="#0f766e">e.g. wheels, arm</text>
+
+    <rect x="1030" y="470" width="240" height="110" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1150" y="506" text-anchor="middle">COMPUTATION</text>
+    <text x="1150" y="532" text-anchor="middle" font-size="14" font-weight="400" fill="#0f766e">where decisions get made</text>
+    <text x="1150" y="552" text-anchor="middle" font-size="13" font-weight="400" fill="#0f766e">e.g. onboard PC</text>
+
+    <rect x="10" y="470" width="240" height="110" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="130" y="506" text-anchor="middle">COMMUNICATION</text>
+    <text x="130" y="532" text-anchor="middle" font-size="14" font-weight="400" fill="#0f766e">how the pieces talk</text>
+    <text x="130" y="552" text-anchor="middle" font-size="13" font-weight="400" fill="#0f766e">e.g. USB, ROS 2 topics</text>
+
+    <rect x="80" y="130" width="240" height="110" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="200" y="166" text-anchor="middle">POWER</text>
+    <text x="200" y="192" text-anchor="middle" font-size="14" font-weight="400" fill="#0f766e">what keeps it running</text>
+    <text x="200" y="212" text-anchor="middle" font-size="13" font-weight="400" fill="#0f766e">e.g. battery, USB power</text>
+  </g>
+
+  <text x="640" y="670" text-anchor="middle" font-size="18" fill="#475569">Every piece of hardware this course ever covers fits <tspan font-weight="700" fill="#0f172a">one or more of exactly these five</tspan> — a durable classification tool, not trivia.</text>
+</svg>

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ray" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L8,4 L0,8 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="56" font-size="28" font-weight="800" fill="#134e4a">Structured light: two separate optical systems, side view</text>
+  <text x="64" y="84" font-size="16" fill="#64748b">The IR pair computes depth; the RGB lens is a genuinely independent light path into the same housing.</text>
+
+  <!-- device on the left -->
+  <rect x="60" y="300" width="70" height="180" rx="12" fill="#1e293b"/>
+  <circle cx="95" cy="330" r="12" fill="#134e4a" stroke="#0d9488" stroke-width="2"/>
+  <text x="95" y="290" text-anchor="middle" font-size="12" fill="#0f766e" font-weight="700">IR Projector</text>
+
+  <circle cx="95" cy="450" r="12" fill="#134e4a" stroke="#0d9488" stroke-width="2"/>
+  <text x="95" y="500" text-anchor="middle" font-size="12" fill="#0f766e" font-weight="700">IR Receiver</text>
+
+  <circle cx="95" cy="390" r="10" fill="#0f172a" stroke="#64748b" stroke-width="2"/>
+  <text x="150" y="394" font-size="12" fill="#64748b">RGB lens</text>
+
+  <!-- near and far objects -->
+  <rect x="620" y="360" width="24" height="120" fill="#94a3b8"/>
+  <text x="632" y="500" text-anchor="middle" font-size="13" fill="#475569">Near object</text>
+
+  <rect x="1020" y="380" width="24" height="90" fill="#cbd5e1"/>
+  <text x="1032" y="490" text-anchor="middle" font-size="13" fill="#475569">Far object</text>
+
+  <!-- projector pattern rays -->
+  <g stroke="#0d9488" stroke-width="2" marker-end="url(#ray)">
+    <line x1="107" y1="325" x2="618" y2="390"/>
+    <line x1="107" y1="330" x2="1018" y2="410"/>
+  </g>
+  <!-- distorted pattern reflected back to receiver -->
+  <g stroke="#134e4a" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ray)">
+    <line x1="632" y1="395" x2="107" y2="448"/>
+    <line x1="1032" y1="415" x2="107" y2="452"/>
+  </g>
+
+  <!-- RGB light path, drawn visually separate -->
+  <g stroke="#64748b" stroke-width="2" stroke-dasharray="2 4">
+    <line x1="105" y1="390" x2="1080" y2="390"/>
+  </g>
+  <text x="640" y="378" text-anchor="middle" font-size="13" fill="#64748b">RGB light path (separate system — ordinary color image, no pattern)</text>
+
+  <text x="632" y="340" text-anchor="middle" font-size="13" fill="#0f766e">pattern shift: small (near)</text>
+  <text x="1032" y="358" text-anchor="middle" font-size="13" fill="#0f766e">pattern shift: large (far)</text>
+
+  <!-- explanation card -->
+  <g>
+    <rect x="60" y="560" width="1160" height="130" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="90" y="592" font-size="16" font-weight="800" fill="#134e4a">Fixed projector-to-receiver geometry means any local shift in the pattern reveals distance.</text>
+    <text x="90" y="618" font-size="15" fill="#0f766e">Closer surfaces shift the known pattern more; farther surfaces shift it less — the same triangulation-family</text>
+    <text x="90" y="642" font-size="15" fill="#0f766e">idea as the RPLIDAR's laser method, computed across a whole 2D field at once instead of one scanning point.</text>
+    <text x="90" y="666" font-size="14" font-weight="700" fill="#0d9488">RGB and depth are two independent systems — they only become pixel-aligned through explicit processing (Section D).</text>
+  </g>
+</svg>

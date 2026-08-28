@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="carrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="60" font-size="30" font-weight="800" fill="#134e4a">One cable, one hub, two logical devices</text>
+  <text x="64" y="90" font-size="18" fill="#64748b">The physical connection is simple — the logical split happens once the cable reaches the host.</text>
+
+  <!-- device -->
+  <rect x="60" y="260" width="200" height="90" rx="14" fill="#1e293b"/>
+  <text x="160" y="310" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">Astra Pro</text>
+
+  <!-- cable -->
+  <path d="M 260 305 C 340 305, 340 305, 420 305" stroke="#0d9488" stroke-width="6" fill="none" marker-end="url(#carrow)"/>
+  <text x="340" y="285" text-anchor="middle" font-size="13" fill="#0f766e">one captive cable</text>
+
+  <!-- powered hub -->
+  <rect x="430" y="230" width="220" height="150" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+  <text x="540" y="270" text-anchor="middle" font-size="16" font-weight="800" fill="#134e4a">Powered USB Hub</text>
+  <text x="540" y="294" text-anchor="middle" font-size="13" fill="#0f766e">not a bare laptop port —</text>
+  <text x="540" y="314" text-anchor="middle" font-size="13" fill="#0f766e">this device draws power</text>
+  <text x="540" y="334" text-anchor="middle" font-size="13" fill="#0f766e">across two USB identities</text>
+  <text x="540" y="354" text-anchor="middle" font-size="12" fill="#0f766e">at once (Module 0 L4)</text>
+
+  <!-- host -->
+  <path d="M 660 305 C 720 305, 720 305, 780 305" stroke="#64748b" stroke-width="6" fill="none" marker-end="url(#carrow)"/>
+  <rect x="790" y="230" width="200" height="150" rx="16" fill="#f8fafc" stroke="#64748b" stroke-width="2.5"/>
+  <text x="890" y="315" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">Ubuntu 24.04 Host</text>
+
+  <!-- inset: logical split -->
+  <g>
+    <rect x="200" y="450" width="880" height="220" rx="16" fill="#fffbeb" stroke="#d97706" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="230" y="486" font-size="16" font-weight="800" fill="#92400e">Inset: what the host actually sees</text>
+    <text x="230" y="510" font-size="14" fill="#78350f">One physical cable does not mean one lsusb line — expect two, both vendor 2bc5.</text>
+
+    <rect x="260" y="540" width="340" height="100" rx="12" fill="#ffffff" stroke="#0f766e" stroke-width="2"/>
+    <text x="430" y="572" text-anchor="middle" font-size="15" font-weight="700" fill="#134e4a">Depth / OpenNI2 identity</text>
+    <text x="430" y="596" text-anchor="middle" font-size="14" fill="#0f766e">2bc5:0403</text>
+    <text x="430" y="618" text-anchor="middle" font-size="12" fill="#64748b">IR projector + receiver</text>
+
+    <rect x="680" y="540" width="340" height="100" rx="12" fill="#ffffff" stroke="#0f766e" stroke-width="2"/>
+    <text x="850" y="572" text-anchor="middle" font-size="15" font-weight="700" fill="#134e4a">RGB / UVC identity</text>
+    <text x="850" y="596" text-anchor="middle" font-size="14" fill="#0f766e">2bc5:0501</text>
+    <text x="850" y="618" text-anchor="middle" font-size="12" fill="#64748b">color lens</text>
+  </g>
+</svg>

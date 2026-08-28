@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="56" font-size="30" font-weight="800" fill="#134e4a">The generic pipeline</text>
+  <text x="64" y="86" font-size="17" fill="#64748b">No device name anywhere on this diagram — this exact shape applies to any sensor this course ever adds.</text>
+
+  <!-- row 1: five stages -->
+  <g font-size="14" font-weight="700" fill="#134e4a">
+    <rect x="64" y="130" width="216" height="120" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="172" y="180" text-anchor="middle">1. Physical</text>
+    <text x="172" y="198" text-anchor="middle">World</text>
+
+    <rect x="300" y="130" width="216" height="120" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="408" y="188" text-anchor="middle">2. Sensor</text>
+
+    <rect x="536" y="130" width="216" height="120" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="644" y="188" text-anchor="middle">3. Signal</text>
+
+    <rect x="772" y="130" width="216" height="120" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="880" y="180" text-anchor="middle">4. Digital</text>
+    <text x="880" y="198" text-anchor="middle">Data</text>
+
+    <rect x="1008" y="130" width="216" height="120" rx="14" fill="#ecfdf5" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1116" y="188" text-anchor="middle">5. Driver</text>
+  </g>
+
+  <!-- row 2: five stages -->
+  <g font-size="14" font-weight="700" fill="#134e4a">
+    <rect x="64" y="380" width="216" height="120" rx="14" fill="#ecfdf5" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="172" y="430" text-anchor="middle">6. ROS 2</text>
+    <text x="172" y="448" text-anchor="middle">Node</text>
+
+    <rect x="300" y="380" width="216" height="120" rx="14" fill="#ecfdf5" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="408" y="438" text-anchor="middle">7. Topic</text>
+
+    <rect x="536" y="380" width="216" height="120" rx="14" fill="#ecfdf5" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="644" y="438" text-anchor="middle">8. Message</text>
+
+    <rect x="772" y="380" width="216" height="120" rx="14" fill="#ecfdf5" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="880" y="438" text-anchor="middle">9. QoS</text>
+
+    <rect x="1008" y="380" width="216" height="120" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1116" y="430" text-anchor="middle">10. Application</text>
+    <text x="1116" y="448" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">(RViz2, robot logic)</text>
+  </g>
+
+  <g stroke="#0d9488" stroke-width="4" marker-end="url(#arrow)" fill="none">
+    <line x1="284" y1="190" x2="296" y2="190"/>
+    <line x1="520" y1="190" x2="532" y2="190"/>
+    <line x1="756" y1="190" x2="768" y2="190"/>
+    <line x1="992" y1="190" x2="1004" y2="190"/>
+    <path d="M 1116 254 C 1116 320, 1116 320, 172 320 C 100 320, 80 320, 80 376"/>
+    <line x1="284" y1="440" x2="296" y2="440"/>
+    <line x1="520" y1="440" x2="532" y2="440"/>
+    <line x1="756" y1="440" x2="768" y2="440"/>
+    <line x1="992" y1="440" x2="1004" y2="440"/>
+  </g>
+
+  <text x="640" y="560" text-anchor="middle" font-size="17" fill="#134e4a" font-weight="700">Why each stage exists</text>
+  <text x="64" y="592" font-size="14" fill="#0f766e">Driver: raw signals aren't yet software-shaped.  ·  Node: a consistent way to expose data to the rest of ROS 2.</text>
+  <text x="64" y="614" font-size="14" fill="#0f766e">Topic/Message: any number of programs can consume the same data without touching the driver.  ·  QoS: "delivered" can mean different things.</text>
+
+  <text x="640" y="672" text-anchor="middle" font-size="18" fill="#475569">The next two lessons ground this exact chain in <tspan font-weight="700" fill="#0f172a">two real devices</tspan> — this model doesn't get replaced, only filled in.</text>
+</svg>

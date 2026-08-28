@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="60" font-size="30" font-weight="800" fill="#134e4a">One node, two parallel pipelines</text>
+  <text x="64" y="90" font-size="18" fill="#64748b">Two independent sensing paths converge into one ROS 2 node, then diverge again into their own topics.</text>
+
+  <!-- top chain: RGB/UVC -->
+  <g font-size="15" font-weight="700" fill="#134e4a">
+    <rect x="40" y="140" width="230" height="100" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="155" y="180" text-anchor="middle">RGB / UVC Sensor</text>
+    <text x="155" y="204" text-anchor="middle" font-size="13" font-weight="400" fill="#0f766e">USB identity 2bc5:0501</text>
+  </g>
+
+  <!-- bottom chain: OpenNI2/depth -->
+  <g font-size="15" font-weight="700" fill="#134e4a">
+    <rect x="40" y="480" width="230" height="100" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="155" y="520" text-anchor="middle">OpenNI2 Depth Sensor</text>
+    <text x="155" y="544" text-anchor="middle" font-size="13" font-weight="400" fill="#0f766e">USB identity 2bc5:0403</text>
+  </g>
+
+  <!-- shared node -->
+  <rect x="500" y="300" width="280" height="120" rx="16" fill="#ecfdf5" stroke="#0f766e" stroke-width="3"/>
+  <text x="640" y="350" text-anchor="middle" font-size="19" font-weight="800" fill="#134e4a">ROS 2 Node</text>
+  <text x="640" y="376" text-anchor="middle" font-size="14" font-weight="400" fill="#0f766e">astra_camera_node</text>
+  <text x="640" y="398" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">namespace /camera</text>
+
+  <!-- output topics: RGB -->
+  <g font-size="14" font-weight="700" fill="#134e4a">
+    <rect x="990" y="140" width="250" height="100" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1115" y="182" text-anchor="middle">/camera/color/</text>
+    <text x="1115" y="202" text-anchor="middle">camera_info</text>
+  </g>
+
+  <!-- output topics: depth -->
+  <g font-size="14" font-weight="700" fill="#134e4a">
+    <rect x="990" y="440" width="250" height="90" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1115" y="478" text-anchor="middle">/camera/depth/</text>
+    <text x="1115" y="498" text-anchor="middle">camera_info</text>
+
+    <rect x="990" y="545" width="250" height="90" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1115" y="580" text-anchor="middle" font-size="13">/camera/depth_registered/</text>
+    <text x="1115" y="602" text-anchor="middle" font-size="13">points</text>
+  </g>
+
+  <g stroke="#0d9488" stroke-width="4" marker-end="url(#arrow)" fill="none">
+    <path d="M 270 190 C 400 190, 420 280, 498 320"/>
+    <path d="M 270 530 C 400 530, 420 440, 498 400"/>
+    <path d="M 780 335 C 900 335, 900 190, 986 190"/>
+    <path d="M 780 380 C 900 380, 900 480, 986 480"/>
+    <path d="M 780 400 C 920 400, 920 585, 986 585"/>
+  </g>
+
+  <text x="640" y="672" text-anchor="middle" font-size="17" fill="#475569">"One ROS 2 node" doesn't mean "one pipeline" —</text>
+  <text x="640" y="698" text-anchor="middle" font-size="17" fill="#475569">each path has its <tspan font-weight="700" fill="#0f172a">own physical camera intrinsics</tspan>, which is why camera_info appears twice.</text>
+</svg>

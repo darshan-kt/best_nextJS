@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="64" font-size="34" font-weight="800" fill="#134e4a">Two different shapes of coverage</text>
+  <text x="64" y="96" font-size="19" fill="#64748b">Same scale, top-down view — not just different numbers, different sensing shapes.</text>
+
+  <!-- RPLIDAR: full circle -->
+  <g>
+    <circle cx="330" cy="400" r="230" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5" stroke-dasharray="3 6"/>
+    <circle cx="330" cy="400" r="20" fill="#0f766e"/>
+    <text x="330" y="406" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">A2</text>
+    <text x="330" y="150" text-anchor="middle" font-size="20" font-weight="800" fill="#134e4a">RPLIDAR A2</text>
+    <text x="330" y="178" text-anchor="middle" font-size="17" font-weight="700" fill="#0f766e">360° — full circle, every rotation</text>
+  </g>
+
+  <!-- Astra Pro: 60 degree wedge -->
+  <g>
+    <path d="M 950 400 L 1105 296 A 230 230 0 0 1 1105 504 Z" fill="#ecfdf5" stroke="#0f766e" stroke-width="2.5"/>
+    <circle cx="950" cy="400" r="18" fill="#0f766e"/>
+    <text x="950" y="406" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Pro</text>
+    <text x="950" y="150" text-anchor="middle" font-size="20" font-weight="800" fill="#134e4a">Orbbec Astra Pro</text>
+    <text x="950" y="178" text-anchor="middle" font-size="17" font-weight="700" fill="#0f766e">60° × 49.5° — fixed cone</text>
+  </g>
+
+  <line x1="655" y1="200" x2="655" y2="620" stroke="#e2e8f0" stroke-width="2"/>
+
+  <text x="640" y="672" text-anchor="middle" font-size="18" fill="#475569">Neither shape is unconditionally better —</text>
+  <text x="640" y="698" text-anchor="middle" font-size="18" fill="#475569"><tspan font-weight="700" fill="#0f172a">match the coverage shape to the task</tspan>, the same choice Module 2 Lesson 4 asks you to make for real.</text>
+</svg>

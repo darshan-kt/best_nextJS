@@ -225,6 +225,13 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
     category: "LIDAR_2D",
     summary:
       "A 360° 2D laser scanner that measures distance to surrounding objects, publishing a live LaserScan a robot uses for obstacle detection, mapping and localization.",
+    // Real product photo, not generated (VISUAL STANDARD). Sourced
+    // 2026-08-28 — one hero angle only; PHOTOGRAPHY_CHECKLIST.md's full
+    // shot list (top-down, side profile, adapter-board and model-label
+    // close-ups, RViz2 captures) is still open.
+    heroImageSrc: "/hardware/rplidar-a2-hero.png",
+    heroImageAlt:
+      "The RPLIDAR A2 2D LiDAR unit: a round black scanning head with a red scan-window ring and its connector cable.",
     driverPackage: "rplidar_ros",
     driverRepoUrl: "https://github.com/Slamtec/rplidar_ros",
     rosDistroCompat: ["jazzy", "humble"],
@@ -232,6 +239,66 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
     homeCourseSlug: "robotics-hardware-and-sensors",
     homeSectionTitle: "RPLIDAR A2",
     specs: [
+      // Physical/optical specs (0-6) — the full official Slamtec table,
+      // added in Stage 7 for Module 2's SPEC_TABLE blocks. `whyItMatters`
+      // is lifted from STAGE_4_RPLIDAR_A2_PROFILE.md §1, not reworded.
+      {
+        key: "measuring_range",
+        label: "Measuring Range",
+        value: "0.2 m – 16 m (A2M7); 0.2 m – 12 m (A2M8/A2M12)",
+        whyItMatters:
+          "Sets the usable detection envelope; a robot's obstacle-avoidance planning distance must sit comfortably inside this, not at its edge.",
+        sortOrder: 0,
+      },
+      {
+        key: "range_resolution",
+        label: "Range Resolution (Accuracy)",
+        value: "≤1% of range up to 12 m; ≤2% of range from 12–16 m",
+        whyItMatters:
+          "This is the closest thing to a published accuracy figure this device has. At 10 m, ≤1% means readings are accurate to roughly ±10 cm; at 15 m, inside the coarser ≤2% band, that widens to roughly ±30 cm — a real, published accuracy tolerance, not an inferred one.",
+        sortOrder: 1,
+      },
+      {
+        key: "angular_resolution",
+        label: "Angular Resolution",
+        value: "0.225° (A2M7/A2M12); 0.45° (A2M8)",
+        whyItMatters:
+          "Determines whether two close/thin obstacles resolve as distinct returns or merge into one — smaller means finer detail per 360° sweep.",
+        sortOrder: 2,
+      },
+      {
+        key: "sample_rate",
+        label: "Sample Rate",
+        value: "16,000 samples/sec (A2M7/A2M12); 8,000 samples/sec (A2M8)",
+        whyItMatters:
+          "More samples per second at the same rotation speed means finer angular resolution per sweep — the reason A2M7/A2M12 out-resolve the A2M8 above.",
+        sortOrder: 3,
+      },
+      {
+        key: "rotation_speed",
+        label: "Rotation Speed",
+        value: "10 Hz, adjustable 5–15 Hz",
+        whyItMatters:
+          "A real trade-off: faster rotation means a fresher scan sooner, at the cost of fewer samples per revolution.",
+        sortOrder: 4,
+      },
+      {
+        key: "angular_range",
+        label: "Angular Range",
+        value: "360°",
+        whyItMatters:
+          "Full omnidirectional coverage every rotation — the headline contrast against a fixed-cone sensor like an RGB-D camera.",
+        sortOrder: 5,
+      },
+      {
+        key: "laser_safety_class",
+        label: "Laser Safety Class",
+        value: "Class 1",
+        whyItMatters:
+          "Confirmed directly from the official spec page — safe under normal operating conditions, including direct viewing. A real, checkable safety rating, not a marketing claim.",
+        sortOrder: 6,
+      },
+      // ROS 2 integration specs (7-9) — unchanged from Stage 1.
       {
         key: "serial_baudrate",
         label: "Serial Baud Rate (A2M8)",
@@ -239,7 +306,7 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
         unit: "baud",
         whyItMatters:
           "Must match exactly for the driver to read valid data. Wrong baud rate is a classic real symptom: the device shows up in lsusb and the port opens, but scan data is garbled or absent — and it's model-specific (the A3 launch file defaults to 256000).",
-        sortOrder: 0,
+        sortOrder: 7,
       },
       {
         key: "usb_bridge_chip",
@@ -247,7 +314,7 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
         value: "Silicon Labs CP2102",
         whyItMatters:
           "This is the chip udev rules match on (vendor 10c4, product ea60) to give the device a stable /dev/rplidar symlink instead of a shifting /dev/ttyUSBn.",
-        sortOrder: 1,
+        sortOrder: 8,
       },
       {
         key: "publisher_qos",
@@ -255,7 +322,7 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
         value: "RELIABLE",
         whyItMatters:
           "Confirmed directly from the driver's source, not assumed: RViz2's default LaserScan subscription is also RELIABLE, so no QoS override is needed to visualize this device's data.",
-        sortOrder: 2,
+        sortOrder: 9,
       },
     ],
     topics: [
@@ -274,6 +341,17 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
     category: "RGB_D_CAMERA",
     summary:
       "An RGB-D camera reporting color video and per-pixel depth from two separate sensing paths — a UVC RGB camera and an OpenNI2 structured-light depth engine — that a robot combines into a 3D view of what's in front of it.",
+    // Real product photo, not generated (VISUAL STANDARD). Sourced
+    // 2026-08-28. Unlike the RPLIDAR shot, this one could NOT be confirmed
+    // against a legible model label in the photo itself — the Astra Pro
+    // vs. Astra Pro Plus mix-up is this device's own single most-flagged
+    // risk (JAZZY_DEVICE_VERIFICATION.md §2.1, PHOTOGRAPHY_CHECKLIST.md's
+    // "single most important disambiguation shot"), so this is stated
+    // honestly rather than silently assumed. Swap this file, not just the
+    // path here, once the label close-up confirms it.
+    heroImageSrc: "/hardware/orbbec-astra-pro-hero.png",
+    heroImageAlt:
+      "The Orbbec Astra Pro RGB-D camera: a black horizontal bar housing the RGB lens and depth-sensing emitter/receiver, on a small stand.",
     driverPackage: "astra_camera",
     driverRepoUrl: "https://github.com/yosefl20/ros2_astra_camera",
     rosDistroCompat: ["jazzy"],
@@ -283,13 +361,65 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
     homeCourseSlug: "robotics-hardware-and-sensors",
     homeSectionTitle: "Orbbec Astra Pro",
     specs: [
+      // Physical/optical specs (0-5) — the full table, added in Stage 7
+      // for Module 4's SPEC_TABLE blocks. `whyItMatters` is lifted from
+      // STAGE_4_ASTRA_PRO_PROFILE.md §1, not reworded.
+      {
+        key: "depth_range",
+        label: "Depth Range",
+        value: "0.6 m – 8.0 m (optimal 0.6 m – 5.0 m)",
+        whyItMatters:
+          "Beyond the optimal band, depth noise rises sharply — plan robot behavior around the optimal figure, not the maximum.",
+        sortOrder: 0,
+      },
+      {
+        key: "depth_resolution",
+        label: "Depth Resolution",
+        value: "VGA (640×480), QVGA (320×240), or QQVGA (160×120), up to 30 FPS",
+        whyItMatters:
+          "Lower resolution trades detail for bandwidth/CPU cost — relevant when running alongside the RPLIDAR in the capstone.",
+        sortOrder: 1,
+      },
+      {
+        key: "rgb_resolution",
+        label: "RGB Resolution",
+        value: "Up to 1280×960 (lower FPS) or 640×480 @ 30 FPS",
+        whyItMatters:
+          "The fork's own launch defaults use 640×480 @ 30 FPS MJPEG — the default a learner actually sees, not the sensor's technical ceiling.",
+        sortOrder: 2,
+      },
+      {
+        key: "field_of_view",
+        label: "Field of View",
+        value: "60° horizontal × 49.5° vertical (73° diagonal)",
+        whyItMatters:
+          "A fixed cone, directly contrasted against the RPLIDAR's full 360° — this device sees a lot of detail in a small window, not the whole room.",
+        sortOrder: 3,
+      },
+      {
+        key: "interface",
+        label: "Interface",
+        value: "USB 2.0, as two separate USB identities from one housing",
+        whyItMatters:
+          "The single most important fact about this device's electrical behavior — one cable, two logical devices, confirmed at the source-code level (see the two USB identity specs below).",
+        sortOrder: 4,
+      },
+      {
+        key: "dimensions_weight",
+        label: "Dimensions / Weight",
+        value: "~165 × 30 × 40 mm / ~0.3 kg",
+        whyItMatters:
+          "Relevant for the capstone's physical mounting.",
+        sortOrder: 5,
+      },
+      // ROS 2 integration specs (6-8) — unchanged from Stage 1.
       {
         key: "usb_identity_depth",
         label: "USB Identity — Depth Engine",
         value: "2bc5:0403",
         whyItMatters:
           "The depth/OpenNI2 half of this camera enumerates as its own USB device, separate from the RGB camera below — expect two lines in lsusb for one physical unit, not one.",
-        sortOrder: 0,
+        sortOrder: 6,
       },
       {
         key: "usb_identity_rgb",
@@ -297,7 +427,7 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
         value: "2bc5:0501",
         whyItMatters:
           "Confirmed from two independent sources (the udev rules file and the launch file's uvc_vendor_id/uvc_product_id defaults) — the RGB camera is a UVC device sharing this id with several other Orbbec models, which is why a learner must not assume one lsusb line means one identity.",
-        sortOrder: 1,
+        sortOrder: 7,
       },
       {
         key: "color_format",
@@ -305,14 +435,25 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
         value: "MJPEG, 640x480 @ 30fps",
         whyItMatters:
           "The launch file's own defaults — worth knowing before assuming a different resolution or format is required just to get a first image.",
-        sortOrder: 2,
+        sortOrder: 8,
       },
     ],
     topics: [
       {
+        topicName: "/camera/color/image_raw",
+        messageType: "sensor_msgs/msg/Image",
+        description:
+          "The RGB/UVC stream — published when enable_color and use_uvc_camera are both true (default).",
+      },
+      {
         topicName: "/camera/color/camera_info",
         messageType: "sensor_msgs/msg/CameraInfo",
         description: "Intrinsics for the RGB (UVC) sensor.",
+      },
+      {
+        topicName: "/camera/depth/image_raw",
+        messageType: "sensor_msgs/msg/Image",
+        description: "The raw OpenNI2 depth stream, in millimeters as 16-bit values.",
       },
       {
         topicName: "/camera/depth/camera_info",
@@ -320,10 +461,16 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
         description: "Intrinsics for the OpenNI2 depth sensor.",
       },
       {
+        topicName: "/camera/ir/image_raw",
+        messageType: "sensor_msgs/msg/Image",
+        description:
+          "The raw infrared stream from the depth receiver — published when enable_ir is true (default).",
+      },
+      {
         topicName: "/camera/depth_registered/points",
         messageType: "sensor_msgs/msg/PointCloud2",
         description:
-          "Depth aligned to the color frame — confirmed from the launch file's own remap of depth/color/points to this name.",
+          "A point cloud published via a topic remap of depth/color/points — named 'registered' regardless of whether the depth_registration parameter (default false) actually aligns color to depth. See Module 4 Section D.",
       },
     ],
   },
@@ -445,7 +592,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
             {
               type: "TEXT",
               data: {
-                body: "The compiler infers a type from the value assigned to it, so an annotation on a `const` you initialize immediately is usually redundant. Inference gets more interesting — and more useful — at function boundaries and with generics, where it can propagate a type through several calls without it ever being written down.",
+                body: "The compiler infers a type from the value assigned to it, so an annotation on a const you initialize immediately is usually redundant. Inference gets more interesting — and more useful — at function boundaries and with generics, where it can propagate a type through several calls without it ever being written down.",
               },
             },
             {
@@ -512,7 +659,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
                     body: "Add a null check before calling .toUpperCase() so the compiler can narrow the type on the line that uses it.",
                   },
                   rootCause: {
-                    body: "TypeScript's control-flow analysis narrows a union based only on checks it can see in the code — an `if` guard, a truthiness check, or similar. It never infers that a value \"can't actually be null\" from how the code is used elsewhere.",
+                    body: "TypeScript's control-flow analysis narrows a union based only on checks it can see in the code — an if guard, a truthiness check, or similar. It never infers that a value \"can't actually be null\" from how the code is used elsewhere.",
                   },
                 },
               },
@@ -3763,31 +3910,1847 @@ const CURRICULA: Record<string, SeedSection[]> = {
   /// exists so SPEC_TABLE/DEVICE_CARD have somewhere real to render, with
   /// specs pulled from HARDWARE_DEVICES above rather than invented here.
   "robotics-hardware-and-sensors": [
+    // Modules 0-3 (Stage 7, docs/hardware/STAGE_3_MODULES_0_TO_3_DESIGN.md,
+    // as corrected by Stage 4). Inserted before the Stage 1 device-fixture
+    // sections below so they display first, matching course order.
     {
-      title: "RPLIDAR A2",
+      title: "Module 0 — Course Onboarding",
       summary:
-        "A 360° 2D laser scanner and its verified path onto ROS 2 Jazzy.",
+        "What this course covers, what it costs, how to stay safe, and why USB power is a real failure mode — before any setup begins.",
       lessons: [
         {
-          slug: "rplidar-a2-overview",
-          title: "RPLIDAR A2 — Device Overview",
+          slug: "welcome-prerequisites-what-youll-build",
+          title: "Welcome, Prerequisites & What You'll Build",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "This course teaches you to evaluate, set up, integrate, and debug real robotics hardware — not a simulation, not a theory course. Every command you'll run has been verified against a real upstream source; every claim about a device's specs or driver support is cited, not assumed.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Hard prerequisite",
+                body: "This course assumes Ubuntu 24.04 with ROS 2 Jazzy already installed and working (e.g. from the ROS 2 Fundamentals course's Module 3). Nothing here re-teaches that installation — if ros2 topic list doesn't run on your machine right now, stop and complete that first.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The two launch devices, honestly framed: the RPLIDAR A2 is an actively-maintained LiDAR with an officially released Jazzy driver — the \"everything works as documented\" case. The Orbbec Astra Pro is a legacy depth camera whose only working Jazzy path is a small community fork. You will learn to evaluate hardware support, not just follow steps for hardware that already works perfectly.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/module-0-capstone-preview.svg",
+                alt: "Two-branch flow diagram: Orbbec Astra Pro produces RGB and depth data over a fixed 60-degree cone; RPLIDAR A2 produces LaserScan data over a full 360 degrees; both feed into one combined Robot Perception box.",
+                caption: "Where this course is headed — neither sensor alone gives a robot the full picture.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Roadmap: Modules 0–3 build the mental models every device in this course plugs into — hardware safety, the five-branch hardware model, sensor concepts grounded in real numbers, and the generic ROS 2 data pipeline. Modules 4–5 apply all of that to the RPLIDAR A2 and Orbbec Astra Pro specifically, with full physical setup, first-run, and real debugging.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "hardware-safety",
+          title: "Hardware Safety",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The RPLIDAR's laser is rated Class 1 — confirmed directly from Slamtec's own official spec page. Class 1 means safe under normal operating conditions, including direct viewing. That said, \"Class 1\" is not a license for carelessness: as a matter of general practice, don't stare into any laser source at close range.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-laser-safety-class1.svg",
+                alt: "A laser safety icon labelled Class 1, with text confirming it is safe under normal operating conditions, plus a warning box noting this is not a license for carelessness.",
+                caption: "A real, checkable safety rating — not a marketing claim.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "ESD (electrostatic discharge)",
+                body: "Both devices have exposed circuit boards near their connectors. Discharge static — touch a grounded metal object — before handling either unit, especially in dry conditions.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Safe handling specifics: the RPLIDAR's rotating head should never be forced or held stationary while powered. The Astra Pro's depth-sensing emitter and lenses should not be touched directly — fingerprints and dust degrade the structured-light pattern this course later teaches you to reason about.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "Power sequencing",
+                body: "Never hot-plug or unplug USB while colcon build or a driver process is actively writing to the device.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "None of this is exotic — these are consumer-grade devices — but robotics hardware safety habits should start now, not after the first mistake.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "bill-of-materials",
+          title: "The Bill of Materials: What This Course Costs You",
           durationMinutes: 10,
           contentBlocks: [
             {
               type: "TEXT",
               data: {
-                body: "The RPLIDAR A2 is a 360° 2D laser scanner from Slamtec. It spins a laser rangefinder continuously, publishing one reading per angle for a full sweep — the raw material almost every wheeled robot uses for obstacle detection, mapping and localization.\n\nThis page is a schema and integration check, not the full lesson — the complete device module, with working principle, physical setup and guided exercises, is designed in Stage 5.",
+                body: "This course requires two real devices, a powered USB hub, and a native Ubuntu 24.04 machine. Approximate total: $265–$545.",
+              },
+            },
+            {
+              // The TEXT block renders as plain literal text with no
+              // markdown parsing, by deliberate XSS-avoidance design
+              // (`text-block.tsx`, §29) — a pipe-table string would render
+              // as raw "| Item | ... |" text, not an actual table. CODE's
+              // <pre> preserves whitespace/alignment instead, which is a
+              // more honest fit than asking TEXT to do something it never
+              // supported.
+              type: "CODE",
+              data: {
+                filename: "Bill of Materials",
+                code:
+                  "Item              Approx. cost   Note\n" +
+                  "----------------  -------------  --------------------------------------------------\n" +
+                  "RPLIDAR A2        $150-$320      Confirm the exact sub-model (A2M7/A2M8/A2M12)\n" +
+                  "                                 before buying -- Module 2 explains why it matters.\n" +
+                  "Orbbec Astra Pro  $100-$200      Secondhand/reseller only -- see the callout below.\n" +
+                  "Powered USB hub   $15-$25        Not optional -- Lesson 4 explains why.\n" +
+                  "Cables            included       Or a USB-C hub if your machine lacks full-size\n" +
+                  "                                 USB-A ports.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "The Astra Pro specifically",
+                body: "Orbbec no longer sells this exact model new — its own product page returns a 404 as of this course's own research. You will be buying secondhand or from a reseller's remaining stock. Budget extra time for sourcing, not just extra money.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What's deliberately not required: no robot chassis, no motor controller. This course teaches sensor data, not building a physical robot platform.",
               },
             },
             { type: "DEVICE_CARD", deviceSlug: "rplidar-a2" },
+            { type: "DEVICE_CARD", deviceSlug: "orbbec-astra-pro" },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Build Your Own Sourcing Checklist",
+                instructions:
+                  "Before buying anything, work through the three checks below.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Confirm you know exactly what you're buying and where it will plug in, before spending any money.",
+                  },
+                  steps: [
+                    {
+                      title: "Choose your RPLIDAR A2 sub-model",
+                      content: {
+                        body: "Record which sub-model (A2M7, A2M8, or A2M12) you're targeting and why — price, availability, or range needs. You'll confirm this again against the physical label once the unit arrives.",
+                      },
+                    },
+                    {
+                      title: "Identify an Astra Pro source",
+                      content: {
+                        body: "Find at least one real listing for an Orbbec Astra Pro (not \"Astra Pro Plus\") and record its condition — new old stock, refurbished, or used.",
+                      },
+                    },
+                    {
+                      title: "Confirm your USB setup",
+                      content: {
+                        body: "Check whether your machine has enough free full-size USB-A ports for both devices plus the powered hub, or note the adapter you'll need.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        {
+          slug: "usb-fundamentals-power-budgets",
+          title:
+            'USB Fundamentals: Power Budgets and the "Device Not Detected" Failure Mode',
+          durationMinutes: 14,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "USB carries power and data over the same connector. Every port has a real power budget — often ~500 mA–900 mA on a standard laptop USB port, shared further if downstream of an unpowered hub — and every plugged-in device draws against it.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Neither of this course's two devices is power-trivial. The RPLIDAR A2's motor alone draws a continuous 450–600 mA, confirmed from Slamtec's own datasheet. The Astra Pro draws power across two simultaneous USB identities from one housing — the depth engine and the RGB camera enumerate and power up independently. Running both devices on unpowered ports at once is a real, specific way to exceed a laptop's power budget, not a hypothetical.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/usb-power-budget.svg",
+                alt: "A budget bar showing a typical unpowered USB port's ~500-900 mA budget, with the RPLIDAR's 450-600 mA draw and the Astra Pro's additional two-identity draw stacked against it, approaching and then exceeding the budget line.",
+                caption: "These two specific devices, together, are a realistic way to hit a real limit.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The diagnostic signature to recognize: a device that enumerates intermittently, drops out only when a second device is also plugged in, or a camera stream that stutters/drops while a LiDAR spins nearby — these are power symptoms, not driver bugs. This course teaches you to check power before touching software — the first rung of the diagnostic ladder every device module reuses.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "This is exactly why the BOM includes a powered USB hub, not as a nice-to-have: it supplies its own power source, not just the host's limited budget.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now that you know what to watch for physically, the last piece is how this course's own debugging and assessment format works.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Read Your Own USB Bus",
+                instructions:
+                  "This doesn't require the course's own hardware — a real, immediately practicable skill you can build right now.",
+                config: {
+                  type: "GUIDED",
+                  goal: {
+                    body: "Practice reading lsusb and dmesg output — the exact skill both Module 3 and every device module reuse.",
+                  },
+                  steps: [
+                    {
+                      title: "Plug in any USB device you already have",
+                      content: {
+                        body: "A mouse, keyboard, or flash drive works fine — you don't need this course's own hardware for this exercise.",
+                      },
+                    },
+                    {
+                      title: "Run lsusb and dmesg",
+                      content: {
+                        body: "Run lsusb to see the device listed, then dmesg | tail to see the kernel's own log of it being detected.",
+                        visuals: [
+                          {
+                            kind: "CODE",
+                            data: { language: "bash", code: "lsusb\ndmesg | tail" },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      title: "Identify the vendor:product ID pair",
+                      content: {
+                        body: "Find the idVendor:idProduct pair in the output — this is the exact same identifier scheme both the RPLIDAR and Astra Pro use, and udev rules match on later in this course.",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        {
+          slug: "how-the-hardware-lab-works",
+          title: "How the Hardware Lab Works",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "This course has no simulation or rosbag-replay fallback track. Every hands-on exercise from Module 4 onward assumes the learner has the real device in hand.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The debugging-exercise format: a broken scenario is presented, hints are revealed one at a time on request, and the full solution — plus, often, a deeper root-cause explanation — only appears after, never immediately. This is the same format used throughout the ROS 2 Fundamentals course.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The quiz format: questions test diagnosis and decision-making using this course's own real devices and numbers, not abstract recall. Expect questions shaped like \"given this real symptom, what do you check next,\" not \"define resolution.\"",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "You already did a real diagnostic exercise in the previous lesson without realizing it — reading lsusb/dmesg output is exactly the skill this format is built around.",
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 0 Check: Course Onboarding",
+                description:
+                  "Scenario and diagnostic questions on the BOM, safety, and USB power — not recall.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You've found an Astra Pro listed by a reseller for $90, with no manufacturer support page. Before buying, what should you check first?",
+                    explanation:
+                      "Evaluating driver support before buying is a real robotics-engineering skill this course teaches directly, not an afterthought.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "Whether a working Jazzy driver path exists and its confidence level",
+                      },
+                      { id: "b", label: "Whether the price is the lowest available" },
+                      { id: "c", label: "Whether the reseller offers free shipping" },
+                      { id: "d", label: "Whether the box is the original retail packaging" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "MULTIPLE_CHOICE",
+                    prompt:
+                      "Which of these are part of this course's exact BOM? Select all that apply.",
+                    explanation:
+                      "A robot chassis is explicitly out of scope — this course teaches sensor data, not building a physical robot platform.",
+                    options: [
+                      { id: "a", label: "RPLIDAR A2" },
+                      { id: "b", label: "Orbbec Astra Pro" },
+                      { id: "c", label: "Powered USB hub" },
+                      { id: "d", label: "A robot chassis" },
+                    ],
+                    correctOptionIds: ["a", "b", "c"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You plug both devices into your laptop's built-in ports with no hub, and the Astra Pro's depth stream keeps cutting out whenever the RPLIDAR is also running. What's the most likely cause?",
+                    explanation:
+                      "The RPLIDAR's continuous 450–600 mA motor draw plus the Astra Pro's two simultaneous USB identities is a realistic way to exceed an unpowered port's budget — exactly why the BOM includes a powered hub.",
+                    options: [
+                      {
+                        id: "a",
+                        label: "Combined power draw exceeding the port/bus power budget",
+                      },
+                      { id: "b", label: "A corrupted driver installation" },
+                      { id: "c", label: "The RPLIDAR's laser interfering with the camera" },
+                      { id: "d", label: "An outdated ROS 2 version" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "The Orbbec Astra Pro can currently be purchased new, directly from Orbbec's own store.",
+                    explanation:
+                      "Orbbec's own product page for this exact model returns a 404 — confirmed directly during this course's own research, not assumed.",
+                    correctAnswer: false,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Module 1 — Robotics Hardware Fundamentals",
+      summary:
+        "The five-branch model every piece of robot hardware fits into — sensors, actuators, computation, communication, power.",
+      lessons: [
+        {
+          slug: "what-makes-up-a-robot",
+          title: "What Makes Up a Robot?",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Before looking at any specific sensor, it helps to see the whole robot it plugs into.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/robot-five-branch-model.svg",
+                alt: "A radial diagram with ROBOT at the center and five labeled branches radiating outward: Sensors, Actuators, Computation, Communication, and Power, each with a one-phrase generic example.",
+                caption: "Every piece of hardware this course covers fits at least one of exactly five branches.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Walking each branch with one concrete, general example: sensors = anything that measures the world (a camera, a LiDAR); actuators = anything that acts on the world (wheels, an arm); computation = where decisions get made (an onboard computer); communication = how the pieces talk to each other (USB, a network); power = what keeps everything running (a battery, a USB port's own supply).",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "If you've taken the ROS 2 Fundamentals course, \"communication\" here is the same concept as \"the graph\" — nodes are how software pieces talk; this module is about the hardware underneath that.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Where do this course's own two devices fit? Both are sensors — but that single word hides real differences worth naming precisely.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "sensors-and-actuators",
+          title: "Sensors and Actuators: Reading the World vs. Acting on It",
+          durationMinutes: 9,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The core distinction: a sensor turns the physical world into data; an actuator turns data — a decision — into physical motion or action. Neither this course's RPLIDAR nor its Astra Pro is an actuator — both are sensors, which already tells you something about this course's own scope.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Naming the two launch devices as sensor types, not yet their specs: the RPLIDAR is a ranging sensor (measures distance). The Astra Pro is a combined imaging + ranging sensor (color video and depth, from two genuinely separate sensing paths in one housing — a fact Module 2/3 will ground in real numbers).",
+              },
+            },
+            { type: "DEVICE_CARD", deviceSlug: "rplidar-a2" },
+            { type: "DEVICE_CARD", deviceSlug: "orbbec-astra-pro" },
+            {
+              type: "TEXT",
+              data: {
+                body: "One concrete actuator counter-example, purely for contrast, since this course teaches no actuators directly: a drive motor. You won't set up a motor in this course, but recognizing the difference matters when you read about a robot that has both.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "A single physical device can straddle categories — the Astra Pro alone produces two different kinds of sensor data. Don't assume \"one housing\" means \"one sensor.\"",
+              },
+            },
+          ],
+        },
+        {
+          slug: "computation-communication-power",
+          title: "Computation, Communication & Power: The Systems Around the Sensors",
+          durationMinutes: 11,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Your own Ubuntu 24.04 machine running ROS 2 Jazzy is the \"computation\" branch for this course — nothing exotic, but worth naming explicitly.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Communication has two layers this course cares about: the physical layer (USB/serial, moving raw bytes between a device and the host — Module 0's subject) and the ROS 2 layer (nodes publishing/subscribing to topics — Module 3's subject). Naming both now prevents conflating them later.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/robot-five-branch-model-populated.svg",
+                alt: "The same five-branch ROBOT diagram, now filled in with this course's own concrete instances: RPLIDAR A2 and Astra Pro as sensors, the learner's Ubuntu/ROS 2 machine as computation, USB and ROS 2 topics as communication, the USB port budget as power, and actuators marked as not used in this course.",
+                caption: "The abstract model, populated with this course's own real instances.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Power, recapped in context: Module 0 showed you why power matters with real numbers. Here's where it sits in the whole picture — it isn't a side concern, it's one of the five branches every robot needs.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You now have the full five-branch picture, with this course's own two devices already placed inside it. Module 2 goes deeper into what makes a sensor good or bad at its job.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Classify the Hardware",
+                instructions:
+                  "Classify each item into one or more of the five branches, with a one-sentence justification each.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Given RPLIDAR A2, Astra Pro, a drive motor, your own Ubuntu PC, a USB cable, and a battery pack — classify each into sensors/actuators/computation/communication/power.",
+                  },
+                  successCriteria: [
+                    "Correctly places both launch devices as sensors, not actuators",
+                    "Correctly identifies the drive motor as an actuator",
+                    "Correctly places the Ubuntu PC as computation",
+                    "Correctly places the USB cable as communication (and recognizes it also carries power)",
+                  ],
+                  hints: [
+                    "Some items are intentionally a little ambiguous — a USB cable carries both data and power. Reasoning about why is more valuable than picking one 'correct' box.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 1 Check: The Five-Branch Model",
+                description: "Scenario-weighted questions on classifying real hardware.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "A robot's onboard computer, running Ubuntu and ROS 2, belongs to which branch of the five-part model?",
+                    options: [
+                      { id: "a", label: "Sensors" },
+                      { id: "b", label: "Computation" },
+                      { id: "c", label: "Communication" },
+                      { id: "d", label: "Power" },
+                    ],
+                    correctOptionIds: ["b"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "The RPLIDAR's motor draws power continuously even while the robot itself is standing still. Which two branches does this single fact connect?",
+                    explanation:
+                      "A sensor's own operation has a real power cost, independent of whatever the robot's actuators are doing — exactly the fact Module 0 grounded with real current-draw numbers.",
+                    options: [
+                      { id: "a", label: "Sensors and Power" },
+                      { id: "b", label: "Actuators and Communication" },
+                      { id: "c", label: "Computation and Communication" },
+                      { id: "d", label: "Sensors and Actuators" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "MULTIPLE_CHOICE",
+                    prompt: "Which of the following are sensors, not actuators? Select all that apply.",
+                    explanation:
+                      "A drive motor is included as a contrasting actuator example.",
+                    options: [
+                      { id: "a", label: "RPLIDAR A2" },
+                      { id: "b", label: "Orbbec Astra Pro" },
+                      { id: "c", label: "A drive motor" },
+                    ],
+                    correctOptionIds: ["a", "b"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "A learner says: 'The Astra Pro is one sensor, so it belongs entirely in one place in this model.' What's the issue with that claim?",
+                    explanation:
+                      "\"One housing\" does not mean \"one sensing path\" — previewed here and grounded with real specs in Module 2.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "A single device can straddle categories — the Astra Pro produces two genuinely separate kinds of sensor data from one housing",
+                      },
+                      { id: "b", label: "The Astra Pro is actually an actuator, not a sensor" },
+                      { id: "c", label: "The claim is entirely correct" },
+                      { id: "d", label: "The Astra Pro belongs in the power branch" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Module 2 — Understanding Robotic Sensors",
+      summary:
+        "Accuracy, precision, resolution, range, frequency, noise, latency, field of view — every concept grounded in this course's own two devices' real numbers.",
+      lessons: [
+        {
+          slug: "range-resolution-field-of-view",
+          title: "Range, Resolution, and Field of View",
+          durationMinutes: 13,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Range, defined then grounded immediately: the RPLIDAR A2's measuring range is 0.2–16 m (A2M7) or 0.2–12 m (A2M8/A2M12); the Astra Pro's depth range is 0.6–8.0 m, with only 0.6–5.0 m rated as optimal. Range and optimal range are not the same claim — a device's datasheet distinguishing them is itself informative.",
+              },
+            },
+            {
+              type: "SPEC_TABLE",
+              deviceSlug: "rplidar-a2",
+              specKeys: ["measuring_range", "angular_range"],
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Resolution, grounded: the RPLIDAR's angular resolution is 0.225° (A2M7/A2M12) or 0.45° (A2M8) — smaller means finer detail per 360° sweep. The Astra Pro's depth resolution is up to VGA (640×480). These are different kinds of resolution (angular vs. spatial) — worth naming explicitly since both devices use the same word for genuinely different measurements.",
+              },
+            },
+            {
+              type: "SPEC_TABLE",
+              deviceSlug: "rplidar-a2",
+              specKeys: ["angular_resolution"],
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Field of view, grounded and directly contrasted: the RPLIDAR sees the full 360° around itself every sweep; the Astra Pro sees a fixed 60° horizontal × 49.5° vertical cone. This is the sharpest, most visual contrast between the two devices' fundamental design.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/sensor-fov-contrast.svg",
+                alt: "A top-down diagram showing the RPLIDAR A2's full 360-degree circular field of view next to the Orbbec Astra Pro's fixed 60-degree wedge, drawn at the same scale.",
+                caption: "Not just different numbers — different shapes of sensing coverage.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "Neither 'more range' nor 'wider FOV' is unconditionally better — Lesson 4 asks you to actually choose between these two devices for a specific job.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "accuracy-precision-noise",
+          title: "Accuracy, Precision, and Noise",
+          durationMinutes: 14,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Definitions, kept precise: accuracy = how close a reading is to the true value; precision = how consistent repeated readings are with each other, whether or not they're accurate. A sensor can be precise but inaccurate — consistently wrong by the same amount — a genuinely common real-world case worth naming explicitly, since the two words are often used interchangeably in casual speech.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/accuracy-precision-quadrants.svg",
+                alt: "A four-quadrant target diagram: accurate and precise (tightly clustered on the bullseye), precise but not accurate (tightly clustered off-center), accurate but not precise (scattered around the bullseye), and neither (scattered off-center).",
+                caption: "Two independent properties, not two words for the same idea.",
+              },
+            },
+            {
+              type: "SPEC_TABLE",
+              deviceSlug: "rplidar-a2",
+              specKeys: ["range_resolution"],
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Turn the tolerance into a concrete number, the way a robotics engineer actually would: at 10 m, ≤1% means readings are accurate to roughly ±10 cm; at 15 m — inside the coarser ≤2% band — that widens to roughly ±30 cm. The tolerance isn't a single flat number across the whole range — it gets coarser exactly where the range table shows the sensor operating furthest from its strongest signal return, a real, published confirmation of the general \"accuracy degrades with distance\" intuition, not just an assumption.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "The Astra Pro's specification data gathered for this course does not include a separately published accuracy or precision tolerance — common for consumer-grade depth cameras, whose datasheets often report only range and resolution. A missing spec is itself something to notice when evaluating hardware — and the RPLIDAR example above shows the difference: when a real tolerance exists, use it directly; don't reach for an indirect proxy out of habit.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The Astra Pro's indirect evidence, kept, now correctly scoped to a device that actually needs it: its datasheet rates 0.6–8.0 m as its range but only 0.6–5.0 m as optimal — a real, if qualitative, signal that accuracy/noise characteristics degrade before the sensor's absolute range limit is reached, used here only because a direct figure genuinely isn't available.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Noise, connected to both examples: noise is what causes that degradation — small random variations in a reading that grow larger as a sensor operates closer to its physical limits (longer range, dimmer/farther light return, weaker reflection). The RPLIDAR's widening tolerance band is published evidence of exactly this; the Astra Pro's optimal-range cutoff is the same phenomenon without a number attached.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "The evaluation heuristic, sharpened: always look for a direct tolerance figure first (like the RPLIDAR's range resolution). Only fall back to an indirect signal (like an 'optimal' range cutoff) when a datasheet genuinely doesn't publish one — and recognize that fallback for what it is, not a substitute of equal strength.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "frequency-latency-data-rate",
+          title: "Frequency, Latency, and Data Rate",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Frequency, grounded: the RPLIDAR's rotation speed is 10 Hz by default, adjustable 5–15 Hz; the Astra Pro streams RGB and depth up to 30 FPS each. Higher frequency means fresher data sooner, at a real cost — more data to process per second.",
+              },
+            },
+            {
+              type: "SPEC_TABLE",
+              deviceSlug: "rplidar-a2",
+              specKeys: ["rotation_speed"],
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Latency, distinguished from frequency explicitly — a common confusion: frequency is how often new data arrives; latency is how long any single reading takes to become available after the physical event it measures. A sensor can be high-frequency and still have meaningful latency.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Data rate, introduced via the RPLIDAR's sample rate: 8,000 samples/sec (A2M8) or 16,000 samples/sec (A2M7/A2M12) — more samples per second at the same rotation speed means finer angular resolution per sweep, tying directly back to Lesson 1.",
+              },
+            },
+            {
+              type: "SPEC_TABLE",
+              deviceSlug: "rplidar-a2",
+              specKeys: ["sample_rate"],
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Teaching Point: The Baud Rate Trap",
+                body: "The RPLIDAR's serial output interface has its own throughput number, separate from its scan rate — and it is not uniform even within the A2 family. A2M8 defaults to 115200 bps; A2M7 and A2M12 default to 256000 bps — confirmed directly from Slamtec's own official spec table. Using the wrong SKU's launch file produces a specific, real symptom: the device still shows up in lsusb, the port still opens, but scan data is garbled or absent.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why this belongs in a sensor concepts module, not just a setup guide: baud rate is a concrete instance of \"data rate\" that you can now recognize the general shape of — a communication channel has its own throughput limit and configuration, separate from whatever the sensor itself is physically capable of. This same shape recurs for any future serial or bus-connected device.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-baud-sample-rate-comparison.svg",
+                alt: "A three-column comparison card for A2M7, A2M8, and A2M12, showing each sub-model's serial baud rate, sample rate, and angular resolution — A2M8 highlighted in a different color to show its 115200 bps baud rate differs from the other two's 256000 bps.",
+                caption: "\"The A2\" is not one configuration — the exact sub-model label determines two real, different numbers.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "multi-stream-sensors-fov-range-tradeoff",
+          title: "Multi-Stream Sensors and the Field-of-View/Range Tradeoff",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Recap-and-reframe: the Astra Pro isn't \"one sensor with a lot of specs\" — it's two independent sensing paths (UVC RGB camera; OpenNI2 structured-light depth engine) sharing one housing, confirmed by two independent sources agreeing on distinct USB identities (2bc5:0403 depth, 2bc5:0501 RGB). Each path has its own resolution, its own frame rate, and — per Lesson 2 — potentially its own noise characteristics.",
+              },
+            },
+            { type: "DEVICE_CARD", deviceSlug: "orbbec-astra-pro" },
+            {
+              type: "TEXT",
+              data: {
+                body: "The applied comparison, using real numbers from all three prior lessons at once: for a task like \"detect a person walking 6 meters away, indoors,\" the Astra Pro's optimal depth range (0.6–5 m) already excludes that distance, while the RPLIDAR's 0.2–12/16 m range comfortably includes it — even though the Astra Pro is the \"richer\" sensor by data type (color + depth vs. distance-only).",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "The general lesson underneath the specific example: \"richer data\" and \"better fit for this job\" are different questions — evaluate range/FOV/frequency against the actual task, not against which sensor sounds more capable.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You can now read a sensor's specifications and reason about fitness for a task. Module 3 shows what happens after the sensor measures something — how that measurement actually becomes a ROS 2 message a robot can use.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Choose the Right Sensor",
+                instructions:
+                  "For each scenario, choose RPLIDAR, Astra Pro, or both, and justify the choice with at least one concrete spec.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Given three task scenarios — detecting a person 6 m away indoors; building a detailed 3D model of a small object 1 m away; mapping a room's walls for navigation — choose the right sensor(s) for each and justify with a real number.",
+                  },
+                  successCriteria: [
+                    "Each justification cites a real number from Lessons 1–3 (range, FOV, resolution, or frequency), not a vague 'it's better at that'",
+                    "Correctly identifies the RPLIDAR as primary for the 6 m detection task",
+                    "Correctly identifies the Astra Pro as primary for the close-range 3D modeling task",
+                  ],
+                  hints: [
+                    "Point back to the specific lesson/spec relevant to each scenario — Lesson 1's range/FOV table is the place to start.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 2 Check: Sensor Concepts",
+                description:
+                  "Scenario and diagnostic questions grounded in this course's own real, published specifications.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You're choosing a primary sensor to detect a person 6 meters away, indoors. The Astra Pro's optimal depth range is 0.6–5 m; the RPLIDAR A2M8's range is 0.2–12 m. Which should be primary, and why?",
+                    explanation:
+                      "This is the exact reasoning Lesson 4 walked through — range and FOV should be matched to the task, not assumed from which sensor 'sounds' more capable.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "The RPLIDAR — 6 m falls outside the Astra Pro's optimal range but well inside the RPLIDAR's",
+                      },
+                      { id: "b", label: "The Astra Pro — it has richer color + depth data" },
+                      { id: "c", label: "Either works equally well" },
+                      { id: "d", label: "Neither — 6 m is out of range for both" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "An A2M8 unit is connected, powered, and spinning. lsusb shows the device, and the udev symlink /dev/rplidar exists. But the ROS 2 driver reports garbled range values instead of clean scan data. What should be checked next?",
+                    explanation:
+                      "This is the Baud Rate Trap from Lesson 3 — the device 'looks' fully connected, but the serial configuration doesn't match the physical unit.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "Whether the launch file matches the unit's actual baud rate (A2M8 defaults to 115200 bps)",
+                      },
+                      { id: "b", label: "Whether the udev rule needs to be reinstalled" },
+                      { id: "c", label: "Whether the USB cable is faulty" },
+                      { id: "d", label: "Whether the laser needs recalibration" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "The Astra Pro's RGB image and depth image must have identical resolution and frame rate, since they come from the same physical unit.",
+                    explanation:
+                      "They're two independent sensing paths, confirmed by two separate USB identities — each with its own resolution/frame-rate defaults, not a shared spec.",
+                    correctAnswer: false,
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "The RPLIDAR A2's range resolution is published as ≤1% of range up to 12 m. At a true distance of 10 m, roughly what reading error should you expect?",
+                    explanation:
+                      "This is a direct application of a real published tolerance — 1% of 10 m is 0.1 m.",
+                    options: [
+                      { id: "a", label: "Roughly ±10 cm" },
+                      { id: "b", label: "Roughly ±1 cm" },
+                      { id: "c", label: "Roughly ±1 m" },
+                      { id: "d", label: "No error — the sensor is perfectly accurate" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "A sensor's datasheet lists a maximum range but no separately published accuracy or precision figure — like the Astra Pro. What's the most reasonable conclusion?",
+                    explanation:
+                      "Exactly the reasoning Lesson 2 modeled — but as the fallback case, used only because the Astra Pro genuinely has no direct tolerance figure, unlike the RPLIDAR.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "This is common for consumer-grade sensors; look for indirect signals like a stated 'optimal' range, and don't assume accuracy right up to the maximum",
+                      },
+                      { id: "b", label: "The sensor is unreliable and should not be used" },
+                      { id: "c", label: "The datasheet is incomplete and cannot be trusted at all" },
+                      { id: "d", label: "Accuracy can be assumed to match the resolution figure" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "MULTIPLE_CHOICE",
+                    prompt:
+                      "Which of the following correctly pairs a concept with this course's own real example? Select all that apply.",
+                    explanation:
+                      "The Astra Pro distractor is false — no published numeric accuracy tolerance was found for that device, unlike the RPLIDAR.",
+                    options: [
+                      {
+                        id: "a",
+                        label: "Angular resolution — RPLIDAR's 0.225°/0.45° per-SKU difference",
+                      },
+                      {
+                        id: "b",
+                        label: "Field of view — RPLIDAR's 360° vs. Astra Pro's 60°×49.5° cone",
+                      },
+                      {
+                        id: "c",
+                        label: "Accuracy — RPLIDAR's published ≤1%/≤2% of range tolerance",
+                      },
+                      { id: "d", label: "Accuracy — a published numeric tolerance for the Astra Pro" },
+                    ],
+                    correctOptionIds: ["a", "b", "c"],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Module 3 — Hardware-to-ROS-2 Data Pipeline",
+      summary:
+        "The generic driver→node→topic→message→QoS pipeline, then grounded in both real devices' actual seeded topic and QoS data.",
+      lessons: [
+        {
+          slug: "the-generic-pipeline",
+          title: "The Generic Pipeline: From Physical World to ROS 2 Topic",
+          durationMinutes: 11,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The chain, stated once, plainly, with no device attached yet: a physical event happens in the world; a sensor turns it into a signal; the signal becomes digital data; a driver turns that data into something a computer program understands; a ROS 2 node wraps that into a topic, publishing a stream of typed messages; QoS settings govern how reliably those messages are delivered; finally, an application (RViz2, or a robot's own decision-making) consumes them.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/hardware-ros2-generic-pipeline.svg",
+                alt: "A ten-stage horizontal flow diagram with generic, device-agnostic icons: Physical World, Sensor, Signal, Digital Data, Driver, ROS 2 Node, Topic, Message, QoS, and Application, connected by arrows.",
+                caption: "This is the shape of every device pipeline this course will ever show, before any specific device fills it in.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why each stage exists, one sentence each: the driver exists because raw hardware signals aren't yet software-shaped; the node exists because ROS 2 needs a consistent way to expose that data to the rest of the system; the topic/message pair exists so any number of other programs can consume the same data without coordinating with the driver directly; QoS exists because \"delivered\" can mean different things depending on what the data is for.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "This exact chain applies to any sensor this course ever adds — a LiDAR, a camera, an IMU, anything. The next two lessons ground it in this course's own two real devices; a future device's lesson will ground it the same way, not replace this model.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Now watch this exact chain happen for real, starting with the RPLIDAR.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "grounding-the-pipeline-rplidar",
+          title: "Grounding the Pipeline: RPLIDAR's /scan, From Motor to Message",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Walk the generic chain from Lesson 1, now filled in stage by stage for the RPLIDAR: physical world (an object in the room) → sensor (the spinning laser head) → signal (reflected light, timed) → digital data (a distance value per angle) → driver (rplidar_ros) → ROS 2 node (rplidar_node) → topic (/scan) → message (sensor_msgs/msg/LaserScan) → QoS (RELIABLE) → application (RViz2).",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-data-pipeline.svg",
+                alt: "A six-stage horizontal pipeline: Hardware (RPLIDAR A2) to Driver (rplidar_ros) to ROS 2 Node (rplidar_node) to Topic (/scan, RELIABLE QoS) to Message (sensor_msgs/msg/LaserScan) to Visualization (RViz2, no QoS override needed), connected by arrows.",
+                caption: "Every hop confirmed from the driver's own source, not assumed.",
+              },
+            },
+            {
+              type: "SPEC_TABLE",
+              deviceSlug: "rplidar-a2",
+              specKeys: ["serial_baudrate", "usb_bridge_chip", "publisher_qos"],
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The QoS fact, stated with its own weight rather than buried in the table: the driver's own source publishes /scan with rclcpp::QoS(KeepLast(10)), whose default reliability is RELIABLE — confirmed by reading the driver's source, not assumed from a general \"sensors use best-effort\" rule of thumb. RViz2's default LaserScan subscription is also RELIABLE, so no override is needed — a specific, falsifiable claim, not folklore.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "Notice this pipeline includes a serial stage — the driver reading raw UART data at a specific baud rate — before any ROS 2 concept even appears. This is exactly the stage the Baud Rate Trap (Module 2 Lesson 3) breaks.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "grounding-the-pipeline-astra-pro",
+          title: "Grounding the Pipeline: The Astra Pro's Two Parallel Pipelines",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Direct callback to Module 2 Lesson 4: the Astra Pro isn't one pipeline, it's two, running in parallel from one housing — the RGB/UVC path and the OpenNI2 depth path — each independently instantiating the Lesson 1 generic chain.",
+              },
+            },
+            { type: "DEVICE_CARD", deviceSlug: "orbbec-astra-pro" },
+            {
+              type: "SPEC_TABLE",
+              deviceSlug: "orbbec-astra-pro",
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Walking both chains explicitly, side by side: RGB path — UVC sensor → USB identity 2bc5:0501 → astra_camera_node → topic /camera/color/camera_info (sensor_msgs/msg/CameraInfo); depth path — OpenNI2 sensor → USB identity 2bc5:0403 → the same node → /camera/depth/camera_info (also sensor_msgs/msg/CameraInfo) plus /camera/depth_registered/points (sensor_msgs/msg/PointCloud2).",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "Why two camera_info topics? Each sensing path has its own physical camera intrinsics (focal length, distortion) — a single combined topic would incorrectly imply the RGB and depth sensors share one set of intrinsics, which they don't.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "One node, two independent pipelines converging into it: worth naming explicitly that \"one ROS 2 node\" doesn't imply \"one pipeline\" any more than \"one housing\" implied \"one sensor\" back in Module 2.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/orbbec-astra-pro-data-pipeline.svg",
+                alt: "Two horizontal pipeline chains — RGB/UVC sensor and OpenNI2 depth sensor — converging into a single shared astra_camera_node box, then diverging again into their own separate topics: /camera/color/camera_info for RGB, and /camera/depth/camera_info plus /camera/depth_registered/points for depth.",
+                caption: "Parallelism, not just linearity, is a real pipeline shape this course's own hardware demonstrates.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "qos-why-reliability-settings-matter",
+          title: "QoS: Why Reliability Settings Matter",
+          durationMinutes: 13,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Generalize Lesson 2's specific fact: QoS reliability is a real compatibility contract, not a cosmetic setting. A RELIABLE subscriber (like RViz2's default) cannot receive data from a BEST_EFFORT publisher — the subscription simply never connects, with no error message pointing at QoS as the cause.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why this matters especially for future devices: the RPLIDAR happens to publish RELIABLE, matching RViz2's default, so a learner who never hits a mismatch here might assume QoS \"just works.\" A future sensor driver using SensorDataQoS() (BEST_EFFORT, common for high-rate sensor data) would silently fail to display in a default-configured RViz2 — worth knowing before hitting it for the first time on an unfamiliar device.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/qos-compatibility.svg",
+                alt: "Two side-by-side diagrams: a RELIABLE publisher connecting successfully to a RELIABLE subscriber with a solid line, versus a BEST_EFFORT publisher failing to connect to a RELIABLE subscriber, shown with a broken line.",
+                caption: "This failure mode looks identical to \"nothing is happening,\" but has a specific, checkable cause.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Reintroduce the diagnostic ladder, explicitly as a device-agnostic tool this module hands off complete: connection → power → OS detection → driver → node → topic → data → visualization. Every later device module reuses this exact ladder rather than inventing a new one.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "QoS mismatches live at the 'topic → data' rung — everything below it (connection, power, driver, node, topic existing) can be completely healthy while QoS alone blocks the data from ever reaching an application. This is precisely why the ladder has more than one rung after 'topic.'",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Diagnose Without the Device",
+                instructions:
+                  "A deliberately device-agnostic debugging scenario — the same reasoning applies to any future sensor.",
+                config: {
+                  type: "DEBUGGING",
+                  scenario: {
+                    body: "A sensor's ROS 2 node is confirmed running (ros2 node list shows it), but ros2 topic echo on its expected topic shows nothing.",
+                  },
+                  hints: [
+                    "Confirm the topic actually exists first (ros2 topic list) — a node running doesn't guarantee it's publishing yet.",
+                    "If the topic exists but echo still shows nothing, suspect QoS incompatibility before suspecting the driver.",
+                    "Check both the publisher's and your subscriber's QoS reliability settings: ros2 topic info <topic> --verbose",
+                  ],
+                  solution: {
+                    body: "Running ros2 topic info <topic> --verbose reveals the publisher's QoS reliability differs from your subscriber's — most often a BEST_EFFORT publisher against a RELIABLE subscriber. Matching the subscriber's reliability to the publisher's (or vice versa) resolves it.",
+                    visuals: [
+                      {
+                        kind: "CODE",
+                        data: { language: "bash", code: "ros2 topic info <topic> --verbose" },
+                      },
+                    ],
+                  },
+                  rootCause: {
+                    body: "This symptom is so easy to misdiagnose as \"the driver isn't working\" precisely because the driver is, in fact, running correctly — QoS incompatibility is a silent connection failure, not a data-content failure, and produces no error message pointing at QoS as the cause.",
+                  },
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Module 3 Check: The Hardware-to-ROS-2 Pipeline",
+                description:
+                  "Scenario and diagnostic questions on the generic pipeline, QoS, and the diagnostic ladder.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "In the driver → node → topic → message chain, what is the driver's specific job?",
+                    explanation:
+                      "Publishing the topic is the node's job, using data the driver has already produced.",
+                    options: [
+                      {
+                        id: "a",
+                        label: "Turning raw hardware signal/data into a form the ROS 2 node can work with",
+                      },
+                      { id: "b", label: "Publishing the ROS 2 topic" },
+                      { id: "c", label: "Rendering the data in RViz2" },
+                      { id: "d", label: "Defining the message type" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "The RPLIDAR's /scan topic publishes with RELIABLE QoS. Suppose a different, future sensor's driver instead used BEST_EFFORT QoS, and RViz2 subscribes with its default RELIABLE setting. What would you expect?",
+                    explanation:
+                      "This is a real QoS compatibility rule, not a rare edge case — and it's exactly why the RPLIDAR's own RELIABLE default was worth confirming from source rather than assuming.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "RViz2 would not receive any data — a RELIABLE subscriber cannot connect to a BEST_EFFORT publisher",
+                      },
+                      { id: "b", label: "RViz2 would receive the data, just delayed" },
+                      { id: "c", label: "RViz2 would crash" },
+                      { id: "d", label: "RViz2 would automatically switch to BEST_EFFORT" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "For the Astra Pro, why are /camera/color/camera_info and /camera/depth/camera_info two separate topics instead of one?",
+                    explanation:
+                      "Combining them into one topic would incorrectly imply shared intrinsics.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "The RGB and depth sensors are two independent sensing paths, each with its own physical camera intrinsics",
+                      },
+                      { id: "b", label: "ROS 2 requires every stream to have its own camera_info topic" },
+                      { id: "c", label: "It's a naming convention with no technical reason" },
+                      { id: "d", label: "The depth sensor doesn't actually have intrinsics" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "A device's ROS 2 message type (e.g. sensor_msgs/msg/LaserScan) is fixed by ROS 2 itself and cannot vary between drivers for similar devices.",
+                    explanation:
+                      "The driver's author chooses which standard (or custom) message type best fits the data — ROS 2 provides common types as a shared vocabulary, but doesn't mandate which driver uses which.",
+                    correctAnswer: false,
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "ros2 node list shows a sensor's node running, but ros2 topic echo on its expected topic shows nothing, and the topic does appear in ros2 topic list. Per the diagnostic ladder, what should be checked next?",
+                    explanation:
+                      "Exactly the reasoning built in this module's own debugging exercise — a topic existing doesn't guarantee your subscriber can actually receive from it.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "QoS compatibility between the publisher and your subscriber (ros2 topic info <topic> --verbose)",
+                      },
+                      { id: "b", label: "Whether the USB cable is faulty" },
+                      { id: "c", label: "Whether the driver package needs to be reinstalled" },
+                      { id: "d", label: "Whether the topic name is spelled correctly" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "RPLIDAR A2",
+      summary:
+        "A 360° 2D laser scanner and its verified path onto ROS 2 Jazzy.",
+      lessons: [
+        // Section A — reuses the Stage 1 fixture's slug (rplidar-a2-overview)
+        // rather than abandoning it, since seedCurricula never deletes a
+        // lesson that disappears from this array. The pipeline IMAGE that
+        // used to live here has moved to Section H, where the design
+        // actually places it.
+        {
+          slug: "rplidar-a2-overview",
+          title: "RPLIDAR A2 — Introduction",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "A robot that can't see walls coming is a robot that crashes into them. LiDAR is one of the two ways this course teaches you to give a robot that sense — the other being the Astra Pro's depth camera.",
+              },
+            },
+            { type: "DEVICE_CARD", deviceSlug: "rplidar-a2" },
+            {
+              type: "TEXT",
+              data: {
+                body: "A 2D LiDAR, at a high level, is a spinning laser rangefinder that measures distance in every direction around itself, 360 degrees per rotation, many times a second.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "You already know this device's real range (0.2-16 m depending on sub-model) and its 360-degree field of view from Module 2 Lesson 1. This module goes from those numbers to a working sensor on your desk.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why this course leads with confidence framing, not just specs: this device is actively maintained, rated HIGH confidence, and officially released for Jazzy — the everything-works-as-documented case this course needed at least one of, in contrast to the legacy Astra Pro.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-how-it-works",
+          title: "How It Works",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Imagine a laser pointer mounted next to a tiny camera, both spinning together. The laser marks a dot on nearby surfaces; the camera watches exactly where that dot lands, and simple geometry converts where the dot landed into how far away it is.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-working-principle.svg",
+                alt: "A side-view diagram showing a fixed laser emitter and receiver pair, with laser lines drawn to a near object and a far object, and the reflected angle at the receiver visibly different between the two — distance is inferred from the angle, not a time delay.",
+                caption: "Every arrow above is real geometry, not a black box.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "This is triangulation, not time-of-flight — the device measures the angle a reflected laser spot lands on an internal sensor relative to the emitter's fixed position, not how long light takes to return. Quoted directly from Slamtec's own product page: \"RPLIDAR A2 adopts laser triangulation ranging principle, and with high-speed RPVision3.0 range engine, it measures distance data 8000 times per second.\"",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Practical consequence: triangulation is why this device is affordable and low-power enough for a course budget, and why its published range-resolution tolerance coarsens at longer range (1% up to 12 m, 2% from 12-16 m) — the same triangulation geometry that makes this device cheap also makes fine angular differences harder to resolve at distance. The full accuracy discussion, including the plus-or-minus 10 cm and plus-or-minus 30 cm worked calculation, already lives in Module 2 Lesson 2 — this section only connects that already-taught number back to the working principle that causes it.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "The unit uses a brushless motor, not a belt drive, confirmed on Slamtec's own product page — this is why it spins quietly and doesn't wear out the way a belt-driven scanner would.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-hardware-understanding",
+          title: "Hardware Understanding",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Component walkthrough: the rotating head (laser emitter plus angle-sensing receiver) spins continuously — never force it or hold it stationary while powered. The base and motor housing contains the brushless motor. The USB-to-serial adapter board carries the CP2102 bridge chip and is what you actually hold and plug in. The model and serial label is the single most setup-critical label on the device.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-annotated-hardware.svg",
+                alt: "An annotated diagram of the RPLIDAR A2 pointing out the rotating head assembly, the base and motor housing, the model and serial label, the USB-to-serial adapter board, and the connecting cable.",
+                caption: "Match this against your own unit before Section F's physical setup.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "Class 1 laser, safe under normal operating conditions — but never force the rotating head, matching Module 0 Lesson 2's own safety content.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Before connecting anything, know exactly which numbers apply to your unit — that starts with reading the label this section just pointed at.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-specifications",
+          title: "Specifications",
+          durationMinutes: 9,
+          contentBlocks: [
             { type: "SPEC_TABLE", deviceSlug: "rplidar-a2" },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "The range-resolution row above is the one Module 2 Lesson 2 uses as its direct worked accuracy example (1% of range up to 12 m; 2% from 12-16 m) — cross-referenced there in full, not re-derived here.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The per-SKU differences, named explicitly once more before Sections F and G need them operationally: A2M7 and A2M12 both use 256000 bps and 0.225-degree angular resolution; A2M8 uses 115200 bps and 0.45-degree angular resolution. This is not a uniform A2 configuration.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-real-applications",
+          title: "Real Applications",
+          durationMinutes: 7,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "A 0.2-16 m range and 360-degree coverage at 10 Hz is exactly the shape of data SLAM algorithms are built to consume — a fresh full-room sweep ten times a second.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Navigation uses this data to avoid obstacles in real time. SLAM builds a map while localizing within it. Mapping builds a static map for later use. Localization finds the robot's own position in a known map. This course doesn't re-teach SLAM or navigation in depth — that's out of scope — but this is where this device's data feeds into those systems.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "This module doesn't build a SLAM system — it gets you to clean scan data. What you do with that data next is where a dedicated navigation or SLAM course would pick up.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-physical-setup",
+          title: "Physical Setup",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Direct callback to Module 0 Lesson 4's power-budget lesson: this device draws a continuous 450-600 mA. Plug it into the powered USB hub from the course bill of materials, not a bare laptop port, especially once the Astra Pro is also connected.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "Confirm the sub-model before connecting anything else. Read the label — A2M7, A2M8, or A2M12 — since Section G's exact commands depend on getting this right first.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Physical connection: adapter board to USB, via the hub, with the cable secured so the rotating head isn't obstructed. Place the unit upright on a stable, flat surface — the profile's scan-field flatness tolerance is a mechanical spec, not a big constraint, but a flat surface removes it as a variable entirely.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-connection-diagram.svg",
+                alt: "A left-to-right connection diagram: RPLIDAR A2 unit to cable to USB-serial adapter board to powered USB hub.",
+                caption: "Every hop is a physical connection, not yet software — Section G confirms the OS sees it.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-ubuntu-setup",
+          title: "Ubuntu Setup",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Why this device's install is the easy case in this course: officially released for Jazzy, no source build, directly contrasted against the Astra Pro, which needs one.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "sudo apt install ros-jazzy-rplidar-ros",
+                caption:
+                  "Expected: apt resolves and installs ros-jazzy-rplidar-ros from the official Jazzy package index, no compilation step, no error. Failure: \"E: Unable to locate package ros-jazzy-rplidar-ros\" means the ROS 2 apt repository itself isn't configured — a Module 0 prerequisite problem, not an RPLIDAR-specific one.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "Udev is the Linux subsystem that names and sets device permissions on plug-in, already introduced in the Astra Pro's own Ubuntu Setup section. Same tool, same reason: without a rule, this device would get a shifting auto-assigned name like /dev/ttyUSB0 instead of the stable /dev/rplidar the rule below creates.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: 'echo \'KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE:="0777", SYMLINK+="rplidar"\' \\\n  | sudo tee /etc/udev/rules.d/rplidar.rules\nsudo udevadm control --reload-rules && sudo udevadm trigger',
+                caption:
+                  "Expected: the tee command echoes the rule line back; the udevadm commands produce no output on success. Failure: if the device was already plugged in before this step, the symlink may not appear until unplug/replug.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: 'dmesg | grep -i "cp210\\|ttyUSB"',
+                caption:
+                  "Expected: a line mentioning cp210x (the Silicon Labs USB-UART bridge driver) and a ttyUSBn assignment with a recent timestamp. Failure: no matching lines means the OS never saw the device — check the physical connection and USB power before assuming a software problem.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ls -l /dev | grep rplidar",
+                caption:
+                  "Expected: a symlink line, rplidar pointing at ttyUSBn. Failure: ttyUSBn exists but no rplidar symlink means the udev rule didn't apply — re-run udevadm control --reload-rules && udevadm trigger, or unplug/replug.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-ros2-integration",
+          title: "ROS 2 Integration",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Direct callback to Module 3 Lesson 2, which already traced this exact pipeline. This section doesn't re-teach the six-stage chain — it fills in what that lesson didn't need: the full parameter table and the services.",
+              },
+            },
             {
               type: "IMAGE",
               data: {
                 src: "/hardware/rplidar-a2-data-pipeline.svg",
                 alt: "A six-stage horizontal pipeline: Hardware (RPLIDAR A2) to Driver (rplidar_ros) to ROS 2 Node (rplidar_node) to Topic (/scan, RELIABLE QoS) to Message (sensor_msgs/msg/LaserScan) to Visualization (RViz2, no QoS override needed), connected by arrows.",
                 caption:
-                  "Every hop confirmed from the driver's own source (Stage 0), not assumed. SVG, not a PNG capture — validates dangerouslyAllowSVG end to end.",
+                  "Every hop confirmed from the driver's own source. Reused as-is from Module 3 Lesson 2 — this device's pipeline hasn't changed.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The parameter table's most important finding: the node's own compiled-in default baud rate is 1,000,000 bps, matching no A2 sub-model. The correct value only ever comes from whichever launch file is actually used. The frame_id default, laser_frame, similarly differs from what every A2 launch file actually sets, which is laser.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "cpp",
+                code: 'this->get_parameter_or<int>("serial_baudrate", serial_baudrate, 1000000/*256000*/);\n//ros run for A1 A2, change to 256000 if A3',
+                caption:
+                  "Read this literally: the comment says to change to 256000 for A3, implying 256000 is fine for A1/A2 by default. The actual default value beside it is 1000000. The comment and the code disagree with each other. This is real, current, unfixed source, not a hypothetical example.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The two motor-control services are genuinely new content this module adds beyond Module 3: stop_motor and start_motor, both std_srvs/srv/Empty. A ROS 2 service is a different communication pattern than the topics Module 3 already covered — instead of a continuous stream a node publishes and anyone can subscribe to, like the scan topic, a service is a direct, one-off request and response call: you call it, it does something once, and returns. These two exist precisely because stopping the motor isn't a stream of data, it's a single command. Demonstrated live in the next section.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ros2 service list | grep motor",
+                caption:
+                  "Expected: two lines, /stop_motor and /start_motor, once the node from Section I is running. Failure: no output means the node isn't running yet or crashed at startup — check Section J's ladder from the top.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-practical-demo",
+          title: "Practical Demo",
+          durationMinutes: 14,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The full launch sequence, already set up through the udev step in Section G — this is the final step.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ros2 launch rplidar_ros view_rplidar_a2m8_launch.py",
+                caption:
+                  "Swap a2m8 for a2m7 or a2m12 per Section F's confirmed sub-model. Expected: the terminal logs the RPLidar serial number, firmware version, and a health status of OK, then RViz2 opens automatically with a live LaserScan display — no manual QoS configuration needed, since the publisher's RELIABLE default already matches RViz2's default subscription. Failure: covered in full in Section J.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Guided observation: arrange two or three distinct objects, such as a box, a chair leg, and a wall corner, at different distances around the sensor before checking the data below.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ros2 topic echo /scan --once",
+                caption:
+                  "Expected: one full LaserScan message, with angle_min, angle_max, and the ranges array populated with real distance values matching the arranged scene. Failure: an empty or hanging command means the topic isn't publishing — return to Section J.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ros2 service call /stop_motor std_srvs/srv/Empty",
+                caption:
+                  "Expected: the physical head visibly stops spinning within about a second, and the call returns immediately with an empty response. Failure: the head doesn't stop — a rare SDK or firmware-level issue, not a typical setup mistake.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ros2 service call /start_motor std_srvs/srv/Empty",
+                caption:
+                  "Expected: the head resumes spinning and scan data resumes publishing.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "You just controlled real hardware state, motor on and off, from the command line, independent of killing and restarting the whole node — a practical demonstration in the fullest sense, not just watching data.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-debugging",
+          title: "Debugging",
+          durationMinutes: 16,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Every failure mode below is real, sourced from this device's actual driver code, a real closed GitHub issue, or the official README's own text, not invented for this exercise. The ladder tells you where to look; the exact signature tells you what you'll see when you're looking in the right place.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Connection rung: is the cable seated, and is this the right unit for the launch file you're about to run? An unlisted sub-model such as A2M6 has no dedicated launch file at all, confirmed via a real closed issue on the driver's own repository. Signature: no error, just no matching launch file to run.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Power rung: is the port supplying enough current for a continuous 450-600 mA draw? A real failure is insufficient USB power, Module 0 Lesson 4's own worked example, now literally this device. Signature, logged as a warning: Failed to start motor, followed by an error code.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "OS detection rung: does dmesg or ls /dev show the device at all? A real failure is the udev rule not being installed or reloaded. Signature: /dev/ttyUSB0 works directly but /dev/rplidar gives no such file or directory — the device exists, the expected path doesn't.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Driver rung, the richest one for this device, with three distinct real failures. First, the Baud Rate Trap: a wrong SKU launch file, or bypassing the launch file entirely and relying on the node's own 1,000,000 bps default. Signature: the terminal repeats an operation timeout error, SL_RESULT_OPERATION_TIMEOUT, because the device-info handshake fails when the bytes are framed at the wrong rate, before any scan data would even begin. Second, channel_type accidentally left off serial, a real risk given the same package also supports TCP and UDP-connected models. Signature: an error naming the ip address and tcp port it tried to connect to. Third, serial port permission denied. Signature: an error saying it cannot bind to the specified serial port. The official README's own chmod 777 workaround is documented as not always sufficient by a real user report, which is exactly why this course's udev-rule path is primary.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-baud-sample-rate-comparison.svg",
+                alt: "A three-column comparison card for A2M7, A2M8, and A2M12, showing each sub-model's serial baud rate, sample rate, and angular resolution, with A2M8 highlighted differently to show its 115200 bps baud rate differs from the other two's 256000 bps, plus a callout explaining the Baud Rate Trap.",
+                caption:
+                  "Reused from Module 2 Lesson 3 — the exact same per-SKU numbers behind the Baud Rate Trap above.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Node rung: did the node start, but reject something at initialization? Real failures include an internal device-side fault, whose own error text tells you to reboot the device to retry, and an invalid manual scan_mode override, whose error message prints the driver's own list of actually-supported modes, a rare self-diagnosing error worth calling out as a model of what a good error message does.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Topic rung: does the scan topic exist? If the node started, with the previous rungs all clear, but no topic appears, something failed silently between node startup and the first publish — return to the Node rung's log output rather than assuming a topic-layer problem.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Data rung: does echoing the scan topic once return a real, populated message? A real failure is a physical or cable disconnect mid-operation. Signature: a logged message saying the connection was lost, and scan data stops — a live, zero-risk demonstrable failure, since you can just unplug the cable mid-scan to see it.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Visualization rung: does RViz2 render the scan? For this device, this rung needs no special QoS handling, since RELIABLE matches RELIABLE by default. If data is confirmed good on the previous rung but RViz2 shows nothing, check the Displays panel's topic subscription and Fixed Frame setting — a configuration issue at the visualization layer itself, not upstream.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "One real failure doesn't fit cleanly on the live ladder at all: the official README's own setup instructions contain a typo, a misspelled folder name in the udev-rule step. This is a documentation bug, not a system failure — if you followed the upstream README directly instead of this course's own sequence and hit a no-such-file-or-directory error on that exact line, the problem is the README, not your environment.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/rplidar-a2-troubleshooting-flowchart.svg",
+                alt: "A troubleshooting flowchart walking the eight-rung diagnostic ladder — connection, power, OS detection, driver, node, topic, data, visualization — each box showing this device's real failure modes and exact logged signatures, with the stop_motor and start_motor services shown as a side-branch off the node rung labeled as a control surface not on the data path, and the Baud Rate Trap labeled at its precise sub-stage, the device-info handshake before scan data begins.",
+                caption: "Debugging this device is a sequence of checkable rungs with real signatures, not a mystery.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Diagnose the Wrong Launch File",
+                instructions:
+                  "A real, progressive-hint debugging scenario built on the Baud Rate Trap.",
+                config: {
+                  type: "DEBUGGING",
+                  scenario: {
+                    body: "You've connected your RPLIDAR A2M8, installed the package and udev rule, and confirmed dmesg shows the device and /dev/rplidar exists. You run ros2 launch rplidar_ros view_rplidar_a2m12_launch.py, having grabbed the wrong launch file by mistake. RViz2 opens, but the terminal shows a repeating error instead of a clean startup, and no scan ever appears.",
+                  },
+                  hints: [
+                    "The device is detected by the OS and has the right permissions — those rungs are all clear. The problem is further down the ladder. What's the next rung, and what command checks it?",
+                    "Look at the exact terminal text, not just that it's broken. Is there a specific error string repeating? What does it mention?",
+                    "SL_RESULT_OPERATION_TIMEOUT means the initial device-info handshake never got a valid reply, which happens when the bytes the driver reads don't parse as valid data. What single launch parameter controls how those bytes are framed?",
+                  ],
+                  solution: {
+                    body: "The A2M12 launch file sets serial_baudrate to 256000, but this is a real A2M8 unit, which communicates at 115200. Re-launch with view_rplidar_a2m8_launch.py instead.",
+                  },
+                  rootCause: {
+                    body: "The RPLIDAR A2 family is not one uniform configuration — A2M7 and A2M12 both default to 256000 bps, while A2M8 defaults to 115200 bps. The node's own internal default, 1,000,000 bps, doesn't match any of them either — the correct value only ever comes from choosing the launch file that matches the physical label on the unit.",
+                  },
+                },
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-quiz-check",
+          title: "Module Check",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "RPLIDAR A2 Module Check",
+                description:
+                  "Scenario and diagnostic questions, including two spot-what's-wrong items using real artifacts from the profile.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "dmesg shows the device, /dev/rplidar exists, and the launch command runs — but the terminal repeats an operation-timeout error and no scan data ever appears. What's the most likely cause?",
+                    explanation:
+                      "This exact signature means the device-info handshake failed before scan data would even start — the Baud Rate Trap.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "The launch file's serial baud rate doesn't match this unit's actual sub-model",
+                      },
+                      { id: "b", label: "The udev rule needs to be reinstalled" },
+                      { id: "c", label: "The USB cable is faulty" },
+                      { id: "d", label: "RViz2 needs a manual QoS override" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      'Spot what\'s wrong: this->get_parameter_or<int>("serial_baudrate", serial_baudrate, 1000000/*256000*/); followed by the comment //ros run for A1 A2, change to 256000 if A3. What\'s actually wrong here?',
+                    explanation:
+                      "This is real, current source, confirmed by direct fetch, not a hypothetical teaching example.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "The comment implies the default is fine for A1/A2 and only needs changing for A3, but the literal default value is 1000000, which matches none of the A1/A2/A3 baud rates — the comment and the code disagree",
+                      },
+                      { id: "b", label: "Nothing — this is correct for A2M8" },
+                      { id: "c", label: "The syntax is invalid C++" },
+                      { id: "d", label: "The parameter name is spelled incorrectly" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Spot what's wrong: the official README's udev-rule setup step says to run \"cd src/rpldiar_ros/\" before sourcing the create_udev_rules.sh script. What's wrong with it, specifically?",
+                    explanation:
+                      "A learner following the upstream README literally would get a no-such-file-or-directory error here — a documentation bug, not an environment problem.",
+                    acceptedAnswers: [
+                      "typo in the folder name",
+                      "rpldiar_ros is misspelled, should be rplidar_ros",
+                      "wrong directory name",
+                      "misspelled directory",
+                    ],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You call the stop_motor service and the physical head keeps spinning, while the scan topic is still publishing normally. What does this tell you?",
+                    explanation:
+                      "This isn't a common beginner failure, and treating it as one would send a learner down the wrong diagnostic path.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "The driver's software state has diverged from the physical hardware's actual state — a rare SDK or firmware-level issue, not a typical setup mistake",
+                      },
+                      { id: "b", label: "The service call syntax was wrong" },
+                      { id: "c", label: "The motor is permanently damaged" },
+                      { id: "d", label: "This is expected normal behavior" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "The RPLIDAR A2's publisher uses best-effort QoS, so RViz2 needs a manual QoS override to display scan data.",
+                    explanation:
+                      "Confirmed directly from source: the publisher uses RELIABLE reliability, matching RViz2's own default subscription. No override needed.",
+                    correctAnswer: false,
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Which ROS 2 services does this device's driver expose beyond the scan topic?",
+                    explanation:
+                      "Worth including since Module 3's own coarse-grained pipeline diagram doesn't show these, making this an easy assumption to get wrong.",
+                    options: [
+                      { id: "a", label: "stop_motor and start_motor" },
+                      { id: "b", label: "None — only the scan topic exists" },
+                      { id: "c", label: "calibrate and reset" },
+                      { id: "d", label: "pause and resume" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "A learner has an A2M6-labeled unit and can't find a matching launch file in the package. What should they conclude?",
+                    explanation:
+                      "Not a mistake the learner made — a real gap in the package's own coverage, confirmed via a real, still-unresolved GitHub issue.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "This is a real, known gap — they'll need to adapt an existing launch file's parameters by hand rather than assume full SKU coverage",
+                      },
+                      { id: "b", label: "The A2M6 doesn't actually work with this driver at all" },
+                      { id: "c", label: "They should install a different ROS 2 distro" },
+                      { id: "d", label: "The A2M6 uses the same launch file as A2M8, unlabeled" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "rplidar-a2-practical-challenge",
+          title: "Practical Challenge",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Detect obstacles around your robot using the LiDAR: write or run something that reports when an object comes within a chosen distance threshold in any direction, using real scan data.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Real-Time Obstacle Detection",
+                instructions:
+                  "An open-ended practical challenge — no step-by-step instructions.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Using the live scan topic, detect when any object enters a chosen distance threshold, such as one meter, anywhere in the 360-degree scan, and report it. A printed message is sufficient — no robot motion required.",
+                  },
+                  successCriteria: [
+                    "Correctly subscribes to the scan topic and reads the ranges array",
+                    "Correctly threshold-checks against a chosen distance, ignoring infinite or out-of-range values rather than treating them as very close",
+                    "Demonstrates the detection live by moving an object toward and away from the sensor and observing the report change accordingly",
+                    "Can explain, if asked, which LaserScan fields were used and why",
+                  ],
+                  hints: [
+                    "Run ros2 interface show sensor_msgs/msg/LaserScan to inspect the message shape directly rather than guessing field names.",
+                    "The ranges array's order corresponds to angle_min plus the index times angle_increment, not an arbitrary order.",
+                  ],
+                },
               },
             },
           ],
@@ -3801,17 +5764,688 @@ const CURRICULA: Record<string, SeedSection[]> = {
       lessons: [
         {
           slug: "orbbec-astra-pro-overview",
-          title: "Orbbec Astra Pro — Device Overview",
+          title: "Orbbec Astra Pro — Introduction",
           durationMinutes: 10,
           contentBlocks: [
             {
               type: "TEXT",
               data: {
-                body: "The Orbbec Astra Pro is an RGB-D camera: a standard color camera and a structured-light depth sensor in one housing, reporting color video and per-pixel distance as two related but genuinely separate data streams.\n\nThis page is a schema and integration check, not the full lesson — the complete device module is designed in Stage 5. The legacy status below is real, not a placeholder: this device's Jazzy path depends on a small community fork, documented in full in the Stage 0 findings.",
+                body: "The RPLIDAR module ended with a device that just works — official package, officially released, HIGH confidence. This module is the opposite case on purpose: a device whose only working Jazzy path is a small community fork. That's not a flaw in this course's design — it's the more common real-world situation, and learning to evaluate it is the point.",
               },
             },
             { type: "DEVICE_CARD", deviceSlug: "orbbec-astra-pro" },
+            {
+              type: "TEXT",
+              data: {
+                body: "An RGB-D camera reports both an ordinary color image and, separately, a distance value for every pixel — \"RGB\" plus \"D\" (depth). Where the RPLIDAR answers one question well (how far, in every direction), this device answers two different questions at once, over a much smaller field of view.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "This course rated the RPLIDAR HIGH confidence because an official, buildfarm-released package exists. This device is rated MEDIUM because its only working path is a small, single-maintainer, unmerged fork. Every individual claim in this module is still traced to a real source, the same as the RPLIDAR's — the confidence is lower because the source itself is less institutionally backed, not because the facts are less verified.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The driver landscape, stated directly rather than discovered mid-setup: Orbbec's own actively-maintained driver, OrbbecSDK_ROS2, does not support this exact device — only newer, similarly-named models. This course uses yosefl20/ros2_astra_camera, branch jazzy, instead. Knowing this now, before Section G, is the whole point of stating legacy status honestly up front.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-hardware-understanding",
+          title: "Hardware Understanding",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Four physical components make up this device. RGB lens: an ordinary color camera, a UVC device in its own right. IR projector: emits the invisible structured-light pattern. IR receiver: captures the pattern's distortion, paired with the projector as the OpenNI2 depth engine. Housing: one enclosure for all three optical elements.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/orbbec-astra-pro-annotated-hardware.svg",
+                alt: "An annotated front view of the Orbbec Astra Pro housing, labeling the IR projector, RGB lens, IR receiver, housing, and captive cable, with a warning callout about confirming the label reads exactly Astra Pro.",
+                caption: "Two sensors, one housing — every component here is referenced again operationally in Sections F–J.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "The single most important label on this device: it must read exactly \"Astra Pro,\" not \"Astra Pro Plus\" or any other variant. This isn't a cosmetic difference — Orbbec's modern, actively-maintained driver supports the Plus model but not this one. Confirm the label before doing anything else in this module.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "One nuance worth knowing before Section F needs it operationally: this device has one physical captive cable, but it enumerates as two separate USB identities at the OS level. The physical cable count (one) does not match the logical device count (two). Keep this in mind for Section G's very first verification command.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-how-it-works",
+          title: "How It Works",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "This device is really two devices sharing one housing — an ordinary color camera, and a separate depth-sensing system that projects an invisible infrared pattern and watches how it distorts across surfaces at different distances, the same way two eyes infer depth by comparing slightly different views.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/orbbec-astra-pro-working-principle.svg",
+                alt: "A side-view diagram showing an IR projector emitting a pattern toward near and far objects, an IR receiver capturing the distorted pattern, and a separate RGB light path drawn as a visually distinct system into the same housing.",
+                caption: "Two genuinely separate optical systems, not one sensor producing two outputs.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Structured light, simplified technical: an infrared projector emits a fixed, known pattern; an infrared receiver captures how that pattern lands on the scene; because the projector-to-receiver geometry is fixed and known, any local shift in the pattern reveals distance at that point — the same triangulation-family idea as the RPLIDAR's laser method, applied across a whole 2D field at once instead of one scanning point.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "The RPLIDAR scans one direction at a time, 360° per rotation. This device measures an entire 2D field simultaneously, but only within its fixed 60°×49.5° cone. Same underlying triangulation idea, genuinely different coverage shape — Module 2 Lesson 1 already drew this exact contrast.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The practical consequence, load-bearing for this whole module: because RGB and depth are two independent sensing systems, they can be enabled and disabled independently, and their data only becomes spatially aligned through explicit processing — not automatically, just because both come from one housing. Section D's specification table has a real, published example of exactly this — read it carefully.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-specifications",
+          title: "Specifications",
+          durationMinutes: 10,
+          contentBlocks: [
             { type: "SPEC_TABLE", deviceSlug: "orbbec-astra-pro" },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "A fully working, error-free, publishing point cloud on /camera/depth_registered/points does not guarantee the depth and color data are actually pixel-aligned. The depth_registration parameter — which controls real hardware/SDK-level alignment — defaults to false in this device's own launch file, even though the topic name contains the word \"registered.\" The name comes from a topic remap (depth/color/points to depth_registered/points); the alignment itself is a separate, independently-defaulted setting. If you need a genuinely aligned RGB-D point cloud, you must explicitly set depth_registration:=true — nothing about the topic's name or the absence of any error will tell you this.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why this matters practically, not just as trivia: a learner building a perception pipeline that assumes color and depth line up pixel-for-pixel — \"the object at pixel (320, 240) in the color image is this far away, per the depth image at the same pixel\" — gets silently wrong answers with default settings. No crash, no error, just quietly incorrect data.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The per-stream FOV/resolution picture, connected back to how it works: RGB up to 1280×960 at lower FPS, or 640×480 @ 30 FPS — this fork's own launch default, the number a learner actually sees. Depth up to VGA (640×480) @ 30 FPS. Both fixed within the shared 60°×49.5° cone.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-real-applications",
+          title: "Real Applications",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Where the RPLIDAR answers \"is something there, and how far,\" this device additionally answers \"what is it\" (via RGB) and \"what shape is it\" (via depth) — richer data, over a much smaller field of view and shorter effective range than the RPLIDAR.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Object perception: recognize what's in the scene, using RGB. Robot manipulation: a depth-aware gripper needs to know exact distance to an object, not just \"something is near.\" Obstacle detection: depth alone, within the optimal 0.6–5 m range. Human interaction: RGB for recognition, depth for real-world scale. 3D sensing: the registered point cloud, when actually enabled — a direct callback to the specifications section's finding.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "The capstone, once it's built to reflect the full device catalog, will combine this device's close-range richness with the RPLIDAR's long-range 360° coverage — neither sensor alone gives a robot the full picture.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-physical-setup",
+          title: "Physical Setup",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "Direct callback to Hardware Understanding: confirm the label reads \"Astra Pro\" before proceeding — this is Setup Step 0 in substance.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Direct callback to Module 0's power-budget lesson, now doubly relevant: this device alone presents two simultaneous USB identities drawing power from one cable. Connect it to the course's powered USB hub, not a bare laptop port — especially once the RPLIDAR is also connected for the capstone.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/orbbec-astra-pro-connection-diagram.svg",
+                alt: "A left-to-right connection diagram: Astra Pro housing to powered USB hub to Ubuntu host, with an inset showing the single cable logically splitting into two USB identities once it reaches the host.",
+                caption: "One cable, one hub — the logical split into two identities happens at the host, not the cable.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Physical connection: captive cable to USB, via the hub. Housing placed with a clear, unobstructed view of the intended scene — no further physical assembly required. Unlike the RPLIDAR, this device has no moving parts to keep clear.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-ubuntu-setup",
+          title: "Ubuntu Setup",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "Gotcha #1: clone the fork, and the jazzy branch specifically — the upstream repo's master branch is unfixed and will not build.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "cd ~/ros2_ws/src\ngit clone -b jazzy https://github.com/yosefl20/ros2_astra_camera.git",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Expected output: a normal git clone log ending in \"done.\" What failure looks like: cloning without -b jazzy silently checks out the repo's default branch (master) instead — no error at clone time, but the build fails later.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Native dependencies, confirmed directly from the fork's own README.MD. The README itself still says galactic throughout, a stale artifact addressed honestly below, not silently corrected.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "sudo apt install libgflags-dev ros-jazzy-image-geometry ros-jazzy-camera-info-manager \\\n  ros-jazzy-image-transport ros-jazzy-image-publisher libgoogle-glog-dev libusb-1.0-0-dev libeigen3-dev\ngit clone https://github.com/libuvc/libuvc.git\ncd libuvc && mkdir build && cd build\ncmake .. && make -j4\nsudo make install && sudo ldconfig",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Expected output: apt installs cleanly; libuvc's cmake/make/install sequence completes with no errors — libuvc has no ROS/apt package, the one genuinely source-built native dependency this device needs, unlike the RPLIDAR's fully apt-installable path. What failure looks like: a missing libusb-1.0-0-dev produces a cmake configuration error naming libusb specifically — install it and re-run cmake.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "Stale-artifact finding, surfaced honestly, not corrected away: the fork's own README additionally instructs extracting a separate openNISdk_ROS2_xxx.tar.gz archive into the workspace. This appears to be a stale instruction from before the OpenNI2 redistributable binaries were vendored directly into the repository. This course's own sequence has no such step, on purpose — that omission was confirmed correct, not an oversight.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "cd ~/ros2_ws\nrosdep install --from-paths src --ignore-src -y\ncolcon build --event-handlers console_direct+ --cmake-args -DCMAKE_BUILD_TYPE=Release",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Expected output: rosdep resolves cv_bridge/image_geometry from Jazzy's own official release; colcon build completes with no errors. What failure looks like: \"fatal error: cv_bridge/cv_bridge.h: No such file or directory\" means the master branch was cloned instead of jazzy — the earlier clone step's failure mode surfacing here instead.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What a udev rule actually is, before running one: udev is the Linux subsystem that names and sets permissions on devices as they're plugged in. Without a rule, a device gets an auto-assigned name that can shift between reboots, and may default to permissions only root can use. This device needs two such entries in one rule file, one per USB identity.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "cd ~/ros2_ws/src/ros2_astra_camera/astra_camera/scripts\nsudo bash install.sh\nsudo udevadm control --reload-rules && sudo udevadm trigger",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Expected output: no output on success. What failure looks like: covered fully in the debugging lesson — this step's failure surfaces later, as a permission error when the driver actually tries to open a device.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "lsusb | grep 2bc5",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Expected output: two lines — product 0403 (depth/OpenNI2) and product 0501 (RGB/UVC), both vendor 2bc5. What failure looks like: one line means a cable or hub power problem — check that before suspecting the driver.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "Gotcha #2, before first launch. Stock Ubuntu 24.04 blocks real-time priority for non-root users by default, and the launch fails without this — confirmed by a real user's run. Honestly flagged, not overstated: this requirement could not be traced to a specific line in the fork's own C++ source — it lives in the closed/vendored OpenNI2 binary, not this fork's own code — stated as a real-user-confirmed fact, not a source-line-confirmed one.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: 'echo "$USER    -   rtprio   99" | sudo tee /etc/security/limits.d/99-ros2-rt.conf',
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Log out and back in (or reboot) for the limit to take effect.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "clear a stale semaphore before a re-launch attempt",
+                code: "ros2 run astra_camera clean_shm_node",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Confirmed as the actual registered executable directly from the fork's CMakeLists.txt — not the earlier typo'd cleanup_shm_node. What a hang (not clearing this) looks like: covered in the debugging lesson — checkable directly via ls /dev/shm | grep astra, the semaphore's real name, astra_device_sem.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ros2 launch astra_camera astra_pro.launch.xml",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Not astra_pro_plus.launch.xml, which targets a different product.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-ros2-integration",
+          title: "ROS 2 Integration",
+          durationMinutes: 16,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The architecture, stated precisely, not simplified into \"two nodes\": this device runs as one ROS 2 node, astra_camera_node, package astra_camera, under namespace /camera — a prefix ROS 2 adds in front of every one of this node's topic and service names (/camera/color/image_raw, not just /color/image_raw), so a second camera on the same robot can run under a different prefix without its topics colliding with this one's. Internally, the node is composed of two independent driver components — an OBCameraNode class handling the OpenNI2 depth/IR path, and a separate UVCCameraDriver class handling the RGB path. Two USB identities, two driver classes, one ROS 2 process — precise language matters here, because the debugging lesson's paths follow the driver-component split, not a node-count split.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/orbbec-astra-pro-dual-driver-pipeline.svg",
+                alt: "A pipeline diagram showing two parallel driver-component chains, UVCCameraDriver and OBCameraNode, both running inside one shared astra_camera_node boundary box, converging from two USB identities and diverging into their own topic outputs, with a depth_registration: false (default) label on the point-cloud output.",
+                caption: "One process, two internal driver components — both true at once, neither simplified away.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The depth/OpenNI2 surface: /camera/depth/image_raw plus /camera/depth/camera_info; /camera/ir/image_raw plus /camera/ir/camera_info, when enable_ir (default true); /camera/depth_registered/points (sensor_msgs/msg/PointCloud2, via the launch file's own topic remap) when enable_point_cloud (default true).",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "Forward-reference, not a repeat, of the specifications lesson's finding: the point cloud topic above is named depth_registered because of a topic remap, not because depth_registration is on by default — it isn't. Full explanation in the specifications lesson; this is where you'll actually pass depth_registration:=true if you need it, in the practical demo lesson.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The RGB/UVC surface, kept visually distinct: /camera/color/image_raw plus /camera/color/camera_info, when enable_color and use_uvc_camera (both default true) — sourced from uvc_vendor_id/uvc_product_id defaults 0x2bc5/0x0501, confirmed two independent ways: the launch file's own defaults, and the udev rules file's astrauvc symlink entry for the same product ID.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Per-stream QoS, a genuinely more granular surface than the RPLIDAR's single fixed publisher: color_qos, depth_qos, ir_qos, and their camera_info counterparts are each independently configurable — default \"default,\" left unset, which defers to whatever reliability/history settings the underlying ROS 2 middleware itself defaults to, the same RELIABLE-by-default behavior Module 3 already established for the RPLIDAR's own publisher, rather than a per-stream override this device sets deliberately.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Frame IDs: base camera_link — confirmed as the node's own compiled-in default, which is why RViz2's Fixed Frame must be set to this exact string in the practical demo lesson. Depth: camera_depth_frame / optical camera_depth_optical_frame. IR: camera_infra1_frame / optical camera_infra1_optical_frame.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "A small, honestly-flagged naming inconsistency, in the same spirit as the RPLIDAR module's stale-comment callout: every other optical-frame constant follows camera_<stream>_optical_frame except color, which is camera_optical_color_frame — \"optical\" and \"color\" swapped relative to the pattern. Harmless, but a real, source-confirmed instance of reading the actual constants file catching things a summary wouldn't.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-practical-demo",
+          title: "Practical Demo",
+          durationMinutes: 14,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The full launch, matching the Ubuntu setup lesson exactly — already executed through the semaphore cleanup step. This is the final step.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ros2 launch astra_camera astra_pro.launch.xml",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Expected output: an astra_camera_node starts under /camera, publishing color, depth, IR, and a point cloud. What failure looks like: covered fully in the debugging lesson.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                body: "Gotcha #3, the last of the three, immediately after launch, before anything else: in RViz2, set Fixed Frame to camera_link manually. It does not default there. Skipping this produces a blank RViz2 window with no error explaining why.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Guided viewing: add the RGB Image display (/camera/color/image_raw), the Depth Image display (/camera/depth/image_raw), and the PointCloud2 display (/camera/depth_registered/points) — a room with a few distinct objects at varying depths.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The depth_registration demonstration, made concrete, not just described: with the point cloud already visible (default depth_registration:=false), note in RViz2 whether the point cloud's colors look correctly placed on the 3D geometry or subtly offset — with a wide field-of-view scene and objects at different depths, a misalignment is visible once you know to look for it. Then:",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                code: "ros2 launch astra_camera astra_pro.launch.xml depth_registration:=true",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Expected output: the same point cloud, now with color properly aligned to the 3D structure. This is the live version of the specifications lesson's callout — the same topic name, the same lack of any error either way, a real visual difference only the parameter controls.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                body: "You just watched a single boolean parameter change data correctness with zero change in error output either way. This is the single strongest argument in this entire course for reading parameters, not just topic names.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-debugging",
+          title: "Debugging",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "The RPLIDAR module walked one linear ladder, because that device has one data path. This device genuinely has two — confirmed by two separate USB identities and two separate driver classes. Debugging it means first figuring out which path is broken, then walking that path's own ladder.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Shared rungs, before the fork, both paths depend on these. Connection/Setup: correct fork, jazzy branch. Failure: cloned master. Signature: cv_bridge.h not found at build time. OS detection: both USB identities visible. Command: lsusb | grep 2bc5. Failure: one line instead of two — cable/hub power problem, not a driver problem. rtprio: granted before first launch. Failure: launch fails; not traceable to this fork's own source, a real-user-confirmed requirement, stated as such.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Path 1: RGB/UVC — diverges here, with two distinct real failures, each with its own exact signature, both confirmed directly from uvc_camera_driver.cpp. Device not found: the UVC device never enumerates, uvc_find_device exhausts its 100 retries. Signature — a thrown exception, the node visibly crashes: \"Find device error <reason>\". Permission denied: device enumerates, but the udev rule hasn't been applied or reloaded. Signature: \"Permission denied opening /dev/bus/usb/%03d/%03d\" — note this references the raw USB bus path, not /dev/ttyUSBn, a genuinely different permission surface than the RPLIDAR's serial port. Distinguishing them: the first is a crash with a \"device not found\" message; the second is a logged error with the specific word \"Permission\" in it, referencing exact bus/device numbers. Different exact text, different root cause — don't guess, read which one you actually got.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Path 2: depth/OpenNI2 — diverges here, with its own distinct failure family. Semaphore hang: relaunching after an unclean kill without clearing it. Signature: silent hang, no error — directly checkable via ls /dev/shm | grep astra, not just inferred. depth_registration silently defaulting to false while assuming an aligned point cloud. Signature: no error at all — the point cloud publishes correctly-shaped data that is simply not aligned to color. The sharpest, quietest failure this entire course has produced — no crash, no log line, just a wrong assumption about a default.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Rungs after the fork, shared again: node startup (ros2 node list shows astra_camera_node); topics (ros2 topic list under /camera/...); data (ros2 topic echo, per-topic); visualization (RViz2 — Fixed Frame must be camera_link manually; if data is confirmed good but RViz2 shows nothing, this is almost always the cause).",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                body: "One artifact that isn't on either live path: the fork's own README instructs sourcing /opt/ros/galactic/setup.bash throughout and describes a stale manual OpenNI2-tarball step this repository no longer needs. Neither is a system failure — both are documentation debt a learner following the upstream README directly, not this course, would hit.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/hardware/orbbec-astra-pro-troubleshooting-flowchart.svg",
+                alt: "A branch-and-rejoin troubleshooting flowchart: shared rungs at the top, an explicit fork into two labeled paths, RGB/UVC and depth/OpenNI2, each showing its own real failures and exact signatures, rejoining at shared node/topic/data/visualization rungs. The depth_registration failure is marked with a check mark and no error, instead of the warning icon every other failure gets.",
+                caption: "This device's failures split into two real families, and one produces no error signal at all.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Diagnose the Missing Color Stream",
+                instructions:
+                  "A real, progressive-hint debugging scenario built on the RGB path's two-distinct-errors distinction.",
+                config: {
+                  type: "DEBUGGING",
+                  scenario: {
+                    body: "Both USB identities show in lsusb | grep 2bc5. You run ros2 launch astra_camera astra_pro.launch.xml. The depth image and point cloud both work fine in RViz2. But the color image never appears, and the terminal shows a repeating error you don't recognize.",
+                  },
+                  hints: [
+                    "Depth is working, so the node itself started and the shared rungs (connection, OS detection, rtprio) are all fine. The problem is specific to one of the two driver components — which one, given what's missing?",
+                    "Look at the exact error text. Does it mention a device not being found, or something about permission?",
+                    "If it specifically says 'Permission denied opening /dev/bus/usb/...', that's not the same failure as the device never being found at all — what does a permission error, specifically, usually mean about a step you may have skipped or that didn't take effect?",
+                  ],
+                  solution: {
+                    body: "The udev rule for the RGB/UVC identity (0501) either wasn't applied or wasn't reloaded after being applied — re-run sudo udevadm control --reload-rules && sudo udevadm trigger, or unplug/replug the device so it re-enumerates under the now-active rule.",
+                  },
+                  rootCause: {
+                    body: "The RGB and depth paths are two independent driver components with two independent USB identities — one can fail while the other works perfectly, and the udev rule installed in the Ubuntu setup lesson covers both identities in one file, but a rule not yet reloaded (versus not yet written) produces exactly this 'one works, one doesn't, with a permission-specific error' symptom.",
+                  },
+                },
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-quiz-check",
+          title: "Module Check",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Orbbec Astra Pro Module Check",
+                description:
+                  "Scenario and diagnostic questions, led by the depth_registration finding as its own marquee item.",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You launch the Astra Pro driver. The node starts with no errors, and /camera/depth_registered/points publishes a real, correctly-shaped point cloud in RViz2 — no crash, no warning, nothing in the log. Later, a teammate points out the colors in the point cloud don't actually match the 3D shapes they're painted onto. What's actually wrong?",
+                    explanation:
+                      "This is the sharpest failure mode either device profile has produced — zero error signal, a topic name that implies behavior a separate, independently-defaulted parameter doesn't actually deliver.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "depth_registration defaults to false — the point cloud topic is named depth_registered/points because of a topic remap, not because hardware/SDK-level color-depth alignment is active. It must be explicitly set to true",
+                      },
+                      { id: "b", label: "The RGB and depth streams are running at different frame rates" },
+                      { id: "c", label: "RViz2 needs a manual QoS override to render color correctly" },
+                      { id: "d", label: "The point cloud topic itself is corrupted" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Both USB identities appear in lsusb | grep 2bc5. The terminal shows \"Permission denied opening /dev/bus/usb/003/012\". What's the most likely fix?",
+                    explanation:
+                      "The device enumerating in lsusb and the udev rule actually being active are two different things.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "Re-apply/reload the udev rule (sudo udevadm control --reload-rules && sudo udevadm trigger), or unplug and replug the device so it re-enumerates under the now-active rule",
+                      },
+                      { id: "b", label: "Reinstall the entire ros2_astra_camera package from scratch" },
+                      { id: "c", label: "Switch to a different USB cable" },
+                      { id: "d", label: "Downgrade to the master branch" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Spot what's wrong: a learner buys a depth camera whose box and printed label both read \"Astra Pro Plus.\" They follow this module's exact setup sequence (the yosefl20/ros2_astra_camera fork, astra_pro.launch.xml). What's wrong with this plan, specifically?",
+                    explanation:
+                      "This is the module's own central disambiguation — the two products share a confusingly similar name but different driver support entirely.",
+                    acceptedAnswers: [
+                      "wrong device/model",
+                      "Astra Pro Plus is a different product than Astra Pro",
+                      "the launch file and driver path in this module target the plain Astra Pro, not the Plus model",
+                    ],
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "This device runs as two separate ROS 2 nodes — one for the RGB camera, one for the depth camera.",
+                    explanation:
+                      "One node (astra_camera_node), internally composed of two driver components (OBCameraNode, UVCCameraDriver) — stated precisely rather than simplified.",
+                    correctAnswer: false,
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "A previous launch was killed uncleanly. The next launch attempt produces no error at all, but also never finishes starting. What should you check?",
+                    explanation:
+                      "A stale semaphore blocks startup with no log line — this is checkable directly, not just inferred.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "Whether a stale semaphore is blocking startup — check ls /dev/shm | grep astra and run ros2 run astra_camera clean_shm_node before relaunching",
+                      },
+                      { id: "b", label: "ros2 run astra_camera cleanup_shm_node" },
+                      { id: "c", label: "Whether the udev rule needs reinstalling" },
+                      { id: "d", label: "Whether the USB cable is faulty" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Real-time priority (rtprio) must be granted before this device's first launch on stock Ubuntu 24.04. Where in this fork's own C++ source is that requirement enforced?",
+                    explanation:
+                      "An honesty check, not a trick — this module states this limit directly rather than fabricating a plausible-sounding source citation.",
+                    options: [
+                      {
+                        id: "a",
+                        label:
+                          "It isn't traceable to this fork's own source — the requirement comes from the closed/vendored OpenNI2 binary, confirmed only by a real user's reported run, not by reading a specific line of this repository's own code",
+                      },
+                      { id: "b", label: "In the OBCameraNode constructor, which checks getpriority() directly" },
+                      { id: "c", label: "In the CMakeLists.txt build configuration" },
+                      { id: "d", label: "In the udev rules file itself" },
+                    ],
+                    correctOptionIds: ["a"],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "orbbec-astra-pro-practical-challenge",
+          title: "Practical Challenge",
+          durationMinutes: 25,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Detect and visualize the distance of an object at different positions, using real depth data from this device.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Live Distance Detection",
+                instructions:
+                  "An open-ended, independent challenge using this device's own genuine capability: depth at a specific distance.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Using the live /camera/depth/image_raw topic (or the point cloud, your choice), report the distance to whatever is directly in front of the camera's center, and demonstrate the reported distance changing as an object is moved closer and farther, within the device's optimal 0.6–5.0 m range.",
+                  },
+                  successCriteria: [
+                    "Correctly subscribes to a depth-bearing topic and extracts a real distance value, not a placeholder",
+                    "Explicitly reasons about the image's center pixel (or an equivalent point in the point cloud) rather than an arbitrary one",
+                    "Demonstrates the value changing live as an object moves, and can explain what happens (and why) if the object moves outside the 0.6–5.0 m optimal range",
+                    "If using the point cloud specifically: can state whether depth_registration was left at its default and, if so, correctly predicts that color alignment (not raw distance accuracy) is what would be affected by that choice",
+                  ],
+                  hints: [
+                    "Run ros2 interface show sensor_msgs/msg/Image to inspect the depth image's actual encoding rather than assuming a format.",
+                    "Depth images typically encode distance in millimeters as 16-bit values, not directly as meters.",
+                  ],
+                },
+              },
+            },
           ],
         },
       ],
@@ -4031,7 +6665,7 @@ async function seed(prisma: PrismaClient): Promise<void> {
     });
   }
 
-  await prisma.user.upsert({
+  const student = await prisma.user.upsert({
     where: { email: STUDENT_EMAIL },
     update: {},
     create: {
@@ -4043,6 +6677,35 @@ async function seed(prisma: PrismaClient): Promise<void> {
       },
     },
   });
+
+  // The Robotics Hardware & Sensors course is DRAFT — same as
+  // ros2-fundamentals — so a signed-in-but-unenrolled visitor gets "course
+  // not found" (§12: DRAFT/PUBLIC is instructor-preview-only, and course
+  // visibility gates *finding* the course before enrollment can even
+  // happen). ros2-fundamentals, typescript-foundations and
+  // web-accessibility-in-practice already carry a real Enrollment row for
+  // this student in the dev database, which is what actually makes them
+  // reachable and is why they "just work" while this course didn't — not
+  // a difference in course status or any code path. Enrolling here too
+  // closes that gap the same way, as real seed data instead of a manual
+  // row that only exists until someone resets the database.
+  const roboticsHardwareCourse = await prisma.course.findUnique({
+    where: { slug: "robotics-hardware-and-sensors" },
+    select: { id: true },
+  });
+  if (roboticsHardwareCourse) {
+    await prisma.enrollment.upsert({
+      where: {
+        userId_courseId: { userId: student.id, courseId: roboticsHardwareCourse.id },
+      },
+      update: {},
+      create: {
+        userId: student.id,
+        courseId: roboticsHardwareCourse.id,
+        status: "ACTIVE",
+      },
+    });
+  }
 
   // Devices must exist before seedCurricula, since SPEC_TABLE/DEVICE_CARD
   // blocks reference them by slug; homeSectionId is resolved in a second
@@ -4179,19 +6842,33 @@ async function seedCurricula(prisma: PrismaClient): Promise<void> {
         select: { id: true },
       });
 
-      const sectionId =
-        existing?.id ??
-        (
-          await prisma.section.create({
-            data: {
-              courseId: course.id,
-              title: section.title,
-              summary: section.summary,
-              position: index,
-            },
-            select: { id: true },
-          })
-        ).id;
+      // `position` is set here on both branches — including on an existing
+      // row — so that re-running the seed after the array order changes
+      // (e.g. new sections inserted earlier in CURRICULA) actually moves
+      // already-created sections to match. Lessons two levels below already
+      // do this (`position: lessonIndex` in the upsert's `update`); sections
+      // not doing the same was an inconsistency, not a deliberate choice —
+      // nothing here preserves a human's manual drag-and-drop reorder, since
+      // this array is the declared source of truth for seeded curricula.
+      const sectionId = existing
+        ? (
+            await prisma.section.update({
+              where: { id: existing.id },
+              data: { title: section.title, summary: section.summary, position: index },
+              select: { id: true },
+            })
+          ).id
+        : (
+            await prisma.section.create({
+              data: {
+                courseId: course.id,
+                title: section.title,
+                summary: section.summary,
+                position: index,
+              },
+              select: { id: true },
+            })
+          ).id;
 
       for (const [lessonIndex, lesson] of section.lessons.entries()) {
         const { id: lessonId } = await prisma.lesson.upsert({

@@ -165,33 +165,40 @@ Wait for my go-ahead on the plan before implementing — especially the attempt-
 
 ----------------------
 
-Module 6 design written and committed (43e9f3a, pushed). Five lessons, ~68 blocks, seven diagrams, six exercises, six-question quiz. Not implemented — this is the Stage 4 pass, for your review before Stage 5/6.
+Come back prompt for ROS 2 couse, use below.
 
-Files changed
-- docs/course-design/module-6-design.md (new, 596 lines)
-- docs/course-design/open-items.md — items 6 and 7 added, item 5 strengthened
-- milestones_prompt.md — your pasted Module 5 report, committed as-is
+Resuming the ROS 2 Fundamentals course after a pause. Before doing anything else, tell me the actual current state — don't assume from any prior chat summary:
 
-Two flags that contradict the design document directly
+Read docs/course-design/open-items.md and report it verbatim/current.
+Check prisma/seed.ts directly — which modules are actually implemented and shipped (not just designed)?
+Confirm whether Module 6 was fully implemented and verified in the last session (5 lessons, 68 blocks, no video), or whether it's still pending — check git log, not memory.
+Confirm whether the Modules 1-4 Playwright re-verification (against the enrollment access-control fix, commit d42bf75) was completed, and what it found.
+Confirm the ROS 2 terminal-verification workflow (path C) status — still paused, or was it resumed?
 
-§9's own example diagram for this module draws TOPIC as a box between publisher and subscribers. That box is the broker misconception §21 warns about, and it sets up a specific later failure — a learner who believes in a topic process looks for it when data stops, instead of checking the two endpoints, which is the only place the fault can be. Every diagram here puts the topic name on the arrows instead. Flagged rather than silently corrected.
+Give me a clean status report: what's shipped, what's designed-but-not-implemented, what's genuinely open — then tell me the single next recommended step per ROS2_COURSE_KICKOFF_PROMPTS.md's module-by-module sequencing. Don't start any new work yet, just establish ground truth first.
 
-ros2 interface show is listed under both Module 6 and Module 9. I drew the boundary: Module 6 reads a definition (two types, to answer "where did those six numbers come from"), Module 9 owns the .msg format, custom interfaces, and the standard-interface landscape. Lesson 2 says this to the learner so the shallow treatment reads as deliberate.
 
-A curriculum gap this module surfaced but can't fix
+------------------------------------------------------
 
-The 10 in create_publisher(Twist, '/turtle1/cmd_vel', 10) is a QoS queue depth — the first line of ROS 2 code in this course whose meaning the course hasn't scoped. Module 6 handles it honestly in a sentence and a callout. But QoS is taught by no module in §9 — not Module 2 (explicitly excluded by its own depth ceiling), not 9, not 12. It's also the cause of one of the most common real ROS 2 failures, and Module 6 Lesson 2 actively trains the learner that name + type matching is sufficient. True for everything in this course; not true in general. Open item 7, with Module 9 as my recommended home.
 
-Verified rather than recalled
+Completed
 
-The one-second command timeout that Lesson 1's whole payoff rests on came from turtle.cpp on the jazzy branch, not memory. And /turtle1/color_sensor samples a uniform background — so driving around changes nothing unless the turtle crosses its own trail. I'd written the Lesson 2 exercise asking what the values do when you drive; checking changed the question, and the design now forbids implementation from phrasing it as a promise that they'll move.
+Implemented the Orbbec Astra Pro device module (Stage 7) per STAGE_5_ASTRA_PRO_MODULE.md — Sections A–L, 12 lessons, matching the RPLIDAR A2 pattern.
 
-Video durations came from player metadata, not estimates: DigiKey at 2133s (35m33s, and C++) rejected, The Construct's topics episode rejected as Bouncy-era like its sibling in Module 5. One 4m02s candidate is review-gated, not accepted — §15 asks for a teaching-quality judgement I can't make from metadata, and its title foregrounds "DDS pipeline" against Module 2's stated ceiling. Lesson 1 is designed to work without it.
+Files Changed:
+- prisma/seed.ts — expanded HardwareDevice specs (3→9) and topics (3→6) with real profile values; replaced orbbec-astra-pro-overview (Section A) and added 11 new lessons (Sections B–L) in the same section.
+- 5 new SVGs in public/hardware/: annotated hardware, working-principle, connection diagram, dual-driver pipeline (the resolved Section H decision), troubleshooting flowchart.
+- Left the existing orbbec-astra-pro-data-pipeline.svg untouched — it's still wired into Module 3 and is a different, simpler diagram than Section H's requirement.
 
-Known limitations
+Architecture Decisions:
+- Section K kept as a standalone lesson, matching RPLIDAR's precedent and the design doc's literal structure.
+- B/C lettering kept swapped (Hardware Understanding before How It Works) per the doc's explicit instruction, not normalized to RPLIDAR's order.
+- Zero video embeds, matching the doc's own verification-driven rejection of every candidate.
 
-Two consecutive modules would ship without video. Worth treating as a strategy question if a third follows, rather than three independent rejections.
+Validation: typecheck ✓, lint ✓, db:seed ×2 (idempotent) ✓, build ✓ (/hardware stays dynamic), unit tests 178/178 ✓, integration tests 41/41 ✓, e2e 3/4 ✓ (unrelated pre-existing AI-assistant failure). Verified live in the rebuilt Docker container: walked all 12 lessons, all 5 new diagrams render correctly, took and passed the 6-question quiz (83%), confirmed the progressive-hint debugging exercise.
 
-Next recommended step
+Known Limitations:
+- Found and fixed one real bug during verification: the annotated-hardware SVG's subtitle overlapped the "Captive Cable" callout box — moved the box down, confirmed via direct content comparison (not just a visual re-screenshot, since browser image caching made that unreliable here).
+- PHOTOGRAPHY_CHECKLIST.md's full shot list is still open for this device (unchanged from before this pass).
 
-Stage 5 quality review on this design before implementation — and the checkpoint at the end asks you three specific things: whether ~68 blocks is right or Lesson 2 should compress, whether two debugging exercises in one module is one too many, and the video gate, which needs four minutes of someone's attention to close either way.
+Next Recommended Step: Astra Pro's PHOTOGRAPHY_CHECKLIST.md shots, or the capstone once more devices exist.

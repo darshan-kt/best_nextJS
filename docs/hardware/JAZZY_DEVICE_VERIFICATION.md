@@ -313,7 +313,13 @@ echo "$USER    -   rtprio   99" | sudo tee /etc/security/limits.d/99-ros2-rt.con
 # 7. If this is not the first launch attempt and a previous one was
 #    killed uncleanly, clear the semaphore hang (§2.4) before launching —
 #    this is silent and produces no error, only a hang.
-ros2 run astra_camera cleanup_shm_node
+# CORRECTED by Stage 4 (STAGE_4_ASTRA_PRO_PROFILE.md, 2026-08-29): the
+# registered executable is `clean_shm_node`, not `cleanup_shm_node` —
+# confirmed directly from CMakeLists.txt's add_executable()/install(TARGETS)
+# block on the jazzy branch, fetched raw via curl (not AI-summarized). The
+# command below was wrong as originally written; a learner running the
+# original command would get "No executable found".
+ros2 run astra_camera clean_shm_node
 
 # 8. Launch, using the plain Astra Pro's own launch file — not
 #    astro_pro_plus.launch.xml, which targets a different, newer product.
@@ -360,11 +366,17 @@ set.
 Confirmed directly in the original repo's documentation (not the fork,
 since this is inherited, un-fixed behavior): if the camera process is killed
 uncleanly, a semaphore file is left in `/dev/shm`, and the next launch hangs.
-Mitigation, run before launching: `ros2 run astra_camera cleanup_shm_node`.
-This is real, upstream-documented behavior, worth its own debugging-exercise
-scenario rather than a footnote — it produces exactly the "everything looks
-fine, nothing errors, it just hangs" symptom this course's own established
-debugging-exercise format (from the ROS 2 course) is built to teach.
+Mitigation, run before launching: `ros2 run astra_camera clean_shm_node`
+(corrected by Stage 4 — see the note at §2.2a step 7; the executable is
+`clean_shm_node`, confirmed directly from the fork's `CMakeLists.txt`, not
+`cleanup_shm_node`). The semaphore itself is named `astra_device_sem`
+(`DEFAULT_SEM_NAME` in `constants.h`, also confirmed by Stage 4) — a
+learner can directly confirm the hang's cause with `ls /dev/shm | grep
+astra` rather than taking the diagnosis on faith. This is real, upstream-
+documented behavior, worth its own debugging-exercise scenario rather than
+a footnote — it produces exactly the "everything looks fine, nothing
+errors, it just hangs" symptom this course's own established debugging-
+exercise format (from the ROS 2 course) is built to teach.
 
 ### 2.5 Recommended path
 

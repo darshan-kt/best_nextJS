@@ -12,6 +12,21 @@ export const metadata: Metadata = {
 };
 
 /**
+ * Forces server rendering per request instead of Next's default attempt to
+ * statically prerender this page at build time. Nothing here reads
+ * `searchParams`/`cookies`/`headers` (unlike `/courses`, which gets this
+ * for free from `searchParams`), so without this the build tries to query
+ * the database while generating the production bundle — fine when a local
+ * Postgres happens to be reachable at build time, but it breaks any build
+ * environment without one (e.g. a Docker image build stage, which has no
+ * route to the `db` compose service until the containers are actually
+ * started). The catalog is exactly as live as `/courses` — which device
+ * publish state a device belongs to can change at any time — so static
+ * generation was never the right strategy for it, Docker or not.
+ */
+export const dynamic = "force-dynamic";
+
+/**
  * The hardware device catalog (Robotics Hardware & Sensors course, Stage 1
  * — §36 plan, decision 5).
  *

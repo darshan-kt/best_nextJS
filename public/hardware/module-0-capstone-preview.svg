@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="64" font-size="34" font-weight="800" fill="#134e4a">Where this course is headed</text>
+  <text x="64" y="96" font-size="19" fill="#64748b">Two devices, two kinds of data, one combined picture of the world.</text>
+
+  <g font-size="17" font-weight="700" fill="#134e4a">
+    <rect x="64" y="170" width="340" height="120" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="234" y="220" text-anchor="middle">Orbbec Astra Pro</text>
+    <text x="234" y="246" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">RGB image + depth image</text>
+    <text x="234" y="268" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">close range, fixed 60° cone</text>
+
+    <rect x="64" y="430" width="340" height="120" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="234" y="480" text-anchor="middle">RPLIDAR A2</text>
+    <text x="234" y="506" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">LaserScan</text>
+    <text x="234" y="528" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">long range, full 360°</text>
+
+    <rect x="836" y="300" width="380" height="120" rx="16" fill="#ecfdf5" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1026" y="350" text-anchor="middle">Robot Perception</text>
+    <text x="1026" y="376" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">what's around the robot,</text>
+    <text x="1026" y="398" text-anchor="middle" font-size="15" font-weight="400" fill="#0f766e">from both sensors at once</text>
+  </g>
+
+  <g stroke="#0d9488" stroke-width="4.5" marker-end="url(#arrow)" fill="none">
+    <path d="M 404 230 C 620 230, 700 300, 830 340"/>
+    <path d="M 404 490 C 620 490, 700 420, 830 400"/>
+  </g>
+
+  <text x="640" y="620" text-anchor="middle" font-size="18" fill="#475569">Modules 0–3 build the mental models. Modules 4–5 apply them to each device.</text>
+  <text x="640" y="648" text-anchor="middle" font-size="18" fill="#475569"><tspan font-weight="700" fill="#0f172a">Neither sensor alone gives a robot the full picture</tspan> — that's why the course teaches both.</text>
+</svg>

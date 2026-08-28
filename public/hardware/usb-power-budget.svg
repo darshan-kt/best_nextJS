@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="64" font-size="34" font-weight="800" fill="#134e4a">A USB port's power budget is real</text>
+  <text x="64" y="96" font-size="19" fill="#64748b">These two devices, together, are a realistic way to reach it.</text>
+
+  <!-- budget bar background -->
+  <g>
+    <text x="64" y="180" font-size="17" font-weight="700" fill="#134e4a">Typical unpowered laptop USB port budget</text>
+    <rect x="64" y="196" width="900" height="46" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+    <text x="980" y="226" font-size="16" fill="#475569">~500–900 mA</text>
+
+    <!-- RPLIDAR draw segment -->
+    <rect x="64" y="196" width="450" height="46" rx="10" fill="#0d9488"/>
+    <text x="80" y="226" font-size="15" font-weight="700" fill="#ffffff">RPLIDAR A2 motor: 450–600 mA continuous</text>
+  </g>
+
+  <g>
+    <text x="64" y="330" font-size="17" font-weight="700" fill="#134e4a">Same port, Astra Pro also connected</text>
+    <rect x="64" y="346" width="900" height="46" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+    <rect x="64" y="346" width="450" height="46" rx="10" fill="#0d9488"/>
+    <rect x="514" y="346" width="420" height="46" fill="#b45309"/>
+    <text x="530" y="376" font-size="15" font-weight="700" fill="#ffffff">+ Astra Pro: two simultaneous USB identities</text>
+    <rect x="934" y="346" width="80" height="46" rx="10" fill="#b91c1c"/>
+  </g>
+
+  <g font-size="16" fill="#7f1d1d">
+    <text x="64" y="430">Two real devices, added together, land at or past the budget line —</text>
+    <text x="64" y="454" font-weight="700">not a hypothetical, a measured fact from both devices' own specs.</text>
+  </g>
+
+  <g font-size="17" fill="#134e4a">
+    <text x="64" y="520" font-weight="700">The diagnostic signature to recognize:</text>
+    <text x="64" y="552" font-size="16" fill="#0f766e">A device that enumerates intermittently, drops out only when a</text>
+    <text x="64" y="576" font-size="16" fill="#0f766e">second device joins, or a stream that stutters near a spinning LiDAR —</text>
+    <text x="64" y="600" font-size="16" fill="#0f766e">that's a power symptom, not a driver bug. Check power first.</text>
+  </g>
+
+  <text x="640" y="668" text-anchor="middle" font-size="18" fill="#475569"><tspan font-weight="700" fill="#0f172a">This is exactly why the BOM includes a powered USB hub</tspan> — it supplies its own power, not just the host's limited budget.</text>
+</svg>

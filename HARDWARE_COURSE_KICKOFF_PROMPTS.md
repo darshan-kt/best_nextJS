@@ -36,6 +36,14 @@ Hardware documentation rots faster than ROS 2 concepts do. For this course:
   README/docs for the exact package version before writing any setup step.
 - **Never embed a video URL without fetching it first** to confirm it resolves
   and the content matches the description.
+- **For any fact that is a version number, a config/parameter default, a
+  published spec value, or anything read from source code: fetch the raw
+  file or manifest directly** (`curl`/equivalent + grep or a direct read of
+  the raw text) rather than relying on an AI-summarized page fetch for that
+  exact value, and note which retrieval method was used. An AI-summarized
+  fetch is fine for orientation (what a repo is about, what a README
+  covers in general) but is not sufficient on its own to source an exact
+  number or string that a course instruction will assert as fact.
 - **Cite the source** (repo URL + commit/tag or doc URL + date checked) in a
   comment or metadata field for every setup instruction block, so future
   maintenance knows what to re-verify.
@@ -62,6 +70,19 @@ Known starting points, already verified as of this file's writing:
 > - Astra Pro's confirmed working path is the community fork
 >   `yosefl20/ros2_astra_camera`, branch `jazzy`, not upstream `master` —
 >   MEDIUM confidence, full setup sequence in §2.2a of the findings doc.
+
+> **Hardened by Stage 4** (`docs/hardware/STAGE_4_RPLIDAR_A2_PROFILE.md`
+> intro, 2026-08-29) — the "fetch the raw file/manifest directly" bullet
+> above was added after three separate AI-summarized fetches of one fact
+> (the Jazzy release version of `rplidar_ros`) produced three different
+> answers, two of them wrong — resolved only by `curl`-ing
+> `jazzy/distribution.yaml` and grepping it directly. The VERIFICATION
+> RULE's original wording ("fetch the actual upstream README/docs") did not
+> distinguish "fetched and summarized by a tool" from "read directly" —
+> this rule now does, for exactly the class of fact (version numbers,
+> config defaults, spec values, source-code strings) where a summarization
+> error is both easy to introduce and hard to notice without a second,
+> independent check.
 
 ---
 

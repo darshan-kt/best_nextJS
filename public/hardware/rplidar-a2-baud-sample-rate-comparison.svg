@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="64" font-size="34" font-weight="800" fill="#134e4a">"The A2" is not one configuration</text>
+  <text x="64" y="96" font-size="19" fill="#64748b">Three sub-models, two different baud rates — confirmed from the official spec table.</text>
+
+  <g font-size="17" font-weight="800" fill="#134e4a">
+    <!-- A2M7 -->
+    <rect x="80" y="170" width="340" height="300" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="250" y="216" text-anchor="middle" font-size="24">A2M7</text>
+    <line x1="110" y1="236" x2="390" y2="236" stroke="#99f6e4" stroke-width="2"/>
+    <text x="110" y="274" font-size="14" font-weight="400" fill="#0f766e">Serial Baud Rate</text>
+    <text x="110" y="300" font-size="22" font-weight="800" fill="#134e4a">256000 bps</text>
+    <text x="110" y="344" font-size="14" font-weight="400" fill="#0f766e">Sample Rate</text>
+    <text x="110" y="370" font-size="22" font-weight="800" fill="#134e4a">16,000/sec</text>
+    <text x="110" y="414" font-size="14" font-weight="400" fill="#0f766e">Angular Resolution</text>
+    <text x="110" y="440" font-size="22" font-weight="800" fill="#134e4a">0.225°</text>
+
+    <!-- A2M8 -->
+    <rect x="470" y="170" width="340" height="300" rx="16" fill="#fef2f2" stroke="#b91c1c" stroke-width="2.5"/>
+    <text x="640" y="216" text-anchor="middle" font-size="24" fill="#991b1b">A2M8</text>
+    <line x1="500" y1="236" x2="780" y2="236" stroke="#fecaca" stroke-width="2"/>
+    <text x="500" y="274" font-size="14" font-weight="400" fill="#b91c1c">Serial Baud Rate</text>
+    <text x="500" y="300" font-size="22" font-weight="800" fill="#991b1b">115200 bps</text>
+    <text x="500" y="344" font-size="14" font-weight="400" fill="#b91c1c">Sample Rate</text>
+    <text x="500" y="370" font-size="22" font-weight="800" fill="#991b1b">8,000/sec</text>
+    <text x="500" y="414" font-size="14" font-weight="400" fill="#b91c1c">Angular Resolution</text>
+    <text x="500" y="440" font-size="22" font-weight="800" fill="#991b1b">0.45°</text>
+
+    <!-- A2M12 -->
+    <rect x="860" y="170" width="340" height="300" rx="16" fill="#f0fdfa" stroke="#0f766e" stroke-width="2.5"/>
+    <text x="1030" y="216" text-anchor="middle" font-size="24">A2M12</text>
+    <line x1="890" y1="236" x2="1170" y2="236" stroke="#99f6e4" stroke-width="2"/>
+    <text x="890" y="274" font-size="14" font-weight="400" fill="#0f766e">Serial Baud Rate</text>
+    <text x="890" y="300" font-size="22" font-weight="800" fill="#134e4a">256000 bps</text>
+    <text x="890" y="344" font-size="14" font-weight="400" fill="#0f766e">Sample Rate</text>
+    <text x="890" y="370" font-size="22" font-weight="800" fill="#134e4a">16,000/sec</text>
+    <text x="890" y="414" font-size="14" font-weight="400" fill="#0f766e">Angular Resolution</text>
+    <text x="890" y="440" font-size="22" font-weight="800" fill="#134e4a">0.225°</text>
+  </g>
+
+  <rect x="80" y="510" width="1120" height="100" rx="14" fill="#fffbeb" stroke="#b45309" stroke-width="2.5"/>
+  <text x="104" y="546" font-size="17" font-weight="700" fill="#78350f">The Baud Rate Trap</text>
+  <text x="104" y="572" font-size="15" fill="#78350f">Using the wrong SKU's launch file is a real, common mistake: the device still shows up in</text>
+  <text x="104" y="594" font-size="15" fill="#78350f">lsusb and the port opens, but the serial configuration doesn't match — check the physical label first.</text>
+
+  <text x="640" y="668" text-anchor="middle" font-size="16" fill="#475569">Confirm the exact label on your unit before choosing a launch file — this diagram is reused in Module 5's own setup section.</text>
+</svg>
