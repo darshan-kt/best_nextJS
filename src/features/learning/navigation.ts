@@ -31,14 +31,12 @@ export interface LessonNavigation {
  * Returns `null` when the slug isn't in this course's published curriculum
  * at all — the caller treats that as "lesson not found" (§26).
  *
- * `Lesson.slug` is only guaranteed unique *within its section*
- * (`@@unique([sectionId, slug])`), not across the whole course. Two
- * sections could in principle reuse a slug; `findIndex` resolves that by
- * always taking the first match in curriculum order, which is the same
- * order the outline displays. No collision exists in the current seed
- * data. If this becomes a real product concern, the fix is a course-scoped
- * uniqueness constraint added in a future migration — not a client-side
- * workaround here.
+ * `lessons` is already scoped to one course (the caller flattens a single
+ * course's curriculum), and `Lesson.slug` is enforced unique per course at
+ * the database level (`@@unique([courseId, slug])`) — matching the flat,
+ * course-scoped lesson player route (`/courses/[slug]/learn/[lessonSlug]`,
+ * no section segment). `findIndex` can therefore only ever match at most
+ * one lesson; it is not resolving a collision, there being none possible.
  */
 export function findLessonNavigation(
   lessons: CurriculumLesson[],

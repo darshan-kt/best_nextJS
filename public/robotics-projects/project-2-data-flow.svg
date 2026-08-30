@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+  <text x="64" y="70" font-size="32" font-weight="800" fill="#1e3a8a">Project 2 &#8212; Data Flow</text>
+  <text x="64" y="102" font-size="18" fill="#64748b">Visual Object Tracking: perception from a single RGB stream.</text>
+  <rect x="64" y="300" width="260" height="200" rx="16" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5"/>
+  <text x="194" y="366" text-anchor="middle" font-size="20" font-weight="800" fill="#1e3a8a">/camera</text>
+  <text x="194" y="412" text-anchor="middle" font-size="14" fill="#1d4ed8">RealSense D435i (RGB) &#8594;</text>
+  <text x="194" y="432" text-anchor="middle" font-size="14" fill="#1d4ed8">realsense2_camera_node</text>
+  <rect x="361" y="300" width="260" height="200" rx="16" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5"/>
+  <text x="491" y="366" text-anchor="middle" font-size="20" font-weight="800" fill="#1e3a8a">cv_bridge + HSV Mask</text>
+  <text x="491" y="412" text-anchor="middle" font-size="14" fill="#1d4ed8">BGR&#8594;HSV, threshold,</text>
+  <text x="491" y="432" text-anchor="middle" font-size="14" fill="#1d4ed8">contour (hsv_lower/upper)</text>
+  <rect x="659" y="300" width="260" height="200" rx="16" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5"/>
+  <text x="789" y="366" text-anchor="middle" font-size="20" font-weight="800" fill="#1e3a8a">Centroid / Steering</text>
+  <text x="789" y="412" text-anchor="middle" font-size="14" fill="#1d4ed8">cx vs. image center</text>
+  <text x="789" y="432" text-anchor="middle" font-size="14" fill="#1d4ed8">&#177; centroid_deadzone_px</text>
+  <rect x="956" y="300" width="260" height="200" rx="16" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5"/>
+  <text x="1086" y="366" text-anchor="middle" font-size="20" font-weight="800" fill="#1e3a8a">/cmd_vel</text>
+  <text x="1086" y="412" text-anchor="middle" font-size="14" fill="#1d4ed8">existing base driver</text>
+  <text x="1086" y="432" text-anchor="middle" font-size="14" fill="#1d4ed8">&#8594; motors</text>
+  <g stroke="#2563eb" stroke-width="5" fill="none" marker-end="url(#arrow-blue)">
+    <line x1="324" y1="400" x2="361" y2="400"/>
+    <line x1="621" y1="400" x2="659" y2="400"/>
+    <line x1="919" y1="400" x2="956" y2="400"/>
+  </g>
+  <text x="640" y="570" text-anchor="middle" font-size="18" fill="#475569">color_tracker_node &#8212; hsv_calibrator sets the mask once per lighting setup.</text>
+</svg>

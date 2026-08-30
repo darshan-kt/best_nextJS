@@ -47,6 +47,7 @@ async function createStudentAndCourse(options?: { lessonCount?: number }) {
       await prisma.lesson.create({
         data: {
           sectionId: section.id,
+          courseId: course.id,
           slug: `lesson-${i}`,
           title: `Lesson ${i}`,
           position: i,

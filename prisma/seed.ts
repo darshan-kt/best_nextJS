@@ -58,6 +58,19 @@ import {
   VISUAL_TRACKING_BOT_SETUP_PY,
   VISUAL_TRACKING_LAUNCH_PY,
 } from "../src/features/courses/content/robotics-projects/project-2-fixtures";
+import {
+  PROJECT_3_CMAKELISTS,
+  PROJECT_3_PACKAGE_XML,
+  PROJECT_3_SLAM_LAUNCH_PY,
+  PROJECT_3_SLAM_TOOLBOX_PARAMS_YAML,
+} from "../src/features/courses/content/robotics-projects/project-3-fixtures";
+import {
+  PROJECT_4_CMAKELISTS,
+  PROJECT_4_NAV2_PARAMS_YAML,
+  PROJECT_4_NAVIGATION_LAUNCH_PY,
+  PROJECT_4_PACKAGE_XML,
+  PROJECT_4_SEND_GOAL_EXAMPLE,
+} from "../src/features/courses/content/robotics-projects/project-4-fixtures";
 
 /**
  * Development seed data.
@@ -6504,7 +6517,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
         "Shared infrastructure every later project depends on: workspace, sensor bring-up, robot_description, robot_bringup, and resolving the use_ekf question for this specific rig.",
       lessons: [
         {
-          slug: "welcome-prerequisites-what-youll-build",
+          slug: "module-0-welcome-prerequisites-what-youll-build",
           title: "Welcome, Prerequisites & What You'll Build",
           durationMinutes: 12,
           contentBlocks: [
@@ -6520,6 +6533,15 @@ const CURRICULA: Record<string, SeedSection[]> = {
               type: "TEXT",
               data: {
                 body: "Before you build a single robot behavior, you need a robot that reliably talks to its own sensors. Module 0 exists to do that once, carefully, so that every project after this one can simply assume a working LiDAR, a working camera, a working base, and a correct 3D model of how they're all positioned relative to each other.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/robotics-projects/project-data-flow.svg",
+                alt: "A flowchart showing Module 0 (sensors and base bring-up) feeding Projects 1, 2, and 3 independently, with an additional dependency arrow from Project 3's saved map to Project 4.",
+                caption:
+                  "The shape of this whole course: Projects 1–3 each build independently on Module 0. Project 4 is the one exception — it depends directly on Project 3's saved map, not just on Module 0.",
               },
             },
             {
@@ -6553,6 +6575,15 @@ const CURRICULA: Record<string, SeedSection[]> = {
               },
             },
             {
+              type: "IMAGE",
+              data: {
+                src: "/robotics-projects/lab-equipment-overview.svg",
+                alt: "A labeled side view of the lab robot showing the RPLIDAR S3 (360° LiDAR) on a top mast, the RealSense D435i (camera and IMU) mounted at the front, the standalone IMU on the rear deck, and the Jetson Orin compute and battery inside the chassis.",
+                caption:
+                  "The five pieces of hardware Module 0 brings online — every later project assumes all five are already working.",
+              },
+            },
+            {
               type: "TEXT",
               data: {
                 body: "Software prerequisites: ROS 2 Jazzy Jalisco, assumed already installed and working — this module still runs a lightweight sanity check rather than assuming that blindly; colcon, rosdep, and xacro; rplidar_ros and realsense2_camera, installed in this module; and robot_localization, installed alongside and used conditionally.",
@@ -6570,13 +6601,28 @@ const CURRICULA: Record<string, SeedSection[]> = {
               data: {
                 variant: "DANGER",
                 title: "Complete this checklist before powering any motor test",
-                body: "Robot wheels are lifted clear of the ground, or the robot is secured on a stand, for every motor-related test in this module.\nLiDAR, camera, and IMU cables are routed clear of the wheels before any powered test.\nYou (or a lab partner) have a hand on the power switch, or the terminal running any motion command is immediately Ctrl+C-able, during every test.\nA second person is present specifically for the /cmd_vel watchdog test — this is the first time in the course the robot moves under command, and it is expected to move briefly and then stop on its own.\nThe battery is sufficiently charged for a full bring-up session — a brownout mid-test can look exactly like a software bug and waste real debugging time.",
+                body: "Every item below has a right way and a wrong way — check both columns, not just the left one.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Lab Safety Check",
+                code:
+                  "Check                      Do this                                                               Not this\n" +
+                  "-------------------------  --------------------------------------------------------------------  -----------------------------------------------------------------------\n" +
+                  "Wheels during motor tests  Robot on a stand, or wheels fully clear of the ground                 Robot resting on the floor, free to drive\n" +
+                  "Cable routing              LiDAR/camera/IMU cables tied clear of the wheels                      Cables draped near or across the wheel path\n" +
+                  "Kill access                A hand on the power switch, or the terminal focused and Ctrl+C-ready  Walking away while a motor test runs\n" +
+                  "/cmd_vel watchdog test     A second person present — first time the robot moves under command    Running this specific test solo\n" +
+                  "Battery                    Charged for a full bring-up session                                   Starting on a partial or unknown charge (brownouts mimic software bugs)",
               },
             },
           ],
         },
         {
-          slug: "project-architecture-and-data-flow",
+          slug: "module-0-architecture-and-data-flow",
           title: "Project Architecture & Data Flow",
           durationMinutes: 10,
           contentBlocks: [
@@ -7071,7 +7117,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
           ],
         },
         {
-          slug: "how-to-run-expected-results-and-checkpoints",
+          slug: "module-0-how-to-run-expected-results-and-checkpoints",
           title: "How to Run, Expected Results & Verification Checkpoints",
           durationMinutes: 10,
           contentBlocks: [
@@ -7219,7 +7265,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
           ],
         },
         {
-          slug: "can-you-build-it-yourself",
+          slug: "module-0-can-you-build-it-yourself",
           title: "Can You Build It Yourself?",
           durationMinutes: 20,
           contentBlocks: [
@@ -7254,7 +7300,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
         "A reactive robot that watches its front field of view with the RPLIDAR S3 and turns away from anything that gets too close.",
       lessons: [
         {
-          slug: "overview-prerequisites-and-lab-safety-check",
+          slug: "project-1-overview-prerequisites-and-lab-safety-check",
           title: "Overview, Prerequisites & Lab Safety Check",
           durationMinutes: 12,
           contentBlocks: [
@@ -7301,13 +7347,30 @@ const CURRICULA: Record<string, SeedSection[]> = {
               data: {
                 variant: "DANGER",
                 title: "Lab Safety Check",
-                body: "Wheels lifted or the robot on a stand for every test before the first floor test (Step 10).\nLiDAR cable routed clear of the wheels before any floor test.\nlinear_speed capped at ≤ 0.15 m/s for every floor test — no exceptions.\nTest area cleared of fragile objects; use a soft, disposable object as the test obstacle.\nA person available to physically intervene throughout every floor test.\nscan_timeout_sec's safety stop (Step 9) must be confirmed working BEFORE the first floor test — this is a hard prerequisite, not optional.\nBattery charge sufficient for the full test session.",
+                body: "This is the first project with a real floor test — the watchdog and the FOV filter are both new code, not yet proven on this robot.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Lab Safety Check",
+                code:
+                  "Check                         Do this                                                                    Not this\n" +
+                  "----------------------------  -------------------------------------------------------------------------  --------------------------------------------------------\n" +
+                  "Wheels during motor tests     Wheels lifted, or robot on a stand, before the first floor test (Step 10)  Floor-testing before Step 10\n" +
+                  "LiDAR cable routing           Routed clear of the wheels before any floor test                           Cable near or across the wheel path\n" +
+                  "Speed cap                     linear_speed ≤ 0.15 m/s for every floor test — no exceptions               Running faster than 0.15 m/s on any floor test\n" +
+                  "Test area                     Cleared of fragile objects; use a soft, disposable test obstacle           Testing near fragile objects or with a hard obstacle\n" +
+                  "Physical intervention         A person available to intervene throughout every floor test                Running a floor test unsupervised\n" +
+                  "scan_timeout_sec safety stop  Confirmed working (Step 9) BEFORE the first floor test                     Floor-testing before this hard prerequisite is confirmed\n" +
+                  "Battery                       Charged for the full test session                                          Starting on a partial or unknown charge",
               },
             },
           ],
         },
         {
-          slug: "project-architecture-and-data-flow",
+          slug: "project-1-architecture-and-data-flow",
           title: "Project Architecture & Data Flow",
           durationMinutes: 8,
           contentBlocks: [
@@ -7318,27 +7381,12 @@ const CURRICULA: Record<string, SeedSection[]> = {
               },
             },
             {
-              type: "CODE",
+              type: "IMAGE",
               data: {
-                language: "text",
-                filename: "Data flow",
-                code:
-                  "PHYSICAL ENVIRONMENT\n" +
-                  "   (obstacles in the room)\n" +
-                  "        ↓\n" +
-                  "RPLIDAR S3 → rplidar_ros driver node → /scan (sensor_msgs/msg/LaserScan)\n" +
-                  "        ↓\n" +
-                  "obstacle_avoidance_node\n" +
-                  "   ├── Front FOV Filter        (param: front_fov_degrees)\n" +
-                  "   ├── Nearest-Obstacle Distance in front slice\n" +
-                  "   ├── Left/Right Clearance Comparison  (param: side_clearance_fov_degrees)\n" +
-                  "   └── Decision: FORWARD / TURN_LEFT / TURN_RIGHT / STOP\n" +
-                  "        ↓\n" +
-                  "/cmd_vel (geometry_msgs/msg/Twist)\n" +
-                  "        ↓\n" +
-                  "existing base driver → motors → ROBOT MOTION\n" +
-                  "        ↓\n" +
-                  "(motion changes what the LiDAR sees next → loop continues)",
+                src: "/robotics-projects/project-1-data-flow.svg",
+                alt: "A four-stage data flow diagram: /scan from the RPLIDAR S3 via rplidar_ros, into a Front FOV Filter (±15°, front_fov_degrees), into a Decision stage comparing left/right clearance, into /cmd_vel driving the existing base driver.",
+                caption:
+                  "obstacle_avoidance_node is the only new code in this project — everything else is Module 0's robot_bringup.",
               },
             },
             {
@@ -7579,7 +7627,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
           ],
         },
         {
-          slug: "how-to-run-expected-results-and-checkpoints",
+          slug: "project-1-how-to-run-expected-results-and-checkpoints",
           title: "How to Run, Expected Results & Verification Checkpoints",
           durationMinutes: 8,
           contentBlocks: [
@@ -7716,7 +7764,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
           ],
         },
         {
-          slug: "can-you-build-it-yourself",
+          slug: "project-1-can-you-build-it-yourself",
           title: "Can You Build It Yourself?",
           durationMinutes: 30,
           contentBlocks: [
@@ -7816,7 +7864,25 @@ const CURRICULA: Record<string, SeedSection[]> = {
               data: {
                 variant: "DANGER",
                 title: "Lab Safety Check",
-                body: "The floor-test area must be COMPLETELY clear in EVERY direction the robot could possibly turn toward — not just along the target object's path — because this project cannot detect or react to any obstacle that isn't the specific tracked color.\nLost-target behavior is a deliberate design decision: on losing the target, the robot STOPS after target_lost_timeout_sec. It does NOT spin or search. A blind spin-search would be a real collision risk specifically because this project has no obstacle sensing to catch a bad guess.\nWheels lifted for all of Step 11 and Checkpoint 5 — verify turning direction before any floor test, exactly as in Project 1.\nlinear_speed capped at ≤ 0.15 m/s for every floor test, same as Project 1 — with the added note that this project's proportional steering can produce continuously varying turn rates, so watch that max_angular_speed is actually being respected, not just angular_gain trusted blindly.\nCamera and any debug-viewing laptop/cable kept clear of the wheels.\nA person available to physically intervene throughout every floor test, positioned to step into the robot's path if it turns toward an unexpected direction — no sensor will catch that before it happens.\nRe-run the HSV calibration procedure if the test session's lighting differs from when hsv_lower/hsv_upper were last set — a stale calibration is a software-correctness issue that manifests as physically unpredictable turning, not just a vision bug.\nBattery charge sufficient for the full test session.",
+                body: "This project has no obstacle sensing of its own — every item below matters more here than it did in Project 1, not less.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Lab Safety Check",
+                code:
+                  "Check                              Do this                                                                  Not this\n" +
+                  "---------------------------------  -----------------------------------------------------------------------  --------------------------------------------------------------\n" +
+                  "Floor-test area                    Completely clear in EVERY direction the robot could turn                 Only clearing along the target object's path\n" +
+                  "Lost-target behavior               Let the robot STOP after target_lost_timeout_sec                         A blind spin-search to re-find the target\n" +
+                  "Wheels for Step 11 / Checkpoint 5  Wheels lifted, turning direction verified first                          Floor-testing before turning direction is verified\n" +
+                  "Speed cap                          linear_speed ≤ 0.15 m/s; max_angular_speed actually confirmed            Trusting angular_gain blindly, not watching the real turn rate\n" +
+                  "Camera/laptop cable routing        Camera and debug-viewing laptop/cable kept clear of the wheels           Cables near or across the wheel path\n" +
+                  "Physical intervention              A person positioned to step into the robot's path throughout every test  Running a floor test unsupervised\n" +
+                  "HSV calibration freshness          Re-run hsv_calibrator whenever lighting has changed                      Trusting a stale calibration from different lighting\n" +
+                  "Battery                            Charged for the full test session                                        Starting on a partial or unknown charge",
               },
             },
           ],
@@ -7836,29 +7902,12 @@ const CURRICULA: Record<string, SeedSection[]> = {
               },
             },
             {
-              type: "CODE",
+              type: "IMAGE",
               data: {
-                language: "text",
-                filename: "Data flow",
-                code:
-                  "PHYSICAL ENVIRONMENT\n" +
-                  "   (colored target object moves within camera view)\n" +
-                  "        ↓\n" +
-                  "Intel RealSense D435i → realsense2_camera_node → /camera/color/image_raw\n" +
-                  "        ↓\n" +
-                  "color_tracker_node\n" +
-                  "   ├── cv_bridge: ROS Image → OpenCV BGR frame\n" +
-                  "   ├── BGR → HSV conversion\n" +
-                  "   ├── Color Mask                (params: hsv_lower, hsv_upper — calibrated)\n" +
-                  "   ├── Contour Detection → largest contour ≥ min_contour_area\n" +
-                  "   ├── Centroid Calculation (cx, cy)\n" +
-                  "   ├── Compare cx to image-center ± centroid_deadzone_px\n" +
-                  "   └── Decision: TURN_LEFT / TURN_RIGHT / FORWARD\n" +
-                  "       — or, after target_lost_timeout_sec with no detection: STOP\n" +
-                  "        ↓\n" +
-                  "/cmd_vel → existing base driver → motors → ROBOT MOTION\n" +
-                  "        ↓\n" +
-                  "(motion re-centers the object in view → loop continues)",
+                src: "/robotics-projects/project-2-data-flow.svg",
+                alt: "A four-stage data flow diagram: /camera RGB from the RealSense D435i via realsense2_camera_node, into cv_bridge + an HSV color mask, into a Centroid/Steering stage comparing the centroid to image center within a deadzone, into /cmd_vel driving the existing base driver.",
+                caption:
+                  "color_tracker_node — hsv_calibrator sets the mask once per lighting setup, outside this running loop.",
               },
             },
             {
@@ -8159,7 +8208,7 @@ const CURRICULA: Record<string, SeedSection[]> = {
           ],
         },
         {
-          slug: "testing-how-to-run-and-checkpoints",
+          slug: "project-2-testing-how-to-run-and-checkpoints",
           title: "Testing, How to Run & Verification Checkpoints",
           durationMinutes: 12,
           contentBlocks: [
@@ -8389,6 +8438,1292 @@ const CURRICULA: Record<string, SeedSection[]> = {
                     "Test safely: wheels lifted first, low speed on a fully cleared floor second.",
                   ],
                 },
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Project 3 — Robot Mapping (SLAM)",
+      summary:
+        "Drive the robot by keyboard while slam_toolbox fuses live LiDAR scans with odometry into a 2D occupancy-grid map, verify the map with a deliberate loop-closure test, then save and reload it for Project 4 to consume.",
+      lessons: [
+        {
+          slug: "project-3-overview-prerequisites-and-lab-safety-check",
+          title: "Overview, Prerequisites & Lab Safety Check",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Validation status",
+                body: "THEORETICALLY DESIGNED, NOT PHYSICALLY VALIDATED.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You will drive the robot slowly and deliberately around a room using keyboard teleoperation, while slam_toolbox fuses live LiDAR scans with the robot's odometry to build a 2D occupancy-grid map in real time. You'll watch the map take shape in RViz, complete a loop that revisits your starting point to confirm the map doesn't drift, then save the finished map to disk in exactly the format and location Project 4 will load it from next.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "This is the same fundamental capability behind warehouse robots mapping a new facility, vacuum robots building a floor plan on their first run in a home, and search-and-rescue robots building a map of an unknown space as they explore it. SLAM — Simultaneous Localization And Mapping — is one of the foundational problems in mobile robotics, and this project teaches it using a mature, widely-used library rather than implementing the algorithm from scratch.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What the robot will do: build a live occupancy-grid map while you drive it by keyboard, visibly in RViz, and save that map to a file pair your next project depends on.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What you'll build: this project is different from Projects 1 and 2 in an important way — you are not writing a new node. slam_toolbox is a mature, ready-made package; the engineering skill here is learning to configure, drive, and validate it correctly, not to reimplement SLAM. You'll build the robot_slam package: configuration, a launch file, and a saved-maps directory.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Prerequisites — Knowledge: completed Module 0 and Project 1; comfortable with the concept of TF frames (introduced in Module 0); no prior SLAM experience required.\n\nHardware: RPLIDAR S3 + the odometry/TF chain from Module 0 (base driver, optionally combined with the standalone IMU via use_ekf) + a keyboard. The RealSense D435i is not used in this project — explained in the next lesson.\n\nSoftware: Module 0's robot_bringup built and its use_ekf value already resolved and documented — this project consumes that value as a fact, it does not re-test it.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "Lab Safety Check",
+                body: "A human is in direct control of every motion command for the entire mapping run — there is no autonomous decision loop to fail in this project's primary path.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Lab Safety Check",
+                code:
+                  "Check                  Do this                                                                  Not this\n" +
+                  "---------------------  -----------------------------------------------------------------------  -------------------------------------------------------------------------\n" +
+                  "Motion control         A human drives every command via keyboard teleop                         Any autonomous decision loop in the primary path\n" +
+                  "Teleop speed           Same conservative step speed used elsewhere in the course                Driving fast because you're watching a screen, not the robot\n" +
+                  "Mapping-area floor     Cleared of trip hazards and loose cables before driving                  Driving through an uncleared path\n" +
+                  "Situational awareness  Direct line of sight to the physical robot while driving                 Relying on the RViz map view alone — it only shows what's already scanned\n" +
+                  "/cmd_vel watchdog      Robot stops if the teleop terminal loses focus or the SSH session drops  Assuming the robot holds its last command indefinitely",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "If your course later adds autonomous frontier-exploration mapping as a stretch exercise, it must be held to the exact same speed-cap and supervision discipline as Projects 1-2 — this project's primary path avoids that question entirely by keeping a human in the loop.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-3-architecture-and-data-flow",
+          title: "Project Architecture & Data Flow",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Hardware used: RPLIDAR S3, and the odometry/TF chain Module 0 already resolved. The D435i is not used — this is 2D LiDAR-based SLAM, not visual SLAM; the algorithm operates entirely on /scan and TF.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "On use_ekf, stated plainly for this project: Projects 1 and 2 never touched /odom — skipping it cost them nothing, because their decisions depended only on the current sensor frame. This is the first project where that's no longer true. slam_toolbox uses odometry as a motion prior between LiDAR scans to disambiguate matches in open or repetitive spaces — without it, scan-to-scan drift accumulates unchecked on a real robot. This project does not re-decide use_ekf; it simply launches robot_bringup with whatever value Module 0 already determined for your specific rig, and consumes the resulting odom → base_link transform as a given fact.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/robotics-projects/project-3-data-flow.svg",
+                alt: "A four-stage data flow diagram: /scan and /odom from the RPLIDAR S3 and base driver/EKF, into slam_toolbox running in online asynchronous mode, into a live /map shown in RViz, into map_saver_cli producing lab_room.yaml and lab_room.pgm.",
+                caption:
+                  "Teleop drives the loop; slam_toolbox does the scan matching, motion-prior fusing, and loop-closure correction.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-3-configuring-slam-toolbox-and-the-launch-file",
+          title: "Configuring slam_toolbox & the Launch File",
+          durationMinutes: 26,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "This project's \"build\" is configuration, launch composition, and disciplined verification — not new node code. Every step below still follows the course's incremental philosophy: verify one layer before trusting the next.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 1 — re-verify the TF chain you already resolved in Module 0.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 1",
+                code: "ros2 launch robot_bringup bringup.launch.py use_ekf:=<your resolved value>",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 2",
+                code: "ros2 run tf2_ros tf2_echo odom base_link",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: confirms odom → base_link is broadcasting continuously, exactly as Module 0 established, before adding SLAM on top of it.\n\nWhat success looks like: a transform prints continuously, with no gaps.\n\nIf it fails: do not proceed — this means something changed since Module 0 (a config drift, a node not starting). Fix this before touching slam_toolbox at all; a broken transform here will silently corrupt every map you build.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 2 — verify teleop alone, wheels lifted.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal check",
+                code:
+                  "sudo apt install ros-jazzy-teleop-twist-keyboard   # confirmed maintained, Phase 3\nros2 run teleop_twist_keyboard teleop_twist_keyboard",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: opens an interactive terminal tool — i drives forward, , backward, j/l turn in place, k stops, and u/o/m/. combine turning with motion. q/z scale both speeds up/down, w/x scale linear speed only, e/c scale angular speed only.\n\nWhat success looks like: with wheels lifted, each key produces the expected wheel rotation direction — verify this exactly the same way Project 1 verified its own command source before trusting it.\n\nIf it fails: if keys produce no motion, confirm the terminal running teleop_twist_keyboard has keyboard focus — it reads raw terminal input, not a separate window.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 3 — create the robot_slam package.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Create the package",
+                code:
+                  "cd ~/robot_projects_ws/src\nros2 pkg create robot_slam --build-type ament_cmake\nmkdir -p robot_slam/config robot_slam/launch robot_slam/rviz robot_slam/maps",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "xml",
+                filename: "robot_slam/package.xml",
+                code: PROJECT_3_PACKAGE_XML,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "cmake",
+                filename: "robot_slam/CMakeLists.txt",
+                code: PROJECT_3_CMAKELISTS,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 4 — write slam_toolbox's parameters.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "yaml",
+                filename: "robot_slam/config/slam_toolbox_params.yaml",
+                code: PROJECT_3_SLAM_TOOLBOX_PARAMS_YAML,
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "ASSUMED — VERIFY ON ROBOT",
+                body: "max_laser_range: 12.0 is a placeholder. Verify it against the RPLIDAR S3's actual datasheet range before trusting how the map renders distant walls — the same discipline as Module 0's chassis-dimension placeholders in robot_description.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why online asynchronous, not synchronous (decided in Phase 4, applied here): slam_toolbox ships both modes. Synchronous mode processes every scan in strict order and blocks if it falls behind — on a real robot, a momentarily busy Jetson can turn into a lagging map → odom broadcast, which shows up as jittery or stale map updates while you're actively driving. Asynchronous mode drops an occasional scan under load instead of blocking — a non-event at teleop speeds. This is why the launch file below uses slam_toolbox's own online_async_launch.py.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 5 — write the launch file.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "robot_slam/launch/slam.launch.py",
+                code: PROJECT_3_SLAM_LAUNCH_PY,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Build",
+                code: "cd ~/robot_projects_ws\ncolcon build --packages-select robot_slam\nsource install/setup.bash",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 6 — launch with the robot stationary, confirm a local patch appears.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Launch",
+                code: "ros2 launch robot_slam slam.launch.py use_ekf:=<your resolved value>",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The first launch will open RViz with no saved configuration. Add Map, LaserScan, and TF displays, set the Fixed Frame to map, then File → Save Config As → robot_slam/rviz/slam.rviz, exactly as Module 0 taught for its own RViz config.\n\nWhat success looks like: even with the robot completely stationary, a small local patch of map appears around the robot's current position — confirming the pipeline works before any driving happens.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-3-tf-checkpoint-and-teleop-mapping-run",
+          title: "The TF Checkpoint & the Teleop Mapping Run",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "THE TF CHECKPOINT — verify before judging map quality",
+                body: "This is a standalone, mandatory checkpoint, not a footnote: a broken TF chain is the single most common root cause of a bad-looking map, and it is very easy to misdiagnose as a slam_toolbox tuning problem if you don't check this first.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "TF checkpoint",
+                code: "ros2 run tf2_ros tf2_echo map laser_link",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: a continuously updating transform prints, with no gaps or timeouts.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "view_frames",
+                code: "cd ~/robot_projects_ws\nros2 run tf2_tools view_frames",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: samples the running TF tree for a few seconds and renders it to a PDF (named frames.pdf or a timestamped variant, depending on your tf2_tools version) in your current directory.\n\nWhat success looks like: opening that PDF shows one connected chain — map → odom → base_link → laser_link (and base_link → camera_link, base_link → imu_link as side branches) — with no orphaned or disconnected frames.\n\nIf it fails: if map is missing entirely, slam_toolbox isn't running or hasn't started broadcasting yet — check its node status before anything else. If odom → base_link is missing, go back to Step 1 — this project didn't break it, but something regressed since Module 0.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 8 — first teleop-driven mapping pass. With Step 7 passed, drive slowly in a small, simple space first — do not attempt a full loop yet. Watch the /map display build live in RViz as you move.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 9 — deliberate loop-closure test. Drive back over territory you've already mapped, forming a small loop. This is the concrete \"is this map good enough\" checkpoint: watch whether the walls in the overlapping region snap together into a single clean line, or whether you see two offset copies of the same wall (a doubled/ghosted wall). A clean, single line is the pass condition — not merely \"a map appeared.\"",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "If you see doubling: slow down further, and/or tighten minimum_travel_distance/minimum_travel_heading in the config, then re-attempt. Doubling after Step 7 has already passed indicates a slam_toolbox tuning or driving-speed problem, not a TF problem — this is exactly why the TF checkpoint comes first, so you're not chasing the wrong layer.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 10 — complete the full loop and save the map. Once you're satisfied with loop-closure quality, complete a full loop of your intended test area, ending back near your starting position.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Save the map",
+                code:
+                  "mkdir -p ~/robot_projects_ws/src/robot_slam/maps\nros2 run nav2_map_server map_saver_cli -f ~/robot_projects_ws/src/robot_slam/maps/lab_room",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: saves the current /map topic to disk as lab_room.yaml (metadata: resolution, origin, thresholds) and lab_room.pgm (the actual grid image).",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Confirm the files exist",
+                code: "ls -la ~/robot_projects_ws/src/robot_slam/maps/",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the listing shows both lab_room.yaml and lab_room.pgm, neither zero bytes. This exact file pair, at this exact path, is what Project 4 will load next — get the name and location right here, since the next project builds directly on it.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 11 — reload the saved map to confirm it's actually usable.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 1",
+                code: "ros2 run nav2_map_server map_server --ros-args -p yaml_filename:=/home/<you>/robot_projects_ws/src/robot_slam/maps/lab_room.yaml",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 2",
+                code: "ros2 lifecycle set /map_server configure\nros2 lifecycle set /map_server activate",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 3 (or reuse RViz)",
+                code: "ros2 topic echo /map --once",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the reloaded /map visually matches (in RViz, add a Map display subscribed to this instance) what you built live in Step 8-10 — confirming the saved file is valid and complete, not just that map_saver_cli exited without an error code.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-3-how-to-run-expected-results-and-checkpoints",
+          title: "How to Run, Expected Results & Verification Checkpoints",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Path C — Modify Existing (closing challenge): change do_loop_closing to false, repeat the same loop-closure test from Step 9, and compare the result — this makes concrete exactly what loop closure is correcting for; (advanced) record a ros2 bag record /scan /tf /tf_static session during a mapping run, then replay it through slam_toolbox's online synchronous launch file instead, and compare map quality/timing against your live asynchronous run — the tradeoff named earlier becomes directly observable.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 1",
+                code: "ros2 launch robot_slam slam.launch.py use_ekf:=<your resolved value>",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: brings up robot_bringup's sensors, slam_toolbox, and RViz together — matching the \"no project hand-launches a driver\" rule. What should appear: bringup logs, then slam_toolbox startup logs, then RViz opens showing at least a local map patch.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 2",
+                code: "ros2 run teleop_twist_keyboard teleop_twist_keyboard",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: this is how you drive during the mapping run — a human is the only \"controller\" active in this project's primary path.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 3 (as needed)",
+                code: "ros2 run tf2_ros tf2_echo map laser_link  /  ros2 run tf2_tools view_frames",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: the TF checkpoint from Step 7 — run this BEFORE judging map quality any time something looks wrong.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Expected results",
+                body: "odom→base_link transform confirmed present before slam_toolbox is even launched (Step 1).\nA local map patch appears with the robot stationary (Step 6).\nmap→laser_link transform confirmed continuous, and view_frames shows one connected tree with no orphans (Step 7) — BEFORE judging map quality.\nWalls in a deliberately-closed loop appear as single clean lines, not doubled (Step 9).\nmap_saver_cli produces a non-empty .yaml + .pgm pair at the exact path Project 4 expects (Step 10).\nThe reloaded map visually matches the live-built one (Step 11).",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Verification checkpoints",
+                body: "HARDWARE: RPLIDAR S3 connected/spinning (Module 0's check, reused); keyboard/terminal focus confirmed working for teleop.\nROS 2: does slam_toolbox start without error and reach and stay in the ACTIVE lifecycle state?\nTF (hard gate, checked BEFORE map quality): is the full chain map→odom→base_link→laser_link complete and continuously updating, per Step 7? A failure here invalidates any conclusion drawn from the Map Quality checkpoint.\nALGORITHM / MAP QUALITY: during the deliberate loop test (Step 9), does the map snap to a single clean wall line rather than leaving a doubled/offset copy?\nCONTROL: does teleop move the robot in the expected direction immediately, with no lag that would cause overshoot around a corner while you're watching the map instead of the robot?\nPHYSICAL ROBOT / ARTIFACT: after a full loop, does map_saver_cli produce a valid map that, when reloaded (Step 11), visually matches the live-built one with no missing regions?",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-3-quiz",
+          title: "Project 3 Quiz",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Project Understanding",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why does this project not involve writing a new ROS 2 node, unlike Projects 1 and 2?",
+                    acceptedAnswers: [
+                      "slam_toolbox is a mature, ready-made package",
+                    ],
+                    explanation:
+                      "slam_toolbox is a mature, ready-made package (Path A) — the engineering skill this project teaches is correctly configuring, driving, and validating an existing SLAM system, not re-implementing the algorithm. Projects 1 and 2 taught node authorship because their behaviors were simple enough to build from scratch as a learning exercise; SLAM is not.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Concept",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why does slam_toolbox need odometry at all if it's already matching LiDAR scans against the map?",
+                    acceptedAnswers: [
+                      "odometry supplies a motion prior that disambiguates matches between scans",
+                    ],
+                    explanation:
+                      "Scan matching alone is ambiguous in open or repetitive spaces (a long corridor, a mostly empty room) — odometry supplies a motion prior between scans that disambiguates which match is physically plausible, preventing unchecked drift.",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt: "What does do_loop_closing: true actually do, conceptually?",
+                    acceptedAnswers: [
+                      "corrects accumulated pose-graph error when the robot revisits a mapped area",
+                    ],
+                    explanation:
+                      "When the robot revisits a previously-mapped area, loop closure recognizes the match and corrects the accumulated pose-graph error across the whole loop — this is the mechanism directly responsible for walls \"snapping together\" into a single line instead of staying doubled.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Data Flow",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Which node is responsible for broadcasting the map → odom transform, and how is that different from Module 0's odom → base_link transform?",
+                    acceptedAnswers: ["slam_toolbox broadcasts map to odom"],
+                    explanation:
+                      "slam_toolbox broadcasts map → odom, correcting for accumulated drift by comparing the map to live scans. odom → base_link is Module 0's separate, already-resolved transform (from the base driver or ekf_node), representing short-term motion only — the two together complete the full localization chain.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Debugging",
+                questions: [
+                  {
+                    // Audit (docs/robotics-projects/IMPLEMENTATION_PLAN.md
+                    // §5.1, "Project 3 | Debugging | 1", flagged as
+                    // "SINGLE_CHOICE, adapted"): the source stem names all
+                    // three options verbatim ("the TF tree, the
+                    // slam_toolbox parameters, or the LiDAR data itself")
+                    // and its answer gives a full three-step ranking
+                    // ("TF first, params second, LiDAR third"), but the
+                    // schema has no ORDERING/ranking question type
+                    // (`schema.prisma`'s own comment still lists it as a
+                    // future addition). Graded on "what do you check
+                    // first" only (correct = the TF tree) — the prompt
+                    // below is adapted to ask exactly that, narrower than
+                    // the source's full ranking question. Nothing is lost:
+                    // the complete ranking and reasoning is preserved
+                    // verbatim in `explanation`.
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "Your map shows duplicated/offset walls after driving a loop. Which do you check FIRST: the TF tree, the slam_toolbox parameters, or the LiDAR data itself?",
+                    options: [
+                      { id: "a", label: "The TF tree" },
+                      { id: "b", label: "The slam_toolbox parameters" },
+                      { id: "c", label: "The LiDAR data itself" },
+                    ],
+                    correctOptionIds: ["a"],
+                    explanation:
+                      "Full order: TF tree first, slam_toolbox parameters second, raw LiDAR data third (though in this scenario LiDAR was already implicitly validated in Module 0). Check TF first because a broken or incorrect odom → base_link transform will corrupt the map in a way that looks identical to a tuning problem, and it's the cheapest, fastest thing to rule out (Step 7's checkpoint). Only once TF is confirmed correct does it make sense to suspect slam_toolbox's own parameters (e.g. minimum_travel_distance too loose, causing sparse updates) — investigating parameters before ruling out TF risks tuning around a problem that isn't actually there.",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "view_frames shows laser_link as an orphaned frame, disconnected from the rest of the tree. What's the most likely cause?",
+                    acceptedAnswers: [
+                      "robot_state_publisher isn't running or the urdf failed to load",
+                    ],
+                    explanation:
+                      "robot_description's static transform from base_link to laser_link isn't being published — most likely robot_state_publisher isn't running, or the URDF failed to load. This is a Module 0-layer problem resurfacing, not a slam_toolbox issue.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-3-can-you-build-it-yourself",
+          title: "Can You Build It Yourself?",
+          durationMinutes: 30,
+          contentBlocks: [
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Map a different area, save it, and reload it independently",
+                instructions:
+                  "Map a DIFFERENT area than the one used in this walkthrough, without following the steps verbatim.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body:
+                      "Map a DIFFERENT area than the one used in this walkthrough, without following the steps verbatim.",
+                  },
+                  successCriteria: [
+                    "Run the Step 7 TF checkpoint BEFORE judging your map's quality.",
+                    "Perform a deliberate loop-closure test and confirm clean (non-doubled) walls in the overlap region.",
+                    "Save the map with a name reflecting the new area (not \"lab_room\").",
+                    "Reload the saved map independently and visually confirm it matches what you built live — this is the direct rehearsal for what Project 4 requires from you next.",
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Project 4 — Autonomous Navigation (Nav2)",
+      summary:
+        "The robot loads Project 3's saved map, localizes itself against it with AMCL, accepts a goal in RViz or from a Python action client, and plans and drives its own path there — deviating around new obstacles and recovering when blocked, entirely autonomously under close supervision.",
+      lessons: [
+        {
+          slug: "project-4-overview-prerequisites-and-lab-safety-check",
+          title: "Overview, Prerequisites & Lab Safety Check (Escalated)",
+          durationMinutes: 14,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Validation status",
+                body: "THEORETICALLY DESIGNED, NOT PHYSICALLY VALIDATED.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The robot loads the map you built in Project 3, figures out where it is within that map using its LiDAR, accepts a destination you set in RViz, and drives itself there — planning a path, avoiding obstacles that weren't in the original map, and recovering from getting stuck — with no steering input from you once the goal is sent.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/robotics-projects/project-data-flow.svg",
+                alt: "A flowchart showing Module 0 (sensors and base bring-up) feeding Projects 1, 2, and 3 independently, with an additional dependency arrow from Project 3's saved map to Project 4.",
+                caption:
+                  "The dependency from the course overview, made concrete: Project 4 is the one project in this course that cannot start from Module 0 alone — it needs Project 3's saved map first.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "This is the same core capability behind a hospital delivery robot navigating hallways, a warehouse AMR moving between shelves, and a home robot returning to its dock — perception, localization, planning, and control working together as one system, which is what \"autonomous navigation\" actually means in practice, as opposed to just \"the robot moves by itself.\"",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What the robot will do: localize itself in a known map, accept a goal pose, plan and drive a path to it, deviate around obstacles the map didn't know about, recover from being blocked, and arrive within a stated tolerance — entirely autonomously, under close human supervision.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What you'll build: like Project 3, this project is primarily configuration and orchestration, not new node authorship — Nav2 (nav2_bringup) is a mature, ready-made stack. You'll build robot_navigation: its parameters, its launch file wrapping nav2_bringup's own launch composition, and one small standalone Python script demonstrating the NavigateToPose action client programmatically.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Prerequisites — Knowledge: completed Module 0 through Project 3, including the TF-tree-first debugging discipline from Project 3 — this project has a direct equivalent (lifecycle states first).\n\nHardware: RPLIDAR S3 + the odometry/TF chain from Module 0 + Project 3's saved map. The D435i is not used in this project's baseline scope — explained in the next lesson.\n\nSoftware: navigation2 and nav2_bringup installed; Project 3's lab_room.yaml/lab_room.pgm present and previously confirmed reloadable.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "Lab Safety Check — ESCALATED (highest-risk project in the course)",
+                body: "This is not Project 1's checklist restated. Read this as a genuine escalation, because the risk profile genuinely escalated: Project 1 made one reactive decision at a time at low speed with its own obstacle sensor. Project 2 was tightly scoped but had no obstacle sensing at all. Project 3 kept a human driving every meter. This is the first project where the robot commits to a multi-meter plan and executes it with no human steering input during the drive.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Lab Safety Check",
+                code:
+                  "Check                      Do this                                                                                               Not this\n" +
+                  "-------------------------  ----------------------------------------------------------------------------------------------------  -------------------------------------------------------------------\n" +
+                  "E-stop position            Within IMMEDIATE arm's-reach for the entire autonomous execution, set BEFORE sending a goal           Sending a goal first, then getting into position\n" +
+                  "First goal distance        SHORT: 0.5–1 meter, in a fully clear or fenced area                                                   A longer goal before multiple short goals have succeeded\n" +
+                  "Speed ceiling              max_vel_x/max_vel_theta capped at Project 1's defaults (0.12 m/s, 0.4 rad/s) for all initial testing  Raising Nav2's speed ceiling before several clean short-goal trials\n" +
+                  "Supervision                Continuous, attentive supervision for every single trial                                              Sending a goal and walking away\n" +
+                  "Path verification          Visually verify the planned global path in RViz BEFORE physical execution                             Allowing execution before the plan is visually confirmed sane\n" +
+                  "Recovery-behavior testing  Obstacle positioned so a spin/back-up motion cannot reach a person                                    Assuming recovery behaviors are aware of nearby people\n" +
+                  "/cmd_vel watchdog          Robot stops if the Nav2 stack crashes or hangs mid-execution                                          Assuming the robot holds its last command indefinitely\n" +
+                  "AMCL convergence           Re-verified before EACH new goal in a session                                                         Assuming localization stays valid indefinitely",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-4-architecture-and-data-flow",
+          title: "Project Architecture & Data Flow",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Hardware used: RPLIDAR S3 (in two distinct roles at once — AMCL localization AND the local costmap's obstacle layer) and the odometry/TF chain Module 0 resolved. The D435i is not used in baseline scope — a standard 2D Nav2 stack (AMCL + LaserScan-based costmaps) has no RGB/depth dependency; an RGB-D costmap obstacle layer is a real Nav2 capability but is a stretch extension here, not core scope, to keep this project focused on localization/planning/control.",
+              },
+            },
+            {
+              type: "IMAGE",
+              data: {
+                src: "/robotics-projects/project-4-data-flow.svg",
+                alt: "A four-stage data flow diagram: Project 3's saved map plus /scan and /odom, into AMCL localization and local/global costmaps, into bt_navigator's planner and controller, into /cmd_vel driving the existing base driver.",
+                caption:
+                  "AMCL replaces slam_toolbox's role from Project 3 — same map→odom TF slot, different producer, because this project localizes against an already-known map rather than building one.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-4-lifecycle-nodes-nav2-params-and-the-launch-file",
+          title: "Lifecycle Nodes, nav2_params.yaml & the Launch File",
+          durationMinutes: 28,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Understanding lifecycle nodes, before you touch anything else: most nodes you've used so far (in Projects 1–3) start doing their job the instant they launch. Nav2's nodes are different: they're lifecycle nodes, meaning each one moves through explicit states — unconfigured → inactive → active — and a separate node (lifecycle_manager) is responsible for walking every Nav2 node through those transitions together, in the right order, at startup.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A lifecycle node that is merely running (visible in ros2 node list) is not necessarily active — it might still be sitting in unconfigured or inactive, in which case it will not do anything, and nothing downstream of it can work correctly.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "IS IT ACTIVE, NOT JUST RUNNING — check before anything else",
+                body: "This is this project's equivalent of Project 3's \"check TF before judging map quality\" rule. A node appearing in ros2 node list proves nothing about whether it has actually finished configuring and activating — verify every one of the six Nav2 nodes reports active, every time, before trusting anything built on top of them.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Lifecycle check",
+                code:
+                  "ros2 lifecycle list\nros2 lifecycle get /map_server\nros2 lifecycle get /amcl\nros2 lifecycle get /planner_server\nros2 lifecycle get /controller_server\nros2 lifecycle get /behavior_server\nros2 lifecycle get /bt_navigator",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: every one of the six commands reports active.\n\nIf it fails: a node stuck in unconfigured or inactive means lifecycle_manager either hasn't run yet, or one of its dependencies failed to configure — check that node's own startup log for the actual error before assuming anything downstream is broken.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 1 — confirm Project 3's map exists and is valid.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Confirm the map",
+                code: "ls -la ~/robot_projects_ws/src/robot_slam/maps/",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: lab_room.yaml and lab_room.pgm both present, non-empty.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 2 — create the package.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Create the package",
+                code:
+                  "cd ~/robot_projects_ws/src\nros2 pkg create robot_navigation --build-type ament_cmake\nmkdir -p robot_navigation/config robot_navigation/launch",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "xml",
+                filename: "robot_navigation/package.xml",
+                code: PROJECT_4_PACKAGE_XML,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "cmake",
+                filename: "robot_navigation/CMakeLists.txt",
+                code: PROJECT_4_CMAKELISTS,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 3 — write nav2_params.yaml.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "yaml",
+                filename: "robot_navigation/config/nav2_params.yaml",
+                code: PROJECT_4_NAV2_PARAMS_YAML,
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "ASSUMED — VERIFY ON ROBOT",
+                body: "robot_radius: 0.18 is a placeholder in both local_costmap and global_costmap. Measure your actual chassis before trusting this config near walls or in tight spaces, and set the same measured value in both places — a mismatch would mean the local controller and the global planner disagree about how much space the robot actually needs.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 4 — write the launch file.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "robot_navigation/launch/navigation.launch.py",
+                code: PROJECT_4_NAVIGATION_LAUNCH_PY,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Build",
+                code: "cd ~/robot_projects_ws\ncolcon build --packages-select robot_navigation\nsource install/setup.bash",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 5 — launch and check lifecycle state (hard gate, before anything else).",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 1",
+                code: "ros2 launch robot_navigation navigation.launch.py use_ekf:=<your resolved value>",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 2",
+                code:
+                  "ros2 lifecycle get /map_server\nros2 lifecycle get /amcl\nros2 lifecycle get /planner_server\nros2 lifecycle get /controller_server\nros2 lifecycle get /behavior_server\nros2 lifecycle get /bt_navigator",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Do not proceed past this point until all six report active.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-4-initial-pose-navigate-to-pose-and-the-action-client-script",
+          title: "Initial Pose, NavigateToPose, and the Action-Client Script",
+          durationMinutes: 24,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 6 — set the initial pose estimate, verify AMCL actually converges. Open RViz (Nav2's own launch already starts one), and add a PoseArray display subscribed to /particle_cloud if it isn't already present in the default config.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Click the \"2D Pose Estimate\" button in RViz's toolbar, then click on the map at the robot's actual physical location and drag to set its actual heading. Do not assume the click was enough: watch /particle_cloud — immediately after setting the pose, particles should appear scattered around your click (reflecting AMCL's intentionally wide initial uncertainty). If the robot is stationary in a visually ambiguous space (a symmetric room), gently teleop it a short distance — this gives AMCL new scan data to disambiguate against.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the particle cloud visibly collapses into a single, tight cluster near the robot's true position within a few seconds of small motion. A cloud that stays spread out, or that's clustered in the wrong place, means localization has not converged — do not proceed to sending a goal.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 7 — first goal: RViz's \"Nav2 Goal\" tool, verify the plan before motion. Click \"Nav2 Goal\" in RViz's toolbar, then click a point 0.5–1 meter away in open space and drag to set a heading.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Before the robot moves: look at the green global path line RViz draws. Does it look geometrically sane — a direct, sensible route, not cutting through a wall or taking a bizarre detour for a simple case? Only once the plan looks correct, allow execution to proceed — stay near the E-stop the entire time.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the robot follows the planned path and bt_navigator reports the goal SUCCEEDED.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 8 — using NavigateToPose programmatically. RViz's \"Nav2 Goal\" button is really just a convenient way to send a NavigateToPose action goal. Here's what it's doing, written out as a standalone Python script (run directly with python3, not built into robot_navigation's package — it's a teaching example, not part of the maintained stack):",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "send_goal_example.py",
+                code: PROJECT_4_SEND_GOAL_EXAMPLE,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Run it",
+                code: "python3 send_goal_example.py",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why this is an action, and not a topic or a service, made concrete here: notice this script does three distinct things a single topic publish never could — it waits for acceptance (goal_response_callback), streams live feedback while the goal is in progress (feedback_callback, printing distance_remaining as the robot moves), and receives a final result only when the whole multi-second-to-multi-minute drive is actually done (result_callback). A plain topic publish is fire-and-forget with no response; a service would block the entire time the goal is executing, which is unworkable for a drive that could take minutes. This exact shape — a goal, a feedback stream, cancelability, and a terminal result — is what ROS 2 actions exist for.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-4-progressive-goal-testing-and-recovery-behaviors",
+          title: "Progressive Goal Testing & Recovery Behaviors",
+          durationMinutes: 16,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 9 — obstacle test and recovery behavior. Repeat Step 7's goal, but this time with a physical obstacle placed in the path that was not present when Project 3's map was built.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the local costmap (visible in RViz) shows the obstacle, and the controller deviates from the original global path to go around it, re-joining afterward.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Deliberately trigger a recovery behavior by lightly blocking the robot's path in a way that cannot bring a spin/back-up motion into contact with a person. What success looks like: the robot attempts spin, back_up, or wait (visible in the log output naming which behavior is running), then resumes toward the goal.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 10 — longer goals. Only after Steps 7–9 have succeeded repeatably at short range, extend to a longer, multi-meter goal across the mapped area — still under continuous supervision.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Path C — Modify Existing (closing challenge): change inflation_radius from 0.3 to 0.15 and repeat the obstacle test from Step 9 — observe how much closer the planned path now passes to obstacles, and connect this back to the actual physical footprint measured in robot_radius; swap GridBased's planner plugin from nav2_navfn_planner::NavfnPlanner to nav2_smac_planner::SmacPlanner2D and compare the resulting global paths for the same goal.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-4-how-to-run-expected-results-and-checkpoints",
+          title: "How to Run, Expected Results & Verification Checkpoints",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 1",
+                code: "ros2 launch robot_navigation navigation.launch.py use_ekf:=<your resolved value>",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: brings up robot_bringup's sensors AND the full Nav2 stack via nav2_bringup's own launch composition — this project never hand-sequences six lifecycle nodes in separate terminals. What should appear: bringup logs, then Nav2 startup logs, then RViz opens showing the loaded map.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 2",
+                code: "ros2 lifecycle get <node>  # for each of the six Nav2 nodes",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: the hard gate from Step 5 — confirm ACTIVE before trusting anything else.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 3 (as needed)",
+                code: "python3 send_goal_example.py",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: the programmatic alternative to RViz's \"Nav2 Goal\" button, demonstrating the action-client pattern directly.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Expected results",
+                body: "All six Nav2 lifecycle nodes report ACTIVE (Step 5) before any goal is sent.\n/particle_cloud visibly collapses to a tight cluster after setting the initial pose and a small motion (Step 6).\nA sent goal produces a visualized global path in RViz BEFORE any physical motion (Step 7).\nThe robot reaches the goal within tolerance (xy_goal_tolerance: 0.15m, yaw_goal_tolerance: ~10°) and bt_navigator reports SUCCEEDED.\nA newly-placed obstacle causes a visible local-costmap deviation, not a collision (Step 9).\nA deliberately triggered recovery behavior executes and the robot resumes toward the goal afterward.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Verification checkpoints",
+                body: "HARDWARE: RPLIDAR S3 connected/spinning (reused from Module 0); robot physically placed within the mapped area's boundaries.\nROS 2 (hard gate): does ros2 lifecycle get report ACTIVE for map_server, amcl, planner_server, controller_server, behavior_server, AND bt_navigator? A node stuck in inactive or unconfigured invalidates every checkpoint below it.\nDATA: is /map published with the correct resolution and origin matching Project 3's saved file? Are /scan and /odom actually flowing into AMCL and both costmaps?\nALGORITHM: does /particle_cloud actually CONVERGE (collapse to a tight cluster), not merely run without crashing? Does the local costmap correctly show a live obstacle placed in front of the robot?\nCONTROL: before physical motion, does the planned global path look geometrically sane in RViz? During motion, does /cmd_vel stay within max_vel_x/max_vel_theta at all times?\nPHYSICAL ROBOT: does the robot reach the goal pose within tolerance, fully autonomously, correctly avoiding both originally-mapped and newly-placed obstacles, across repeated trials?",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-4-quiz",
+          title: "Project 4 Quiz",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Project Understanding",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why does this project, like Project 3, involve almost no new node authorship?",
+                    acceptedAnswers: [
+                      "nav2_bringup is a mature, ready-made stack",
+                    ],
+                    explanation:
+                      "Nav2 (via nav2_bringup) is a mature, ready-made stack (Path A) — the skill being taught is correctly configuring, sequencing, and verifying it, not re-implementing localization or path planning from scratch.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Concept",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "What is a lifecycle node, and why does Nav2 use them instead of nodes that just start working immediately?",
+                    acceptedAnswers: [
+                      "a coordinator brings interdependent nodes up in order via explicit states",
+                    ],
+                    explanation:
+                      "A lifecycle node explicitly moves through states (unconfigured → inactive → active), letting a coordinator (lifecycle_manager) bring a whole interdependent system up in a controlled, correctly-ordered way — important for Nav2 because its nodes depend on each other (e.g., the planner needs a loaded map before it's meaningful to activate it).",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why must robot_radius be set identically in both local_costmap and global_costmap?",
+                    acceptedAnswers: [
+                      "both costmaps must agree on the robot's footprint for collision checking",
+                    ],
+                    explanation:
+                      "Both costmaps represent the same physical robot's footprint for collision-checking purposes — a mismatch would mean the local controller and the global planner disagree about how much space the robot actually needs, which can produce a plan the controller then can't safely execute.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Data Flow",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Which node broadcasts the map → odom transform in this project, and how does that compare to Project 3?",
+                    acceptedAnswers: ["amcl broadcasts it, replacing slam_toolbox's role"],
+                    explanation:
+                      "amcl broadcasts it here, replacing the role slam_toolbox held in Project 3 — same TF slot in the tree, different producer, because this project is localizing against an already-known map rather than building one.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Debugging",
+                questions: [
+                  {
+                    // Audit (docs/robotics-projects/IMPLEMENTATION_PLAN.md
+                    // §5.1, "Project 4 | Debugging | 1", flagged as
+                    // "SINGLE_CHOICE, adapted" — same shape as Project 3's
+                    // Debugging Q1): the source stem names all three
+                    // options verbatim ("the lifecycle node states, the
+                    // map, or the goal coordinates") and its answer gives
+                    // a full ranking, but the schema has no ORDERING
+                    // question type. Graded on "what do you check first"
+                    // only (correct = the lifecycle node states) — the
+                    // prompt below is adapted to ask exactly that. The
+                    // complete ranking and reasoning is preserved
+                    // verbatim in `explanation`.
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "You send a goal and the robot doesn't respond at all — no motion, no error dialog. What do you check FIRST: the lifecycle node states, the map, or the goal coordinates?",
+                    options: [
+                      { id: "a", label: "The lifecycle node states" },
+                      { id: "b", label: "The map" },
+                      { id: "c", label: "The goal coordinates" },
+                    ],
+                    correctOptionIds: ["a"],
+                    explanation:
+                      "Lifecycle node states first. If bt_navigator (or any node in its dependency chain) isn't active, the action server may not even properly accept or execute the goal, and every symptom downstream — including \"nothing happens\" — is consistent with that single cause. Checking the map next makes sense once nodes are confirmed active (a missing or misaligned map is the next cheapest thing to rule out), and only then does it make sense to scrutinize the goal coordinates themselves (e.g., a goal given in the wrong frame, or one that lands outside the map or inside a wall) — investigating coordinates before ruling out the first two risks debugging the wrong layer.",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "AMCL's particle cloud converges to a tight cluster, but it's clearly in the wrong part of the map. What does this suggest, and what should you do?",
+                    acceptedAnswers: [
+                      "the initial pose estimate was wrong, or the environment is too symmetric — re-set the pose and drive further",
+                    ],
+                    explanation:
+                      "A confident, converged, but wrong localization usually means the initial pose estimate (Step 6) was set incorrectly, or the environment is symmetric enough that a single motion wasn't enough to disambiguate. Re-set the initial pose more carefully and drive a slightly longer, more distinctive path before trusting convergence again — do not send a navigation goal on a confidently-wrong localization.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-4-can-you-build-it-yourself",
+          title: "Can You Build It Yourself?",
+          durationMinutes: 35,
+          contentBlocks: [
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Navigate to a new goal, then trigger and confirm a recovery behavior",
+                instructions:
+                  "Navigate to a NEW goal location not covered in this walkthrough, then deliberately place an obstacle in the path and confirm a recovery behavior fires. This is the course's final challenge — it should draw on everything before it, not just Nav2.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body:
+                      "Navigate to a NEW goal location not covered in this walkthrough, then deliberately place an obstacle in the path and confirm a recovery behavior fires. This is the course's final challenge — it should draw on everything before it, not just Nav2.",
+                  },
+                  successCriteria: [
+                    "Apply Project 1's safety discipline: E-stop in reach, short goal distance first, continuous supervision throughout.",
+                    "Apply Project 3's TF understanding: if anything behaves unexpectedly, check the TF chain (map→odom→base_link→laser_link) before assuming it's a Nav2 configuration problem.",
+                    "Confirm all six lifecycle nodes are ACTIVE before sending the goal.",
+                    "Confirm AMCL convergence before sending the goal.",
+                    "Visually verify the planned path in RViz before allowing motion.",
+                    "Place an obstacle not in the original map and confirm the local costmap deviation.",
+                    "Deliberately trigger and observe a recovery behavior, safely.",
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-4-course-closeout",
+          title: "Course Closeout",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Here is how the four projects tie back together, and what a learner who has completed all of them should now be able to claim — with an honest statement of what \"completed\" means at this point in the course's own development.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "The progression, realized",
+                code:
+                  "ROS 2 CONCEPTS + HARDWARE VERIFICATION (Module 0)\n" +
+                  "        ↓\n" +
+                  "PROJECT 1 — Reactive Behavior\n" +
+                  "   A robot that decides, moment to moment, from raw sensor data alone.\n" +
+                  "        ↓\n" +
+                  "PROJECT 2 — Visual Perception\n" +
+                  "   A robot that decides from a richer, image-based sense of the world —\n" +
+                  "   still purely reactive, but built on a fundamentally different input.\n" +
+                  "        ↓\n" +
+                  "PROJECT 3 — Environment Mapping\n" +
+                  "   The first project where the robot's own history (odometry) becomes\n" +
+                  "   load-bearing, and where the output is a persistent artifact — a map\n" +
+                  "   — rather than just an in-the-moment behavior.\n" +
+                  "        ↓\n" +
+                  "PROJECT 4 — Autonomous Navigation\n" +
+                  "   Everything before this project becomes an ingredient: LiDAR data\n" +
+                  "   (Project 1's sensor), a map (Project 3's artifact), odometry\n" +
+                  "   (Project 3's dependency), and a materially higher safety bar\n" +
+                  "   (Project 1's discipline, escalated) — combined into a robot that\n" +
+                  "   plans and executes its own multi-step behavior.\n" +
+                  "        ↓\n" +
+                  "AUTONOMOUS MOBILE ROBOT ENGINEERING",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "What you should now be able to claim",
+                code:
+                  "I KNOW WHAT EACH OF THESE FOUR ROBOTIC SYSTEMS DOES.\n" +
+                  "I UNDERSTAND EACH ONE'S ARCHITECTURE — nodes, topics, message types,\n" +
+                  "    and how data actually moves from a physical sensor to a motor command.\n" +
+                  "I CAN SET UP THE ROS 2 WORKSPACE these systems live in.\n" +
+                  "I CAN INSTALL AND CONFIGURE THE REQUIRED PACKAGES, distinguishing\n" +
+                  "    ready-made infrastructure (Path A) from code I need to write myself\n" +
+                  "    (Path B).\n" +
+                  "I CAN BUILD THE SOFTWARE, incrementally, verifying each layer before\n" +
+                  "    trusting the next.\n" +
+                  "I CAN RUN THESE SYSTEMS via a single composed launch file, not a\n" +
+                  "    fragile sequence of hand-run terminals.\n" +
+                  "I CAN VERIFY THE DATA at every stage — hardware, ROS topic, TF tree,\n" +
+                  "    algorithm output, and control command — using the checkpoint\n" +
+                  "    discipline established from Module 0 onward.\n" +
+                  "I CAN DEBUG FAILURES by isolating which layer is actually broken,\n" +
+                  "    rather than guessing at the most visible symptom.\n" +
+                  "I KNOW WHAT SAFE TESTING LOOKS LIKE, and that the safety bar rises with\n" +
+                  "    autonomy — reactive, low-speed, sensor-backed behavior is a\n" +
+                  "    different risk category than a multi-meter autonomous plan.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "The Honest Part",
+                body: "Everything above describes content that now exists and design that has been reasoned through carefully — it does not describe a robot that has actually done any of this. Theoretically designed and physically validated are not the same claim, and this course closeout does not blur that line: none of these four projects, nor Module 0's own bring-up, has been run on your actual Jetson, RPLIDAR S3, and D435i rig yet. The code is written to be correct against current ROS 2 Jazzy conventions; it has not been compiled, launched, or driven on real hardware in this conversation, because that isn't something an AI-generated document can do.\n\nPhase 6 — Physical Robot Validation is the remaining step, and it is not optional or cosmetic: it's where every checkpoint, every \"expected result,\" and every safety assumption in this entire course either gets confirmed or gets corrected against reality. That happens next, on the actual robot — not in further generated content.",
               },
             },
           ],
@@ -8638,33 +9973,53 @@ async function seed(prisma: PrismaClient): Promise<void> {
     },
   });
 
-  // The Robotics Hardware & Sensors course is DRAFT — same as
-  // ros2-fundamentals — so a signed-in-but-unenrolled visitor gets "course
-  // not found" (§12: DRAFT/PUBLIC is instructor-preview-only, and course
-  // visibility gates *finding* the course before enrollment can even
-  // happen). ros2-fundamentals, typescript-foundations and
+  // DRAFT courses are unreachable through self-enrollment by design
+  // (`isOpenForSelfEnrollment` requires PUBLISHED+PUBLIC — `can()`'s
+  // `course:enroll` check refuses even an admin actor otherwise, per its
+  // own comment). A signed-in-but-unenrolled visitor to a DRAFT course
+  // gets "course not found" (§12: DRAFT/PUBLIC is instructor-preview-only,
+  // and course visibility gates *finding* the course before enrollment can
+  // even happen). But `course:view`/`course:learn` grant access on a live
+  // `Enrollment` row regardless of the course's current status (§12's own
+  // comment: "enrollment, not publish status, is what makes a course
+  // theirs") — so the only gap for a DRAFT course is *creating* that row,
+  // not holding it. ros2-fundamentals, typescript-foundations and
   // web-accessibility-in-practice already carry a real Enrollment row for
-  // this student in the dev database, which is what actually makes them
-  // reachable and is why they "just work" while this course didn't — not
-  // a difference in course status or any code path. Enrolling here too
-  // closes that gap the same way, as real seed data instead of a manual
-  // row that only exists until someone resets the database.
-  const roboticsHardwareCourse = await prisma.course.findUnique({
-    where: { slug: "robotics-hardware-and-sensors" },
-    select: { id: true },
-  });
-  if (roboticsHardwareCourse) {
-    await prisma.enrollment.upsert({
-      where: {
-        userId_courseId: { userId: student.id, courseId: roboticsHardwareCourse.id },
-      },
-      update: {},
-      create: {
-        userId: student.id,
-        courseId: roboticsHardwareCourse.id,
-        status: "ACTIVE",
-      },
+  // this student in the dev database (created through the ordinary
+  // self-enroll flow while those courses were browsable), which is what
+  // actually makes them reachable — not a difference in course status or
+  // any code path. `robotics-hardware-and-sensors` and
+  // `hands-on-robotics-projects` get the same Enrollment row seeded
+  // directly here instead: real seed data, not a manual row that only
+  // exists until someone resets the database, and not a course-status
+  // change (§12 must stay enforced, not routed around by publishing
+  // something that isn't actually ready). `unreleased-course-draft` is
+  // deliberately excluded — it exists solely as a negative-test fixture
+  // proving DRAFT courses stay out of the catalogue, and enrolling a
+  // student in it would dilute that single purpose with unrelated data.
+  const draftCoursesNeedingTestEnrollment = [
+    "robotics-hardware-and-sensors",
+    "hands-on-robotics-projects",
+  ];
+
+  for (const slug of draftCoursesNeedingTestEnrollment) {
+    const draftCourse = await prisma.course.findUnique({
+      where: { slug },
+      select: { id: true },
     });
+    if (draftCourse) {
+      await prisma.enrollment.upsert({
+        where: {
+          userId_courseId: { userId: student.id, courseId: draftCourse.id },
+        },
+        update: {},
+        create: {
+          userId: student.id,
+          courseId: draftCourse.id,
+          status: "ACTIVE",
+        },
+      });
+    }
   }
 
   // Devices must exist before seedCurricula, since SPEC_TABLE/DEVICE_CARD
@@ -8832,11 +10187,19 @@ async function seedCurricula(prisma: PrismaClient): Promise<void> {
 
       for (const [lessonIndex, lesson] of section.lessons.entries()) {
         const { id: lessonId } = await prisma.lesson.upsert({
-          // Lessons do have a natural key: (sectionId, slug).
+          // Lessons' natural key is (courseId, slug), not (sectionId, slug):
+          // `slug` is only meaningful scoped to the whole course, since the
+          // lesson player route is flat (/courses/[slug]/learn/[lessonSlug])
+          // and has no section segment (see the `Lesson.courseId` schema
+          // comment). `sectionId` is set on both branches below rather than
+          // just `create` so that moving a lesson to a different section in
+          // CURRICULA (slug unchanged) actually relocates it on reseed
+          // instead of silently leaving it under its old section.
           where: {
-            sectionId_slug: { sectionId, slug: lesson.slug },
+            courseId_slug: { courseId: course.id, slug: lesson.slug },
           },
           update: {
+            sectionId,
             title: lesson.title,
             durationMinutes: lesson.durationMinutes,
             isPublished: lesson.isPublished ?? true,
@@ -8844,6 +10207,7 @@ async function seedCurricula(prisma: PrismaClient): Promise<void> {
           },
           create: {
             sectionId,
+            courseId: course.id,
             slug: lesson.slug,
             title: lesson.title,
             durationMinutes: lesson.durationMinutes,

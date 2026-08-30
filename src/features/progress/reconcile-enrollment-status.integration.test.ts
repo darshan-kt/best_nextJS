@@ -53,6 +53,7 @@ async function createCourseWithLessons(lessonCount: number) {
       await prisma.lesson.create({
         data: {
           sectionId: section.id,
+          courseId: course.id,
           slug: `lesson-${i}`,
           title: `Lesson ${i}`,
           position: i,
@@ -70,13 +71,14 @@ async function createCourseWithLessons(lessonCount: number) {
 }
 
 /** Adds `count` further published lessons, i.e. the course grows. */
-async function addLessons(sectionId: string, from: number, count: number) {
+async function addLessons(sectionId: string, courseId: string, from: number, count: number) {
   const added = [];
   for (let i = from; i < from + count; i += 1) {
     added.push(
       await prisma.lesson.create({
         data: {
           sectionId,
+          courseId,
           slug: `lesson-${i}`,
           title: `Lesson ${i}`,
           position: i,
@@ -128,7 +130,7 @@ describe("reconcileEnrollmentStatus", () => {
       });
     }
 
-    await addLessons(section.id, 4, 3);
+    await addLessons(section.id, course.id, 4, 3);
 
     const outcome = await reconcileEnrollmentStatus(enrollment.id);
 
@@ -155,7 +157,7 @@ describe("reconcileEnrollmentStatus", () => {
       data: { userId: student.id, courseId: course.id, status: "ACTIVE" },
     });
 
-    const added = await addLessons(section.id, 4, 3);
+    const added = await addLessons(section.id, course.id, 4, 3);
     for (const lesson of [...lessons, ...added]) {
       await prisma.lessonProgress.create({
         data: { enrollmentId: enrollment.id, lessonId: lesson.id },
@@ -264,7 +266,7 @@ describe("reconcileCourseEnrollments", () => {
       });
     }
 
-    await addLessons(section.id, 4, 3);
+    await addLessons(section.id, course.id, 4, 3);
 
     const outcomes = await reconcileCourseEnrollments(course.id);
     expect(outcomes).toHaveLength(2);

@@ -257,6 +257,12 @@ model Course {
   updatedAt   DateTime  @updatedAt
 
   sections      Section[]
+  /// Denormalised down from Section for a real integrity requirement, not
+  /// convenience (§10, §14): lesson URLs are flat and course-scoped
+  /// (`/courses/[slug]/learn/[lessonSlug]`), so `Lesson.slug` must be
+  /// unique per course, not merely per section. See the comment on
+  /// `Lesson.courseId`.
+  lessons       Lesson[]
   enrollments   Enrollment[]
   conversations Conversation[]
 
@@ -339,6 +345,14 @@ model Section {
 model Lesson {
   id        String  @id @default(cuid())
   sectionId String
+  /// Denormalised from `section.courseId`. The lesson player route is flat
+  /// and course-scoped (`/courses/[slug]/learn/[lessonSlug]`) — there is no
+  /// section segment in the URL — so `slug` must be resolvable to exactly
+  /// one lesson per *course*, not per section. Without this column the
+  /// only enforceable uniqueness is per-section, which `findLessonNavigation`
+  /// (a flat, course-wide lookup) can silently resolve to the wrong
+  /// lesson whenever two sections reuse a slug — the bug this field closes.
+  courseId  String
   slug      String
   title     String
   summary   String?
@@ -351,10 +365,13 @@ model Lesson {
   updatedAt DateTime @updatedAt
 
   section       Section              @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  course        Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
   contentBlocks LessonContentBlock[]
   progress      LessonProgress[]
 
-  @@unique([sectionId, slug])
+  /// The real uniqueness boundary (see `courseId` comment above). Also the
+  /// upsert key `seedCurricula` uses instead of `(sectionId, slug)`.
+  @@unique([courseId, slug])
   @@index([sectionId, position])
 }
 
@@ -763,12 +780,12 @@ model Conversation {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   messages Message[]
-
-  /// One conversation per learner per course — also the upsert key.
-  @@unique([userId, courseId])
   // Every read is "this learner's conversation for this course", which the
   // unique index above already covers; no caller needs the reverse
   // direction ("every conversation in this course") yet.
+
+  /// One conversation per learner per course — also the upsert key.
+  @@unique([userId, courseId])
 }
 
 model Message {

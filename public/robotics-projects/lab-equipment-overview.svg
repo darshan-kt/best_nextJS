@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="leader" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L8,4 L0,8 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <text x="64" y="60" font-size="30" font-weight="800" fill="#134e4a">Lab Equipment Overview</text>
+  <text x="64" y="90" font-size="18" fill="#64748b">The five pieces of hardware every project in this course builds on top of.</text>
+
+  <!-- ground line -->
+  <line x1="120" y1="560" x2="1160" y2="560" stroke="#cbd5e1" stroke-width="2"/>
+
+  <!-- robot chassis, side view -->
+  <g>
+    <!-- base body -->
+    <rect x="440" y="430" width="360" height="110" rx="16" fill="#1e293b"/>
+    <!-- wheels -->
+    <circle cx="510" cy="555" r="38" fill="#0f172a" stroke="#334155" stroke-width="4"/>
+    <circle cx="510" cy="555" r="12" fill="#334155"/>
+    <circle cx="730" cy="555" r="38" fill="#0f172a" stroke="#334155" stroke-width="4"/>
+    <circle cx="730" cy="555" r="12" fill="#334155"/>
+
+    <!-- internal compute box (Jetson Orin) -->
+    <rect x="470" y="450" width="120" height="70" rx="8" fill="#0f172a" stroke="#0d9488" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="530" y="490" text-anchor="middle" font-size="12" font-weight="700" fill="#5eead4">Jetson</text>
+    <text x="530" y="506" text-anchor="middle" font-size="12" font-weight="700" fill="#5eead4">Orin</text>
+
+    <!-- internal battery box -->
+    <rect x="650" y="450" width="120" height="70" rx="8" fill="#0f172a" stroke="#0d9488" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="710" y="490" text-anchor="middle" font-size="12" font-weight="700" fill="#5eead4">Battery</text>
+
+    <!-- LiDAR mast on top -->
+    <rect x="590" y="380" width="10" height="50" fill="#334155"/>
+    <circle cx="595" cy="365" r="30" fill="#0f172a" stroke="#0d9488" stroke-width="3"/>
+    <circle cx="595" cy="365" r="10" fill="#134e4a"/>
+    <!-- 360 sweep hint -->
+    <circle cx="595" cy="365" r="46" fill="none" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="3 6" opacity="0.6"/>
+
+    <!-- D435i camera, mounted front -->
+    <rect x="795" y="395" width="60" height="24" rx="6" fill="#0f172a" stroke="#0d9488" stroke-width="2.5"/>
+    <circle cx="810" cy="407" r="5" fill="#5eead4"/>
+    <circle cx="840" cy="407" r="5" fill="#5eead4"/>
+
+    <!-- standalone IMU, small chip on rear deck -->
+    <rect x="450" y="410" width="30" height="20" rx="4" fill="#0f172a" stroke="#0d9488" stroke-width="2.5"/>
+  </g>
+
+  <!-- leaders + labels -->
+  <g font-size="14" fill="#134e4a">
+    <!-- RPLIDAR S3 -->
+    <line x1="595" y1="335" x2="595" y2="200" stroke="#64748b" stroke-width="2" marker-end="url(#leader)"/>
+    <rect x="470" y="120" width="250" height="76" rx="10" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+    <text x="595" y="146" text-anchor="middle" font-weight="700">RPLIDAR S3</text>
+    <text x="595" y="166" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">360&#176; LiDAR — /scan</text>
+    <text x="595" y="184" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">obstacle sensing + SLAM/AMCL input</text>
+
+    <!-- RealSense D435i -->
+    <line x1="855" y1="405" x2="1010" y2="330" stroke="#64748b" stroke-width="2" marker-end="url(#leader)"/>
+    <rect x="960" y="230" width="250" height="94" rx="10" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+    <text x="1085" y="256" text-anchor="middle" font-weight="700">RealSense D435i</text>
+    <text x="1085" y="276" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">RGB camera + depth + IMU</text>
+    <text x="1085" y="294" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">used by Project 2's color</text>
+    <text x="1085" y="310" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">tracking (RGB stream only)</text>
+
+    <!-- Standalone IMU -->
+    <line x1="450" y1="418" x2="290" y2="330" stroke="#64748b" stroke-width="2" marker-end="url(#leader)"/>
+    <rect x="60" y="230" width="240" height="94" rx="10" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+    <text x="180" y="256" text-anchor="middle" font-weight="700">Standalone IMU</text>
+    <text x="180" y="276" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">identified &amp; brought up in</text>
+    <text x="180" y="292" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">Module 0 Step 8 — feeds</text>
+    <text x="180" y="308" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">ekf_node when use_ekf:=true</text>
+
+    <!-- Jetson Orin -->
+    <line x1="530" y1="450" x2="380" y2="520" stroke="#64748b" stroke-width="2" marker-end="url(#leader)"/>
+    <rect x="90" y="475" width="240" height="76" rx="10" fill="#ecfdf5" stroke="#0f766e" stroke-width="2"/>
+    <text x="210" y="501" text-anchor="middle" font-weight="700">Jetson Orin</text>
+    <text x="210" y="521" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">onboard compute — runs every</text>
+    <text x="210" y="539" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">ROS 2 node in this course</text>
+
+    <!-- Battery -->
+    <line x1="710" y1="450" x2="840" y2="520" stroke="#64748b" stroke-width="2" marker-end="url(#leader)"/>
+    <rect x="850" y="475" width="240" height="76" rx="10" fill="#ecfdf5" stroke="#0f766e" stroke-width="2"/>
+    <text x="970" y="501" text-anchor="middle" font-weight="700">Battery</text>
+    <text x="970" y="521" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">powers compute + motors —</text>
+    <text x="970" y="539" text-anchor="middle" font-size="12" font-weight="400" fill="#0f766e">brownouts mimic software bugs</text>
+  </g>
+
+  <text x="640" y="670" text-anchor="middle" font-size="16" fill="#475569">Module 0 brings all five online, verified, and publishing before any project logic is written.</text>
+</svg>

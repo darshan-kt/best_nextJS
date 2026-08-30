@@ -55,6 +55,7 @@ async function createQuizFixture(options?: {
   const lesson = await prisma.lesson.create({
     data: {
       sectionId: section.id,
+      courseId: course.id,
       slug: "lesson-1",
       title: "Lesson 1",
       position: 1,

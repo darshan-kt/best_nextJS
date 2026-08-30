@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+  <text x="64" y="70" font-size="32" font-weight="800" fill="#4c1d95">Project 3 &#8212; Data Flow</text>
+  <text x="64" y="102" font-size="18" fill="#64748b">SLAM Mapping: building a map live while a human drives.</text>
+  <rect x="64" y="300" width="260" height="200" rx="16" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2.5"/>
+  <text x="194" y="366" text-anchor="middle" font-size="20" font-weight="800" fill="#4c1d95">/scan + /odom</text>
+  <text x="194" y="412" text-anchor="middle" font-size="14" fill="#6d28d9">RPLIDAR S3 +</text>
+  <text x="194" y="432" text-anchor="middle" font-size="14" fill="#6d28d9">base driver/EKF</text>
+  <rect x="361" y="300" width="260" height="200" rx="16" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2.5"/>
+  <text x="491" y="366" text-anchor="middle" font-size="20" font-weight="800" fill="#4c1d95">slam_toolbox</text>
+  <text x="491" y="412" text-anchor="middle" font-size="14" fill="#6d28d9">online asynchronous</text>
+  <text x="491" y="432" text-anchor="middle" font-size="14" fill="#6d28d9">mode (Phase 4 choice)</text>
+  <rect x="659" y="300" width="260" height="200" rx="16" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2.5"/>
+  <text x="789" y="366" text-anchor="middle" font-size="20" font-weight="800" fill="#4c1d95">/map (RViz)</text>
+  <text x="789" y="412" text-anchor="middle" font-size="14" fill="#6d28d9">live occupancy grid +</text>
+  <text x="789" y="432" text-anchor="middle" font-size="14" fill="#6d28d9">map&#8594;odom TF</text>
+  <rect x="956" y="300" width="260" height="200" rx="16" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2.5"/>
+  <text x="1086" y="366" text-anchor="middle" font-size="20" font-weight="800" fill="#4c1d95">map_saver_cli</text>
+  <text x="1086" y="412" text-anchor="middle" font-size="14" fill="#6d28d9">lab_room.yaml +</text>
+  <text x="1086" y="432" text-anchor="middle" font-size="14" fill="#6d28d9">lab_room.pgm</text>
+  <g stroke="#7c3aed" stroke-width="5" fill="none" marker-end="url(#arrow-purple)">
+    <line x1="324" y1="400" x2="361" y2="400"/>
+    <line x1="621" y1="400" x2="659" y2="400"/>
+    <line x1="919" y1="400" x2="956" y2="400"/>
+  </g>
+  <text x="640" y="570" text-anchor="middle" font-size="18" fill="#475569">Teleop drives the loop; slam_toolbox does the scan matching and fusing.</text>
+</svg>
