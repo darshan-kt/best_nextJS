@@ -48,7 +48,14 @@ export function CalloutBlock({ data }: { data: CalloutBlockData }) {
     >
       <Icon aria-hidden="true" />
       {data.title ? <AlertTitle>{data.title}</AlertTitle> : null}
-      <AlertDescription>{data.body}</AlertDescription>
+      {/* whitespace-pre-line: callout bodies are a single string (like
+          TextBlock's), but unlike TextBlock there's no paragraph split —
+          a multi-item checklist relies on single newlines to read as a
+          list rather than collapsing into one run-on sentence, which is
+          the browser's default for a plain <div>. */}
+      <AlertDescription className="whitespace-pre-line">
+        {data.body}
+      </AlertDescription>
     </Alert>
   );
 }

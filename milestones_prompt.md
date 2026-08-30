@@ -202,3 +202,67 @@ Known Limitations:
 - PHOTOGRAPHY_CHECKLIST.md's full shot list is still open for this device (unchanged from before this pass).
 
 Next Recommended Step: Astra Pro's PHOTOGRAPHY_CHECKLIST.md shots, or the capstone once more devices exist.
+
+
+-------------------------------------
+Robotics project - Review for clude
+
+Completed
+
+Project 2 — Visual Object Tracking implemented as the third section of hands-on-robotics-projects, sourced verbatim from PHASE_5_LMS_CONTENT_PROJECT_2.md: 7 lessons, 47 content blocks, transcribed from the source doc following Module 0/Project 1's exact conventions (command-triplet pattern, named-troubleshooting CALLOUT+CODE pairing, per-file CODE blocks with real paths, incremental-build steps kept separate).
+
+Fixtures
+
+Two distinct files in project-2-fixtures.ts, never merged:
+- color_tracker_node.py itions → full node) plusits setup.py, launch file, and config YAML
+- HSV_CALIBRATOR_FULL — s own standalone constant
+  since it's a differentme (calibration vs.
+  runtime tracking), per.
+
+Quiz mapping (traced to ON_PLAN.md §5.1)
+
+┌────────────────┬─────┬─────────────────────┐
+│    Category    │ Q#  │  Why                │
+├────────────────┼─────┼─────────────────────┤
+│ Project        │ 1   │                     │
+│ Understanding  │     │                     │
+├────────────────┼─────┼─────────────────────┤
+│ Concept        │ 1,  │                     │
+│                │ 2   │                     │
+├────────────────┼─────┼─────────────────────┤
+│                │     │               │ stem is already yes/no ("does    │
+│ Data Flow      │ 1   │d to change?");      │
+│                │     │ "No."               │
+├────────────────┼─────┼─────────────────────┤
+│                │     │ll 3 options         │
+│ Debugging      │ 1   │age processing /     │
+│                │     │h / publisher);      │
+│                │     │he publisher"        │
+├────────────────┼─────┼─────────────────────┤
+│ Debugging      │ 2   │                     │
+└────────────────┴─────┴─────────────────────┘
+
+Each conversion is annot comment citing the audit line it implements.
+
+Things watched for
+
+1. cv_bridge/OpenCV troubleshooting — its own CALLOUT (WARNING) + separate
+   CODE fix block, matchd pattern exactly.Verified rendered in-browser.
+2. "No LiDAR safety net"content, not templatedreuse: a TEXT block efference (noobstacle-sensing fallR callout withProject-2-specific items (full-perimeter floor clearance, no spin-search, proportional-steeringn-browser.Indentation integrityd blocks (steeringdecision in color_trahing inhsv_calibrator.py) —  source, both correct.Bug found and fixed by t
+                                                                          Hitting a Project 2 lessal defect:findLessonNavigation resthe whole course, firstmatch wins (Lesson.slug is only unique per-section in the schema). Projectreused three slugs alrea(overview-prerequisites-project-architecture-andyourself), which wouldhave made those Project able — the URL wouldsilently render Module 0tead. Fixed by prefixing Project 2's three collid (project-2-overview-prerk, project-2-architecture-aou-build-it-yourself), with an inline comment eowser (signed in as the seeded instructor) that ject 2's own content, not Module 0's/Project 1's. Not fixed (out of scope)l collide with each other on project-architecture-it-yourself, and
+how-to-run-expected-resusting, in
+already-verified contentging for your awareness;
+happy to fix in a follow
+
+Validation
+
+- tsc --noEmit: clean
+- pnpm lint: clean
+- Re-seeded local dev DB (idempotent), confirmed via direct query: course DRAFT/PUBLIC, Section ith correct variants,
+  quiz types match the a
+- Browser spot-check as n, not enrolled): directhit on a Project 2 les the DRAFT-course gatecovers Project 2 with le 0/Project 1
+- Browser spot-check as lesson URLs render
+  correct Project 2 contleshooting CALLOUT both
+  render correctly
+
+Not proceeding to Projec

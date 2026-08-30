@@ -16,6 +16,48 @@ import {
   ROS2_INSTALL_SCRIPT,
   ROS2_LOCALE_FIX_SCRIPT,
 } from "../src/features/courses/content/ros2/terminal-fixtures";
+import {
+  ROBOT_BRINGUP_BRINGUP_LAUNCH_PY,
+  ROBOT_BRINGUP_EKF_YAML,
+  ROBOT_BRINGUP_REALSENSE_YAML,
+  ROBOT_BRINGUP_RPLIDAR_S3_YAML,
+  ROBOT_BRINGUP_SENSORS_ONLY_LAUNCH_PY,
+  ROBOT_BRINGUP_STANDALONE_IMU_YAML,
+  ROBOT_DESCRIPTION_BASE_XACRO,
+  ROBOT_DESCRIPTION_CAMERA_XACRO,
+  ROBOT_DESCRIPTION_CMAKELISTS,
+  ROBOT_DESCRIPTION_DISPLAY_LAUNCH_PY,
+  ROBOT_DESCRIPTION_IMU_XACRO,
+  ROBOT_DESCRIPTION_LAUNCH_PY,
+  ROBOT_DESCRIPTION_LIDAR_XACRO,
+  ROBOT_DESCRIPTION_PACKAGE_XML,
+  ROBOT_DESCRIPTION_ROBOT_XACRO,
+} from "../src/features/courses/content/robotics-projects/module-0-fixtures";
+import {
+  OBSTACLE_AVOIDANCE_CONFIG_YAML,
+  OBSTACLE_AVOIDANCE_LAUNCH_PY,
+  OBSTACLE_AVOIDANCE_NODE_FULL,
+  OBSTACLE_AVOIDANCE_NODE_MINIMAL,
+  OBSTACLE_AVOIDANCE_STEP3_SUBSCRIBE,
+  OBSTACLE_AVOIDANCE_STEP4_CALLBACK,
+  OBSTACLE_AVOIDANCE_STEP4_FOV_FILTER,
+  OBSTACLE_AVOIDANCE_STEP5_CALLBACK,
+  OBSTACLE_AVOIDANCE_STEP6_CLEARANCE,
+} from "../src/features/courses/content/robotics-projects/project-1-fixtures";
+import {
+  COLOR_TRACKER_CONFIG_YAML,
+  COLOR_TRACKER_NODE_FULL,
+  COLOR_TRACKER_NODE_MINIMAL,
+  COLOR_TRACKER_STEP3_SUBSCRIBE,
+  COLOR_TRACKER_STEP4_CV_BRIDGE,
+  COLOR_TRACKER_STEP6_MASK_DEBUG,
+  COLOR_TRACKER_STEP7_CONTOUR_CENTROID,
+  COLOR_TRACKER_STEP8_STEERING_DECISION,
+  COLOR_TRACKER_STEP9_LOST_TARGET,
+  HSV_CALIBRATOR_FULL,
+  VISUAL_TRACKING_BOT_SETUP_PY,
+  VISUAL_TRACKING_LAUNCH_PY,
+} from "../src/features/courses/content/robotics-projects/project-2-fixtures";
 
 /**
  * Development seed data.
@@ -6451,6 +6493,1909 @@ const CURRICULA: Record<string, SeedSection[]> = {
       ],
     },
   ],
+  // Hands-On Robotics Projects (docs/robotics-projects/IMPLEMENTATION_PLAN.md).
+  // Populated section-by-section, foundation section first — Module 0 only
+  // for now; Projects 1-4 follow in the same dependency order once this
+  // section is validated, per the plan's own risk mitigation.
+  "hands-on-robotics-projects": [
+    {
+      title: "Module 0 — Lab Zero",
+      summary:
+        "Shared infrastructure every later project depends on: workspace, sensor bring-up, robot_description, robot_bringup, and resolving the use_ekf question for this specific rig.",
+      lessons: [
+        {
+          slug: "welcome-prerequisites-what-youll-build",
+          title: "Welcome, Prerequisites & What You'll Build",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Validation status",
+                body: "THEORETICALLY DESIGNED, NOT PHYSICALLY VALIDATED. Every command, code sample, and \"expected result\" in this module is written to be correct against current ROS 2 Jazzy conventions and the architecture finalized across this course's design phases. None of it has been run on a physical robot yet. Wherever this course says \"you should see,\" it means a prediction, not a report of something observed. Physical validation happens later, on real hardware — not by reading this lesson.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Before you build a single robot behavior, you need a robot that reliably talks to its own sensors. Module 0 exists to do that once, carefully, so that every project after this one can simply assume a working LiDAR, a working camera, a working base, and a correct 3D model of how they're all positioned relative to each other.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Every real robotics team goes through exactly this step before writing any application logic — it's often called \"bring-up\" or \"platform integration,\" and it's where a surprising amount of real-world robotics engineering time actually goes. Skipping it, or doing it sloppily, is the single most common reason a team's \"smart\" robot behavior mysteriously fails: not because the algorithm is wrong, but because a sensor was misconfigured, a coordinate frame was flipped, or nothing was watching for a driver that silently stopped publishing.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "By the end of Module 0, your robot will not do anything \"smart\" yet. It will: spin up its RPLIDAR S3 and publish real distance readings on /scan; spin up its Intel RealSense D435i and publish color images (and IMU data) on their respective topics; spin up its standalone IMU (once you've identified exactly what it is); confirm its existing base driver accepts /cmd_vel and reports /odom, and that it has a safety cutoff if commands stop arriving; publish a complete, correct TF tree describing where every sensor sits relative to the robot's body; and bring all of the above up with one launch command.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "You will build two ROS 2 packages that every later project depends on: robot_description (the robot's 3D model and coordinate frames) and robot_bringup (the one launch file that starts everything).",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Knowledge prerequisites: a Linux terminal, basic ROS 2 concepts (nodes, topics, publishers/subscribers, launch files), and basic Python. No prior URDF/xacro or TF experience is required — both are introduced from first principles in this module.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Hardware prerequisites: an NVIDIA Jetson (Orin family) with the robot's RPLIDAR S3, Intel RealSense D435i, and standalone IMU connected; the robot's existing custom base driver, already running or startable; and a workspace where the robot's wheels can be lifted clear of the ground for this module's motor tests.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Software prerequisites: ROS 2 Jazzy Jalisco, assumed already installed and working — this module still runs a lightweight sanity check rather than assuming that blindly; colcon, rosdep, and xacro; rplidar_ros and realsense2_camera, installed in this module; and robot_localization, installed alongside and used conditionally.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "lab-safety-check",
+          title: "Lab Safety Check",
+          durationMinutes: 5,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "Complete this checklist before powering any motor test",
+                body: "Robot wheels are lifted clear of the ground, or the robot is secured on a stand, for every motor-related test in this module.\nLiDAR, camera, and IMU cables are routed clear of the wheels before any powered test.\nYou (or a lab partner) have a hand on the power switch, or the terminal running any motion command is immediately Ctrl+C-able, during every test.\nA second person is present specifically for the /cmd_vel watchdog test — this is the first time in the course the robot moves under command, and it is expected to move briefly and then stop on its own.\nThe battery is sufficiently charged for a full bring-up session — a brownout mid-test can look exactly like a software bug and waste real debugging time.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-architecture-and-data-flow",
+          title: "Project Architecture & Data Flow",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Module 0 builds two packages. robot_description is the robot's 3D model and TF tree: its URDF/xacro files (base, LiDAR, camera, IMU) and a desk-test launch file that requires no hardware. robot_bringup is the one launch surface every project uses: it includes robot_description, launches rplidar_ros and realsense2_camera, launches the standalone IMU driver, and conditionally launches robot_localization's ekf_node depending on the use_ekf argument.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Component breakdown",
+                code:
+                  "Component                    What it does                                              Topics                          Message types\n" +
+                  "----------------------------  ---------------------------------------------------------  ------------------------------  --------------------------------\n" +
+                  "robot_state_publisher         Reads the URDF, broadcasts static geometric relationships   /tf, /tf_static                 tf2_msgs/msg/TFMessage\n" +
+                  "rplidar_ros driver node       Talks to the RPLIDAR S3, converts raw scans to ROS msgs     /scan                           sensor_msgs/msg/LaserScan\n" +
+                  "realsense2_camera node        Talks to the D435i, exposes RGB/depth/IMU streams           /camera/color/image_raw, etc.   sensor_msgs/msg/Image, /Imu\n" +
+                  "Standalone IMU driver         Talks to the standalone IMU (driver TBD)                    /imu/data_raw                   sensor_msgs/msg/Imu\n" +
+                  "ekf_node (conditional)        Fuses wheel odometry + standalone IMU into a corrected pose /odometry/filtered             nav_msgs/msg/Odometry\n" +
+                  "Existing base driver          Converts /cmd_vel into wheel motion, reports distance moved /cmd_vel (in), /odom (out)     geometry_msgs/Twist, nav_msgs/Odometry",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Data flow, once everything is running",
+                code:
+                  "PHYSICAL SENSORS (LiDAR, camera, standalone IMU, base encoders)\n" +
+                  "        ↓\n" +
+                  "Individual driver nodes (rplidar_ros, realsense2_camera, IMU driver,\n" +
+                  "existing base driver)\n" +
+                  "        ↓\n" +
+                  "Raw topics (/scan, /camera/..., /imu/data_raw, /odom)\n" +
+                  "        ↓\n" +
+                  "robot_state_publisher (static frames) + base driver or ekf_node\n" +
+                  "(dynamic odom→base_link frame, per the use_ekf resolution)\n" +
+                  "        ↓\n" +
+                  "COMPLETE TF TREE: odom → base_link → {laser_link, camera_link, imu_link}\n" +
+                  "        ↓\n" +
+                  "Available to every later project — nothing project-specific has\n" +
+                  "happened yet",
+              },
+            },
+          ],
+        },
+        {
+          slug: "workspace-and-environment-setup",
+          title: "Workspace & Environment Setup",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 1 — Create the workspace",
+                code: "mkdir -p ~/robot_projects_ws/src\ncd ~/robot_projects_ws",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: creates the top-level ROS 2 workspace and its src/ directory, where every package for the entire course will live.\n\nWhy it's required: colcon (ROS 2's build tool) expects this exact layout — a workspace root containing a src/ folder — to know what to build.\n\nWhat it receives / produces: receives nothing; produces an empty directory structure.\n\nIf it fails: mkdir failing here almost always means a permissions issue on your home directory — check ls -ld ~ and confirm you own it.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 2 — Environment sanity check",
+                code: "printenv ROS_DISTRO\nros2 doctor\nros2 topic list",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: confirms ROS 2 Jazzy is actually the active distribution in your shell, and that the ROS 2 daemon can start and respond.\n\nWhy it's required: everything else in this module assumes Jazzy is correctly sourced — catching a bad environment now is far cheaper than debugging it three commands into a driver launch.\n\nWhat success looks like: printenv ROS_DISTRO prints jazzy; ros2 doctor reports no critical issues; ros2 topic list runs without error (an empty or near-empty list is fine at this point).\n\nIf it fails: if ROS_DISTRO is empty, you likely haven't sourced ROS 2 — run source /opt/ros/jazzy/setup.bash and add it to ~/.bashrc.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Troubleshooting — libzstd1 dependency conflict (Ubuntu 24.04 arm64)",
+                body: "If you see an error like \"ros-jazzy-ros-base : Depends: ... libzstd1 (< ...) but ... is to be installed\", this is a confirmed, still-open packaging mismatch between Ubuntu's security-update channel and the ROS 2 Jazzy binaries (tracked upstream at ros2/ros2#1789). Use the version number from your own error message, not a copy-pasted one — Ubuntu's update channel shifts over time, so a fixed version string here would already be stale.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "libzstd1 fix",
+                code:
+                  "apt-cache policy libzstd1                             # read the exact conflicting versions\nsudo apt-get install libzstd1=<version-the-error-names>\nsudo apt-mark hold libzstd1                            # stop a later upgrade from re-breaking it\nsudo apt install ros-jazzy-ros-base                    # retry",
+              },
+            },
+          ],
+        },
+        {
+          slug: "sensor-bring-up-rplidar-s3-and-d435i",
+          title: "Sensor Bring-Up: RPLIDAR S3 & D435i",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Each sensor's driver is a maintained, ready-made ROS 2 package — you install/clone it, you don't write it. Each one is verified at two separate layers: hardware first, then ROS, so a failure at either layer is easy to isolate.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 3 — Install the driver packages",
+                code:
+                  "sudo apt install ros-jazzy-rplidar-ros ros-jazzy-robot-localization \\\n                 python3-colcon-common-extensions python3-rosdep\ncd ~/robot_projects_ws/src\ngit clone -b ros2-master https://github.com/realsenseai/realsense-ros.git",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: installs rplidar_ros and robot_localization as prebuilt binaries via apt, and clones realsense-ros from source on the Jazzy-supported ros2-master branch, keeping you on a version matched to your exact D435i firmware.\n\nWhat success looks like: all apt commands complete without error; the git clone produces a realsense-ros/ directory under src/.\n\nIf it fails: an apt failure here is most likely the libzstd1 conflict above — apply that fix and retry. A git clone failure is almost always a network issue.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 4 — RPLIDAR S3: Hardware Checkpoint",
+                code: "ls /dev/serial/by-id/\ngroups $USER",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: confirms the LiDAR enumerates as a serial device the OS can see, and that your user account has permission to access it (via the dialout group).\n\nWhat success looks like: a device path appears under /dev/serial/by-id/; dialout appears in your groups list.\n\nIf it fails: no device path means a cable/power issue — check the physical connection before touching ROS at all. Missing dialout group membership: sudo usermod -aG dialout $USER, then log out and back in.\n\nBefore continuing, check the RPLIDAR S3's actual serial baudrate against its datasheet — copy-pasting an older A-series tutorial's baudrate is a common silent-failure point.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 5 — RPLIDAR S3: ROS 2 Checkpoint",
+                code:
+                  "ros2 launch rplidar_ros rplidar_s3_launch.py\n\n# in a second terminal, once the above is running:\nros2 topic hz /scan\nros2 topic echo /scan --once",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: starts the official S3 driver launch file, then checks that /scan is actually publishing at a steady rate with sane data.\n\nWhat success looks like: topic hz reports a steady, non-zero rate; topic echo --once shows a ranges array full of real distance values (not all zeros, not all inf).\n\nIf it fails: if the node starts but /scan never appears, double check serial_port and serial_baudrate in the launch arguments against Step 4's findings.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 6 — D435i: Hardware Checkpoint (before any ROS node runs)",
+                code: "lsusb | grep -i intel\nrealsense-viewer",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: confirms the camera enumerates over USB, then opens Intel's own viewer tool to visually confirm the RGB, depth, and IMU streams are all live — entirely outside of ROS.\n\nWhy this order matters: Jetson Orin Nano + JetPack 6.0 systems have reported cases of the D435i failing to be detected at the USB/kernel level — a hardware issue, not a ROS or Jazzy issue. Checking this first means a failure here is never mistaken for a ROS driver bug.\n\nWhat success looks like: lsusb shows an Intel RealSense device; realsense-viewer shows live RGB, depth, and motion (IMU) data.\n\nIf it fails: try a different USB3 port/cable — the D435i needs full USB3 bandwidth for all three streams simultaneously.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 7 — D435i: ROS 2 Checkpoint",
+                code:
+                  "cd ~/robot_projects_ws\ncolcon build --packages-select realsense2_camera realsense2_camera_msgs realsense2_description\nsource install/setup.bash\nros2 launch realsense2_camera rs_launch.py enable_gyro:=true enable_accel:=true\n\n# second terminal:\nros2 topic list | grep camera\nros2 topic hz /camera/color/image_raw\nros2 topic hz /camera/imu",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: camera topics appear in the topic list; both image_raw and imu publish at a steady rate.\n\nIf it fails: if /camera/imu never appears despite enable_gyro/enable_accel being set — if you changed unite_imu_method dynamically at runtime, gyro/accel must be re-enabled for the change to take effect. Relaunch cleanly rather than reconfiguring live.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "sensor-bring-up-standalone-imu-and-cmd-vel-watchdog",
+          title: "Sensor Bring-Up: Standalone IMU & the /cmd_vel Watchdog",
+          durationMinutes: 15,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 8 — Standalone IMU: Identification and Bring-Up",
+                code: "lsusb\ndmesg | tail -20    # after plugging the IMU in",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: identifies the IMU's make/model from its USB descriptor or kernel log message. Then, in order: check for (a) an official ROS 2 Jazzy driver package for that exact model, (b) a maintained community package, (c) whether it's already riding on the same microcontroller/serial link as the base driver, in which case no separate driver is needed at all. Only if none of these apply do you write a minimal custom publisher.\n\nWhat success looks like: ros2 topic echo /imu/data_raw --once shows populated orientation, angular_velocity, and linear_acceleration fields — not all zero, which is a common silent IMU driver failure.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 9 — Existing Base Driver: Both Checkpoints",
+                code: "ros2 node list\nros2 topic info /cmd_vel\nros2 topic hz /odom",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the base driver's node appears in the node list; /cmd_vel shows at least one subscriber once something publishes to it; /odom publishes at a steady rate.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "Safety-critical watchdog test — second person required",
+                body: "Wheels lifted. In one terminal, publish a nonzero /cmd_vel for a couple of seconds, then Ctrl+C WITHOUT sending a zero-velocity message first. The wheels must stop shortly after you Ctrl+C, on their own. If the wheels keep spinning on the last commanded velocity indefinitely, this is a stop-ship finding: the base driver has no command-timeout safety behavior. Do not proceed to any project's floor tests until this is fixed — every later project's safety plan assumes this protection exists.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Watchdog test command",
+                code:
+                  "# Wheels lifted. In one terminal:\nros2 topic pub --rate 10 /cmd_vel geometry_msgs/msg/Twist \\\n  \"{linear: {x: 0.1}, angular: {z: 0.0}}\"\n# Let it run for ~2 seconds, then Ctrl+C WITHOUT sending a zero-velocity message first.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "building-robot-description",
+          title: "Building robot_description",
+          durationMinutes: 25,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Unlike the drivers you just brought up, this package is authored by you — it's the course's own shared infrastructure.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 10 — Create the package",
+                code:
+                  "cd ~/robot_projects_ws/src\nros2 pkg create robot_description --build-type ament_cmake\nmkdir -p robot_description/urdf robot_description/launch robot_description/rviz robot_description/meshes",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 11 — write the URDF/xacro files. base.urdf.xacro defines the robot's body and wheels; lidar/camera/imu each add one sensor frame, fixed to base_link at a mount offset. robot.urdf.xacro assembles them. None of the sensors move relative to the chassis, so a fixed joint is correct for each — only the wheels use continuous, since they actually rotate.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "xml",
+                filename: "robot_description/urdf/base.urdf.xacro",
+                code: ROBOT_DESCRIPTION_BASE_XACRO,
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "ASSUMED — VERIFY ON ROBOT",
+                body: "Every dimension above (base_length, wheel_separation, etc.) is a placeholder. Measure your actual chassis and update these values before trusting any visualization or, later, Nav2's footprint configuration.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "xml",
+                filename: "robot_description/urdf/lidar.urdf.xacro",
+                code: ROBOT_DESCRIPTION_LIDAR_XACRO,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "xml",
+                filename: "robot_description/urdf/camera.urdf.xacro",
+                code: ROBOT_DESCRIPTION_CAMERA_XACRO,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "xml",
+                filename: "robot_description/urdf/imu.urdf.xacro",
+                code: ROBOT_DESCRIPTION_IMU_XACRO,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "xml",
+                filename: "robot_description/urdf/robot.urdf.xacro",
+                code: ROBOT_DESCRIPTION_ROBOT_XACRO,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 12 — replace package.xml and CMakeLists.txt.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "xml",
+                filename: "robot_description/package.xml",
+                code: ROBOT_DESCRIPTION_PACKAGE_XML,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "cmake",
+                filename: "robot_description/CMakeLists.txt",
+                code: ROBOT_DESCRIPTION_CMAKELISTS,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 13 — write the desk-test launch file.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "robot_description/launch/display.launch.py",
+                code: ROBOT_DESCRIPTION_DISPLAY_LAUNCH_PY,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 14 — Build and desk-test",
+                code:
+                  "cd ~/robot_projects_ws\ncolcon build --packages-select robot_description\nsource install/setup.bash\nros2 launch robot_description display.launch.py",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The first time you run this, RViz will open with no saved configuration. Add a RobotModel display and a TF display manually (set the Fixed Frame to base_link), confirm you can see the chassis, wheels, and all three sensor frames, then File → Save Config As → save it to robot_description/rviz/robot_description.rviz so future launches load it automatically.\n\nWhat success looks like: RViz shows the robot's shape with laser_link, camera_link, and imu_link all visibly offset from base_link in sensible positions, and no disconnected/orphan frames.\n\nIf it fails: a xacro processing error will appear in the terminal, not RViz — read the reported line number. A frame that doesn't appear where expected usually means a mount-offset value in one of the sensor xacro files needs correcting against your actual measurements.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "building-robot-bringup",
+          title: "Building robot_bringup",
+          durationMinutes: 25,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 15 — Create the package",
+                code:
+                  "cd ~/robot_projects_ws/src\nros2 pkg create robot_bringup --build-type ament_python\nmkdir -p robot_bringup/launch robot_bringup/config",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 16 — write the config files.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "yaml",
+                filename: "robot_bringup/config/rplidar_s3.yaml",
+                code: ROBOT_BRINGUP_RPLIDAR_S3_YAML,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "yaml",
+                filename: "robot_bringup/config/realsense.yaml",
+                code: ROBOT_BRINGUP_REALSENSE_YAML,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "yaml",
+                filename: "robot_bringup/config/standalone_imu.yaml",
+                code: ROBOT_BRINGUP_STANDALONE_IMU_YAML,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "yaml",
+                filename: "robot_bringup/config/ekf.yaml",
+                code: ROBOT_BRINGUP_EKF_YAML,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 17 — write sensors_only.launch.py, plus robot_description/launch/description.launch.py (a thin robot_state_publisher-only wrapper, added to robot_description, not robot_bringup). No joint_state_publisher_gui here — on the real robot there's no reason to fake wheel joint angles with a GUI slider. robot_state_publisher will simply use identity transforms for the two continuous wheel joints, which is fine: the sensor frames that actually matter for real data — laser_link, camera_link, imu_link — are all fixed joints and are published correctly regardless.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "robot_bringup/launch/sensors_only.launch.py",
+                code: ROBOT_BRINGUP_SENSORS_ONLY_LAUNCH_PY,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "robot_description/launch/description.launch.py",
+                code: ROBOT_DESCRIPTION_LAUNCH_PY,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 18 — write bringup.launch.py.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "robot_bringup/launch/bringup.launch.py",
+                code: ROBOT_BRINGUP_BRINGUP_LAUNCH_PY,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 19 — Full integration test",
+                code:
+                  "cd ~/robot_projects_ws\ncolcon build\nsource install/setup.bash\nros2 launch robot_bringup bringup.launch.py use_ekf:=false",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: /scan, /camera/color/image_raw, /camera/imu, and /imu/data_raw are all simultaneously live; no node crashes over a sustained ~2 minute run; the full TF tree renders in RViz with no gaps.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "resolving-use-ekf",
+          title: "Resolving use_ekf",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Resolving use_ekf",
+                code:
+                  "ros2 launch robot_bringup bringup.launch.py use_ekf:=false\n\n# second terminal:\nros2 run tf2_ros tf2_echo odom base_link",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "If a transform prints: your base driver already broadcasts odom→base_link itself (Configuration A). Leave use_ekf's default at false and document this as a settled fact about your robot in robot_bringup's README.\n\nIf nothing prints (or an error/timeout occurs): nothing is broadcasting that transform yet (Configuration B). Relaunch with use_ekf:=true, re-run the same tf2_echo command, and confirm a transform now appears — sourced from ekf_node. Update the launch file's default to true and document this instead.\n\nEither way, this is now a fact about your specific robot, not an open design question — Projects 3 and 4 will rely on whatever you find here.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "how-to-run-expected-results-and-checkpoints",
+          title: "How to Run, Expected Results & Verification Checkpoints",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 1",
+                code: "ros2 launch robot_bringup bringup.launch.py use_ekf:=<your resolved value>",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why this terminal exists: starts every sensor driver and (if needed) the EKF, all at once, matching what every later project will do. What should appear: startup logs from rplidar_ros, realsense2_camera, the standalone IMU driver, robot_state_publisher, and (if use_ekf:=true) ekf_node — no errors, no repeated restarts.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 2",
+                code: "rviz2",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why this terminal exists: lets you see the TF tree and, optionally, add a LaserScan display to watch /scan visually. What should appear: a complete robot model with all sensor frames, and (if you add a LaserScan display) a ring of points matching your room's walls.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Expected results",
+                body: "ros2 doctor / ROS_DISTRO / apt install all clean (or the libzstd workaround applied).\nEvery sensor passes both its hardware checkpoint and its ROS checkpoint.\nThe /cmd_vel watchdog test shows the robot stopping on its own.\nrobot_description's desk-test launch shows a complete TF tree.\nuse_ekf is resolved to a documented value for this specific rig.\nrobot_bringup's full launch runs everything simultaneously without crashing for at least a 2-minute sustained run.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Verification checkpoints",
+                body: "HARDWARE: does each sensor enumerate at the OS level (lsusb / device nodes) BEFORE any ROS command is run?\nROS 2: does each driver node start and appear in ros2 node list without error?\nDATA: does each topic publish at a steady rate with sane, non-zero values?\nTF: does the complete tree render in RViz with no orphan/disconnected frames?\nSAFETY: does the robot stop on its own when /cmd_vel publishing is killed mid-motion?\nINTEGRATION: does bringup.launch.py start everything together and stay stable for a sustained run?",
+              },
+            },
+          ],
+        },
+        {
+          slug: "module-0-quiz",
+          title: "Module 0 Quiz",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Project Understanding",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why does Module 0 build robot_description and robot_bringup before any project-specific code?",
+                    acceptedAnswers: [
+                      "so every later project can assume a working sensor and TF stack",
+                      "avoid rebuilding hardware bring-up each project",
+                    ],
+                    explanation:
+                      "So every later project can assume a working, already-verified sensor and TF stack instead of re-deriving hardware bring-up from scratch each time — the single biggest lever for course quality per the course's executive strategy.",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "What is the difference in responsibility between robot_description and robot_bringup?",
+                    acceptedAnswers: [
+                      "description defines geometry and frames, bringup launches the drivers",
+                    ],
+                    explanation:
+                      "robot_description defines the robot's static geometry and coordinate frames (what the robot looks like and how its parts relate). robot_bringup is the launch surface that starts the actual hardware drivers and, conditionally, the EKF — it uses robot_description's model but doesn't define it.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Concept",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why are the sensor joints in the URDF fixed while the wheel joints are continuous?",
+                    acceptedAnswers: [
+                      "sensors don't move relative to the chassis, wheels rotate",
+                    ],
+                    explanation:
+                      "The sensors don't move relative to the chassis, so their transform to base_link never changes — fixed is correct. The wheels physically rotate, so continuous allows an unbounded rotation angle.",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt: "What does the use_ekf launch argument actually decide?",
+                    acceptedAnswers: [
+                      "whether ekf_node or the base driver owns odom to base_link",
+                    ],
+                    explanation:
+                      "Whether robot_localization's ekf_node fuses wheel odometry with the standalone IMU and owns the odom→base_link TF broadcast (Configuration B), or whether the existing base driver already broadcasts that transform itself and no fusion node is needed (Configuration A).",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Data Flow",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Trace the path of a single LiDAR measurement from the physical sensor to the /scan topic. Which node performs the conversion?",
+                    acceptedAnswers: ["rplidar_ros driver node"],
+                    explanation:
+                      "Physical S3 → serial data → rplidar_ros driver node (converts serial protocol into a sensor_msgs/msg/LaserScan message) → published on /scan.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Debugging",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "ros2 topic list shows /camera/color/image_raw, but ros2 topic hz /camera/color/image_raw shows nothing publishing. What do you check next, and why?",
+                    acceptedAnswers: [
+                      "re-check the hardware checkpoint with realsense-viewer",
+                    ],
+                    explanation:
+                      "A topic existing means a node has advertised it, but nothing publishing means either the camera isn't actually delivering frames (check realsense-viewer again — the Hardware Checkpoint) or the node is stalled. Since the hardware layer was already isolated, re-run it first before assuming a ROS-level bug — this is exactly why the two-step checkpoint pattern exists.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "can-you-build-it-yourself",
+          title: "Can You Build It Yourself?",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Recreate robot_bringup's sensors_only.launch.py",
+                instructions:
+                  "Recreate robot_bringup's sensors_only.launch.py from a blank package, without copying this course's code.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body:
+                      "Recreate robot_bringup's sensors_only.launch.py from a blank package, without copying this document's code.",
+                  },
+                  successCriteria: [
+                    "ros2 pkg create with the correct build type",
+                    "The official rplidar_ros and realsense2_camera launch file names (find them yourself via ros2 pkg prefix and browsing the installed share directory, not by looking them up in the lesson)",
+                    "A working robot_state_publisher include from your own robot_description",
+                    "Confirm your version passes every checkpoint from the Verification Checkpoints lesson",
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Project 1 — Obstacle Avoidance",
+      summary:
+        "A reactive robot that watches its front field of view with the RPLIDAR S3 and turns away from anything that gets too close.",
+      lessons: [
+        {
+          slug: "overview-prerequisites-and-lab-safety-check",
+          title: "Overview, Prerequisites & Lab Safety Check",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Validation status",
+                body: "THEORETICALLY DESIGNED, NOT PHYSICALLY VALIDATED.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A robot that drives forward on its own, continuously watching a cone of space directly ahead of it with its LiDAR, and turns away from anything that gets too close — choosing whichever side has more open space, then resuming forward motion once the way is clear.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "This is the same core pattern behind a robot vacuum's collision avoidance, a warehouse AMR's safety-zone stop, and the lowest layer of almost every mobile robot's safety architecture — a fast, simple, sensor-driven reflex that runs independently of whatever higher-level task the robot is doing.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What the robot will do: move forward at a conservative speed; if an obstacle enters its front field of view within a safe distance, stop or turn toward the clearer side; resume forward motion once clear; and always stop if its LiDAR data goes stale.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What you'll build: one new ROS 2 package, obstacle_avoidance_bot, containing a single node that subscribes to /scan and publishes /cmd_vel — built entirely on top of Module 0's robot_bringup.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Prerequisites — Knowledge: completed Module 0; basic Python; comfortable reading a sensor_msgs/msg/LaserScan message's fields.\n\nHardware: RPLIDAR S3 (only) + the existing base driver — the camera and both IMUs are not required for this project, explained in the next lesson.\n\nSoftware: Module 0's robot_bringup and robot_description packages, already built.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "Lab Safety Check",
+                body: "Wheels lifted or the robot on a stand for every test before the first floor test (Step 10).\nLiDAR cable routed clear of the wheels before any floor test.\nlinear_speed capped at ≤ 0.15 m/s for every floor test — no exceptions.\nTest area cleared of fragile objects; use a soft, disposable object as the test obstacle.\nA person available to physically intervene throughout every floor test.\nscan_timeout_sec's safety stop (Step 9) must be confirmed working BEFORE the first floor test — this is a hard prerequisite, not optional.\nBattery charge sufficient for the full test session.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-architecture-and-data-flow",
+          title: "Project Architecture & Data Flow",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Hardware used: RPLIDAR S3 and the existing base driver only. The RealSense D435i and both IMUs are explicitly not used — this project makes its decision purely from /scan, with no need for the robot's position history or orientation.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Data flow",
+                code:
+                  "PHYSICAL ENVIRONMENT\n" +
+                  "   (obstacles in the room)\n" +
+                  "        ↓\n" +
+                  "RPLIDAR S3 → rplidar_ros driver node → /scan (sensor_msgs/msg/LaserScan)\n" +
+                  "        ↓\n" +
+                  "obstacle_avoidance_node\n" +
+                  "   ├── Front FOV Filter        (param: front_fov_degrees)\n" +
+                  "   ├── Nearest-Obstacle Distance in front slice\n" +
+                  "   ├── Left/Right Clearance Comparison  (param: side_clearance_fov_degrees)\n" +
+                  "   └── Decision: FORWARD / TURN_LEFT / TURN_RIGHT / STOP\n" +
+                  "        ↓\n" +
+                  "/cmd_vel (geometry_msgs/msg/Twist)\n" +
+                  "        ↓\n" +
+                  "existing base driver → motors → ROBOT MOTION\n" +
+                  "        ↓\n" +
+                  "(motion changes what the LiDAR sees next → loop continues)",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Component breakdown",
+                code:
+                  "Component               What it does                    Inputs   Outputs             Topic      Message type\n" +
+                  "-----------------------  ------------------------------  -------  ------------------  ---------  --------------------------\n" +
+                  "obstacle_avoidance_node  Filters, evaluates, decides     /scan    Velocity command    /cmd_vel   geometry_msgs/msg/Twist",
+              },
+            },
+          ],
+        },
+        {
+          slug: "building-the-node-minimal-to-fov-filter",
+          title: "Building the Node: From Minimal to Front-FOV Filter",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 1 — Create the package",
+                code:
+                  "cd ~/robot_projects_ws/src\nros2 pkg create obstacle_avoidance_bot --build-type ament_python \\\n  --dependencies rclpy sensor_msgs geometry_msgs\nmkdir -p obstacle_avoidance_bot/config obstacle_avoidance_bot/launch",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the package directory exists with package.xml listing rclpy, sensor_msgs, geometry_msgs as dependencies.\n\nIf it fails: a missing --dependencies entry just means you'll add it to package.xml by hand afterward — not fatal, just extra editing.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 2 — minimal node, verify it runs.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "obstacle_avoidance_bot/obstacle_avoidance_bot/obstacle_avoidance_node.py (Step 2)",
+                code: OBSTACLE_AVOIDANCE_NODE_MINIMAL,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Build and run",
+                code:
+                  "cd ~/robot_projects_ws\ncolcon build --packages-select obstacle_avoidance_bot\nsource install/setup.bash\nros2 run obstacle_avoidance_bot obstacle_avoidance_node",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the log message appears; ros2 node list (in a second terminal) shows /obstacle_avoidance_node.\n\nIf it fails: a ModuleNotFoundError almost always means the entry point in setup.py doesn't match the file/class path exactly — check spelling and the colon syntax.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 3 — subscribe to /scan, verify data arrives. Run with robot_bringup's sensors active in another terminal first.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 3 addition",
+                code: OBSTACLE_AVOIDANCE_STEP3_SUBSCRIBE,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: log lines with a real, non-zero angle_increment and a non-trivial len(msg.ranges) (typically several hundred to over a thousand points for the S3).\n\nIf it fails: no log output at all means /scan isn't being published — go back to Module 0's Checkpoint for the LiDAR, not this node.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 4 — front-FOV filter (observation only).",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 4 addition — helper",
+                code: OBSTACLE_AVOIDANCE_STEP4_FOV_FILTER,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Replace the callback's body with a call using front_fov_degrees = 30.0 (hardcoded for now, parameterized in Step 7):",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 4 addition — callback",
+                code: OBSTACLE_AVOIDANCE_STEP4_CALLBACK,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the logged distance decreases as you manually move an object closer to the front of the (stationary) robot, and increases as you move it away.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 5 — obstacle distance comparison (still observation only).",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 5 addition",
+                code: OBSTACLE_AVOIDANCE_STEP5_CALLBACK,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 6 — left/right clearance comparison (still observation only).",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 6 addition",
+                code: OBSTACLE_AVOIDANCE_STEP6_CLEARANCE,
+              },
+            },
+          ],
+        },
+        {
+          slug: "publishing-commands-parameters-and-safety-timer",
+          title: "Publishing Commands, Parameters & the Safety Timer",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 7 — publish /cmd_vel, add parameters and the safety timer. Full node, replacing everything above.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "obstacle_avoidance_bot/obstacle_avoidance_bot/obstacle_avoidance_node.py",
+                code: OBSTACLE_AVOIDANCE_NODE_FULL,
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "A note on the FOV index math",
+                body: "This simple index-math approach assumes the front FOV plus both side-clearance zones stay within the scan's angle_min/angle_max without wrapping past ±π — true for the default values above, but revisit this if you significantly widen front_fov_degrees or side_clearance_fov_degrees.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "yaml",
+                filename: "obstacle_avoidance_bot/config/obstacle_avoidance.yaml",
+                code: OBSTACLE_AVOIDANCE_CONFIG_YAML,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "obstacle_avoidance_bot/launch/obstacle_avoidance.launch.py",
+                code: OBSTACLE_AVOIDANCE_LAUNCH_PY,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Update obstacle_avoidance_bot/package.xml to add <exec_depend>robot_bringup</exec_depend>, then build.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Build",
+                code: "cd ~/robot_projects_ws\ncolcon build --packages-select obstacle_avoidance_bot\nsource install/setup.bash",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 8 — Test with wheels lifted",
+                code: "ros2 launch obstacle_avoidance_bot obstacle_avoidance.launch.py\n\n# second terminal:\nros2 topic echo /cmd_vel",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: with an object presented in front, angular.z is nonzero with the sign matching the actual clearer side; with the object removed, linear.x matches linear_speed and angular.z is 0.0.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 9 — confirm the safety stop. With the node running and wheels lifted, physically disconnect the LiDAR. What success looks like: within scan_timeout_sec, an ERROR log appears and /cmd_vel goes to all-zero.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 10 — first floor test. Low speed, supervised, per the Lab Safety Check.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Path C — Modify Existing (closing challenge): change front_fov_degrees from 30° to 60° and observe how much earlier the robot reacts to an obstacle approaching from a wider angle; swap the left/right tie-breaking rule (currently \"prefer left when equal\") to \"prefer right when equal\" and confirm the change in a symmetric-obstacle test; add a visualization marker (visualization_msgs/msg/Marker) showing the front FOV cone in RViz — not required for the core project, but a good exercise in extending a working node without breaking it.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "how-to-run-expected-results-and-checkpoints",
+          title: "How to Run, Expected Results & Verification Checkpoints",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 1",
+                code: "ros2 launch obstacle_avoidance_bot obstacle_avoidance.launch.py",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: this single launch includes robot_bringup AND starts this project's own node, exactly matching Module 0's \"no project ever hand-launches a driver directly\" rule. What should appear: bringup logs, then \"obstacle_avoidance_node started: front_fov_degrees=30.0, ...\"",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 2",
+                code: "ros2 topic echo /cmd_vel",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: lets you watch the exact commands being sent before or instead of trusting the physical robot's motion by eye.\n\nTerminal 3 (optional): rviz2, with a LaserScan display added — visually confirms what the robot \"sees\" at the moment it makes each decision.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Expected results",
+                body: "ros2 node list shows /obstacle_avoidance_node alongside the robot_bringup nodes.\nros2 topic hz /cmd_vel shows steady publishing once the node is running.\nPresenting an object in front produces a STOP or TURN log line and a matching nonzero angular.z on /cmd_vel.\nRemoving the object returns the robot to FORWARD (linear.x = linear_speed).\nDisconnecting the LiDAR produces the safety-stop ERROR log and a zeroed /cmd_vel within scan_timeout_sec.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Verification checkpoints",
+                body: "HARDWARE: is the RPLIDAR S3 connected and spinning?\nROS 2: does ros2 launch rplidar_ros rplidar_s3_launch.py start cleanly and appear in ros2 node list?\nDATA: does ros2 topic hz /scan show a steady rate with sane values?\nALGORITHM: does the node correctly log OBSTACLE/CLEAR and the correct turn direction when an object is manually presented on either side?\nCONTROL: with wheels lifted, does /cmd_vel match the logged decision, including correct sign on angular.z?\nPHYSICAL ROBOT: on the floor at low speed, does the robot repeatably avoid a real obstacle without collision across multiple trials, only after the checkpoints above have already passed?",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-1-quiz",
+          title: "Project 1 Quiz",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Project Understanding",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt: "Why does this project not need the D435i camera or either IMU?",
+                    acceptedAnswers: [
+                      "purely reactive on current scan, no need for position history",
+                    ],
+                    explanation:
+                      "The decision loop is purely reactive on the current /scan — it has no need for the robot's position history (no IMU/odometry) or visual data (no camera). Adding them would add hardware dependency and complexity with no benefit to this specific behavior.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Concept",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why is front_fov_degrees implemented using angle_min/angle_increment index math instead of a hardcoded array slice?",
+                    acceptedAnswers: [
+                      "angle increment can differ between lidar models or scan modes",
+                    ],
+                    explanation:
+                      "angle_increment (and therefore how many array indices correspond to a given angular width) can differ between LiDAR models or scan modes. Hardcoding indices silently breaks if either changes; computing indices from the message's own fields does not.",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "What does the stop_distance parameter do that obstacle_distance alone doesn't?",
+                    acceptedAnswers: [
+                      "harder closer threshold that fully stops the robot",
+                    ],
+                    explanation:
+                      "It provides a harder, closer threshold at which the robot fully stops rather than merely turning — separating \"start reacting\" from \"danger, halt now\" as two distinct thresholds.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Data Flow",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "If linear_speed is changed in obstacle_avoidance.yaml, which file(s) need to be rebuilt for the change to take effect?",
+                    acceptedAnswers: ["none, yaml is read at launch time"],
+                    explanation:
+                      "None need rebuilding — YAML parameter files are read at launch time, not compiled. Just relaunch (colcon build is only needed after changing the Python node's code or setup.py).",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Debugging",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "/scan is confirmed publishing correctly via ros2 topic hz, but the robot never turns even when an object is placed directly in front of it. What do you check next?",
+                    acceptedAnswers: [
+                      "check the front fov index math against a known object placement",
+                    ],
+                    explanation:
+                      "Check whether the front FOV angle math is actually indexing the correct part of the ranges array — e.g., print i_start/i_end for a known object placement and confirm they land where expected. This isolates a logic bug in the node from a data problem already ruled out by the LiDAR check.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "can-you-build-it-yourself",
+          title: "Can You Build It Yourself?",
+          durationMinutes: 30,
+          contentBlocks: [
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Build the obstacle avoidance robot without the tutorial",
+                instructions:
+                  "Build the obstacle avoidance robot without following the step-by-step tutorial above.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body:
+                      "Build the obstacle avoidance robot without following the step-by-step tutorial above.",
+                  },
+                  successCriteria: [
+                    "Create your own workspace and package.",
+                    "Subscribe to /scan.",
+                    "Select a front field of view via a parameter, not a hardcoded value.",
+                    "Detect an obstacle within a configurable distance.",
+                    "Decide a turn direction by comparing left/right clearance.",
+                    "Publish /cmd_vel.",
+                    "Add a safety stop for stale /scan data.",
+                    "Test safely: wheels lifted first, low speed on the floor second.",
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Project 2 — Visual Object Tracking",
+      summary:
+        "A robot that finds a calibrated colored object with its camera, keeps it centered by turning toward it, and stops — deliberately, not by searching — when it disappears from view.",
+      lessons: [
+        {
+          // Project 1's lesson of the same title already uses the slug
+          // "overview-prerequisites-and-lab-safety-check" within this same
+          // course. `findLessonNavigation` (features/learning/navigation.ts)
+          // resolves a lesson URL by slug across ALL of a course's
+          // sections, first match wins — an unqualified reuse here would
+          // make this lesson permanently unreachable by direct URL,
+          // silently rendering Project 1's lesson instead. Prefixed to stay
+          // unique without touching Project 1's already-verified slug.
+          slug: "project-2-overview-prerequisites-and-lab-safety-check",
+          title: "Overview, Prerequisites & Lab Safety Check",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Validation status",
+                body: "THEORETICALLY DESIGNED, NOT PHYSICALLY VALIDATED.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A robot that finds a specific colored object using its camera, keeps that object centered in view by turning toward it, and moves forward while the object stays roughly centered — a simple \"follow me\" behavior built entirely from a single RGB image stream.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Color-based visual tracking is the simplest member of a family of techniques used everywhere from warehouse robots following a colored floor marker, to camera-based ball-tracking in robotics competitions, to the first working prototype most computer-vision engineers build before moving to a learned object detector. It teaches the full perception → decision → actuation loop using nothing but classical image processing — no machine learning model required.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What the robot will do: continuously watch its camera feed for a calibrated target color; when found, turn toward it and move forward; when it's centered, drive straight; when it disappears from view, stop — deliberately, not by spinning to search for it again.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What you'll build: one new package, visual_tracking_bot, containing two pieces: the tracking node itself (color_tracker_node), and a small standalone calibration utility (hsv_calibrator) used once per lighting setup to determine the color thresholds — kept as a separate tool rather than folded into the tracking node, since calibration and tracking are genuinely different tasks with different lifetimes.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Prerequisites — Knowledge: completed Module 0 and Project 1; basic Python; no prior OpenCV experience required — HSV color space and contour detection are introduced from first principles.\n\nHardware: Intel RealSense D435i (RGB stream only) + the existing base driver. The RPLIDAR S3 is not used in this project.\n\nSoftware: Module 0's robot_bringup/robot_description, already built; python3-opencv installed via apt — this matters more here than anywhere else in the course so far.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "This project has a fundamentally different risk profile than Project 1. Project 1 had its own obstacle sensor as a safety net, independent of its primary task. This project has no obstacle sensing running at all — the LiDAR is still physically present and even publishing /scan via robot_bringup, but nothing in this project reads it. If the robot turns toward something the camera doesn't recognize as the target, there is no algorithmic fallback to stop it.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "DANGER",
+                title: "Lab Safety Check",
+                body: "The floor-test area must be COMPLETELY clear in EVERY direction the robot could possibly turn toward — not just along the target object's path — because this project cannot detect or react to any obstacle that isn't the specific tracked color.\nLost-target behavior is a deliberate design decision: on losing the target, the robot STOPS after target_lost_timeout_sec. It does NOT spin or search. A blind spin-search would be a real collision risk specifically because this project has no obstacle sensing to catch a bad guess.\nWheels lifted for all of Step 11 and Checkpoint 5 — verify turning direction before any floor test, exactly as in Project 1.\nlinear_speed capped at ≤ 0.15 m/s for every floor test, same as Project 1 — with the added note that this project's proportional steering can produce continuously varying turn rates, so watch that max_angular_speed is actually being respected, not just angular_gain trusted blindly.\nCamera and any debug-viewing laptop/cable kept clear of the wheels.\nA person available to physically intervene throughout every floor test, positioned to step into the robot's path if it turns toward an unexpected direction — no sensor will catch that before it happens.\nRe-run the HSV calibration procedure if the test session's lighting differs from when hsv_lower/hsv_upper were last set — a stale calibration is a software-correctness issue that manifests as physically unpredictable turning, not just a vision bug.\nBattery charge sufficient for the full test session.",
+              },
+            },
+          ],
+        },
+        {
+          // Same cross-section slug-collision reasoning as the lesson
+          // above: both Module 0 and Project 1 already use
+          // "project-architecture-and-data-flow" within this course.
+          slug: "project-2-architecture-and-data-flow",
+          title: "Project Architecture & Data Flow",
+          durationMinutes: 8,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Hardware used: Intel RealSense D435i (RGB stream only) and the existing base driver. Not used: RPLIDAR S3, the D435i's own depth stream, either IMU, /odom — this project's control loop depends only on the current camera frame, with no need for position history or orientation, exactly as established in Phase 4's scoping check.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Data flow",
+                code:
+                  "PHYSICAL ENVIRONMENT\n" +
+                  "   (colored target object moves within camera view)\n" +
+                  "        ↓\n" +
+                  "Intel RealSense D435i → realsense2_camera_node → /camera/color/image_raw\n" +
+                  "        ↓\n" +
+                  "color_tracker_node\n" +
+                  "   ├── cv_bridge: ROS Image → OpenCV BGR frame\n" +
+                  "   ├── BGR → HSV conversion\n" +
+                  "   ├── Color Mask                (params: hsv_lower, hsv_upper — calibrated)\n" +
+                  "   ├── Contour Detection → largest contour ≥ min_contour_area\n" +
+                  "   ├── Centroid Calculation (cx, cy)\n" +
+                  "   ├── Compare cx to image-center ± centroid_deadzone_px\n" +
+                  "   └── Decision: TURN_LEFT / TURN_RIGHT / FORWARD\n" +
+                  "       — or, after target_lost_timeout_sec with no detection: STOP\n" +
+                  "        ↓\n" +
+                  "/cmd_vel → existing base driver → motors → ROBOT MOTION\n" +
+                  "        ↓\n" +
+                  "(motion re-centers the object in view → loop continues)",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "text",
+                filename: "Component breakdown",
+                code:
+                  "Component                                               What it does                                              Inputs                    Outputs                                  Topic                                  Message type\n" +
+                  "-------------------------------------------------------  --------------------------------------------------------  ------------------------  ---------------------------------------  -------------------------------------  ------------------------------------------------\n" +
+                  "color_tracker_node                                      Detects and steers toward the calibrated color            /camera/color/image_raw  Velocity command, optional debug image  /cmd_vel, /color_tracker/debug_image  geometry_msgs/msg/Twist, sensor_msgs/msg/Image\n" +
+                  "hsv_calibrator (utility, not part of the running robot)  Interactive tool to find hsv_lower/hsv_upper under current lighting  /camera/color/image_raw  Printed parameter values (to your terminal, for you to copy)  —  —",
+              },
+            },
+          ],
+        },
+        {
+          slug: "the-hsv-calibration-tool",
+          title: "The HSV Calibration Tool",
+          durationMinutes: 22,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 1 — Create the package",
+                code:
+                  "cd ~/robot_projects_ws/src\nros2 pkg create visual_tracking_bot --build-type ament_python \\\n  --dependencies rclpy sensor_msgs geometry_msgs cv_bridge\nmkdir -p visual_tracking_bot/config visual_tracking_bot/launch",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: package directory exists with the four dependencies listed in package.xml.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 2 — minimal node, verify it runs.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "visual_tracking_bot/visual_tracking_bot/color_tracker_node.py (Step 2)",
+                code: COLOR_TRACKER_NODE_MINIMAL,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Add the entry point to setup.py (shown in full in Step 10). Build and run:",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Build and run",
+                code:
+                  "cd ~/robot_projects_ws\ncolcon build --packages-select visual_tracking_bot\nsource install/setup.bash\nros2 run visual_tracking_bot color_tracker_node",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the log message appears, and /color_tracker_node shows up in ros2 node list.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 3 — subscribe to /camera/color/image_raw, verify data arrives. Before running this step, apply Module 0's two-step hardware-then-ROS checkpoint for the D435i exactly as established there — lsusb/realsense-viewer first, then the ROS driver check — rather than repeating that procedure here.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 3 addition",
+                code: COLOR_TRACKER_STEP3_SUBSCRIBE,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Run with robot_bringup active in another terminal first. What success looks like: log lines showing the image's actual height/width/encoding, read from the message fields — never assume a fixed resolution in code, since it's configured in robot_bringup/config/realsense.yaml, not hardcoded here.\n\nIf it fails: no log output means /camera/color/image_raw isn't publishing — go back to Module 0's D435i checkpoints, not this node.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 4 — cv_bridge conversion.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 4 addition",
+                code: COLOR_TRACKER_STEP4_CV_BRIDGE,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: frame.shape logs as (height, width, 3), matching Step 3's reported dimensions, with no exception raised.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "Troubleshooting — cv_bridge / OpenCV version mismatch",
+                body: "This is the exact point in the course where Phase 3's flagged risk becomes real: if imgmsg_to_cv2 raises an import or runtime error mentioning OpenCV, it almost always means Python's cv2 module and the OpenCV build ros-jazzy-cv-bridge was compiled against don't match. The fix is prevention, not patching: install OpenCV only via apt, and never run pip install opencv-python (or opencv-python-headless) alongside it on the same system. If you've already mixed the two, uninstall the pip package and confirm the import resolves to the apt-installed version before continuing.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "cv_bridge / OpenCV fix",
+                code:
+                  "sudo apt install python3-opencv\npip uninstall opencv-python opencv-python-headless\npython3 -c \"import cv2; print(cv2.__version__)\"  # confirm this resolves to the apt-installed version",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 5 — calibrate HSV thresholds. Standalone tool, run once per lighting setup — a separate file, never merged into the tracking node.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "visual_tracking_bot/visual_tracking_bot/hsv_calibrator.py",
+                code: HSV_CALIBRATOR_FULL,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Run the calibrator",
+                code: "ros2 run visual_tracking_bot hsv_calibrator",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What this does: shows a live camera feed, a live binary mask, and six trackbars — adjust them until the mask shows your target object as a clean white blob and everything else as black, under your current, actual lab lighting.\n\nWhat success looks like: pressing 'p' logs a line like \"hsv_lower: [0, 120, 70]   hsv_upper: [10, 255, 255]\" — copy those exact numbers into config/color_tracker.yaml.\n\nIf it fails: if no window appears at all, you're likely running this over SSH without X11 forwarding — either run it with a display attached directly, or forward X11 (ssh -X).\n\nRe-run this any time lighting changes materially — this is a documented re-calibration trigger, not a one-time setup step.",
+              },
+            },
+          ],
+        },
+        {
+          slug: "building-the-tracking-node",
+          title: "Building the Tracking Node",
+          durationMinutes: 24,
+          contentBlocks: [
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 6 — apply the mask, publish a debug view.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 6 addition",
+                code: COLOR_TRACKER_STEP6_MASK_DEBUG,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "(self.hsv_lower/self.hsv_upper and self.debug_pub are introduced properly in Step 10's full listing — this step is shown in isolation to keep the incremental build visible.)",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "View the debug mask",
+                code: "ros2 run rqt_image_view rqt_image_view",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Select /color_tracker/debug_image. What success looks like: a clean white blob where your target object is, black everywhere else — visually confirming the calibration before any motion logic is added.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 7 — contour detection and centroid (observation only).",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 7 addition",
+                code: COLOR_TRACKER_STEP7_CONTOUR_CENTROID,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What success looks like: the logged centroid tracks the object smoothly as you move it by hand in front of the camera, and disappears (no log line) when the object is removed.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 8 — steering decision (still observation only).",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 8 addition",
+                code: COLOR_TRACKER_STEP8_STEERING_DECISION,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 9 — lost-target tracking.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "Step 9 addition",
+                code: COLOR_TRACKER_STEP9_LOST_TARGET,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 10 — publish /cmd_vel, full node with parameters and safety timer. Replacing everything above.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "visual_tracking_bot/visual_tracking_bot/color_tracker_node.py",
+                code: COLOR_TRACKER_NODE_FULL,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "yaml",
+                filename: "visual_tracking_bot/config/color_tracker.yaml",
+                code: COLOR_TRACKER_CONFIG_YAML,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "visual_tracking_bot/setup.py",
+                code: VISUAL_TRACKING_BOT_SETUP_PY,
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "visual_tracking_bot/launch/visual_tracking.launch.py",
+                code: VISUAL_TRACKING_LAUNCH_PY,
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Update visual_tracking_bot/package.xml to add <exec_depend>robot_bringup</exec_depend>, then build.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Build",
+                code: "cd ~/robot_projects_ws\ncolcon build --packages-select visual_tracking_bot\nsource install/setup.bash",
+              },
+            },
+          ],
+        },
+        {
+          slug: "testing-how-to-run-and-checkpoints",
+          title: "Testing, How to Run & Verification Checkpoints",
+          durationMinutes: 12,
+          contentBlocks: [
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Step 11 — Test with wheels lifted",
+                code: "ros2 launch visual_tracking_bot visual_tracking.launch.py\n\n# second terminal:\nros2 topic echo /cmd_vel",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Move the calibrated object left/right by hand in front of the camera. What success looks like: angular.z's sign matches the direction the object needs the robot to turn, magnitude never exceeds max_angular_speed, and it returns to 0.0 when the object sits within centroid_deadzone_px of center. Remove the object entirely and confirm /cmd_vel goes to all-zero within target_lost_timeout_sec.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Step 12 — first floor test. Low speed, fully cleared path in every direction, supervised.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Path C — Modify Existing (closing challenge): re-calibrate for a different colored object than the one you started with, without re-reading this document's steps — use only hsv_calibrator's own on-screen instructions; change centroid_deadzone_px to 10 and observe whether the robot starts oscillating (small, rapid left-right corrections), then explain why in terms of the dead-zone's purpose; add a second color range (e.g., handle a target color that wraps around HSV's hue boundary near 0°/180°, which needs two inRange masks OR'd together) as a stretch exercise.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 1 — once, per lighting setup",
+                code: "ros2 run visual_tracking_bot hsv_calibrator",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: determines hsv_lower/hsv_upper for the current lighting; copy the printed values into config/color_tracker.yaml, then close this tool — it is not run alongside the tracking node.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 2",
+                code: "ros2 launch visual_tracking_bot visual_tracking.launch.py",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Why: brings up robot_bringup's sensors and starts color_tracker_node, exactly matching the \"no project hand-launches a driver\" rule. What should appear: bringup logs, then \"color_tracker_node started\".",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "Terminal 3",
+                code: "ros2 run rqt_image_view rqt_image_view",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Viewing /color_tracker/debug_image. Why: lets you see exactly what the node sees and decides, without needing to interpret raw /cmd_vel numbers alone.\n\nTerminal 4 (optional): ros2 topic echo /cmd_vel — confirms the exact commanded velocity at any instant.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Expected results",
+                body: "ros2 node list shows /color_tracker_node alongside the robot_bringup nodes.\n/color_tracker/debug_image shows a clean, isolated mask/annotated frame under current lighting (re-run calibration if it doesn't).\nPresenting the object left/right produces correctly-signed angular.z on /cmd_vel, capped at max_angular_speed.\nCentering the object returns angular.z to 0.0 with linear.x at max_linear_speed.\nRemoving the object produces a WARN log and a zeroed /cmd_vel within target_lost_timeout_sec.",
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Verification checkpoints",
+                body: "HARDWARE: does lsusb/realsense-viewer show the D435i's RGB stream live, BEFORE any ROS node is started?\nROS 2: does realsense2_camera_node start cleanly, and does /camera/color/image_raw appear in ros2 topic list?\nDATA: does ros2 topic hz /camera/color/image_raw show a steady rate, and does the cv_bridge conversion complete without throwing across a sustained run (not just once)?\nALGORITHM: under the lab's ACTUAL current lighting, does the calibrated mask isolate the target with minimal noise (checked visually via /color_tracker/debug_image), and does the computed centroid stay stable when the object is held still?\nCONTROL: with wheels lifted, does /cmd_vel show correctly signed, correctly capped angular.z as the object moves, returning to zero within the dead-zone?\nPHYSICAL ROBOT: on the floor at low speed, in a fully cleared area, does the robot smoothly follow a slowly-moved object without oscillating, and does it stop (not spin) within target_lost_timeout_sec when the object is removed?",
+              },
+            },
+          ],
+        },
+        {
+          slug: "project-2-quiz",
+          title: "Project 2 Quiz",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Project Understanding",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why is the HSV calibration tool a separate script from the tracking node, rather than one combined program?",
+                    acceptedAnswers: [
+                      "different tasks with different lifetimes",
+                    ],
+                    explanation:
+                      "Calibration and tracking are different tasks with different lifetimes — calibration is run once (or occasionally, when lighting changes) by a human adjusting sliders interactively, while tracking runs continuously and autonomously with no human input. Combining them would force the tracking node to carry GUI/trackbar code it never needs while actually running the robot.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Concept",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "Why does the mask isolation step use HSV color space instead of the camera's native BGR/RGB?",
+                    acceptedAnswers: [
+                      "hsv separates hue from brightness and saturation",
+                    ],
+                    explanation:
+                      "HSV separates a color's hue from its brightness and saturation, so a threshold range can be built around \"what color is this\" largely independent of lighting intensity — a BGR/RGB threshold would need to account for brightness changes directly in every channel, which is far harder to tune robustly.",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt: "What does min_contour_area protect against?",
+                    acceptedAnswers: [
+                      "small noisy blobs being mistaken for the target",
+                    ],
+                    explanation:
+                      "Small, noisy blobs in the mask (stray pixels matching the color range by coincidence, or small reflections) being mistaken for the actual target — filtering by a minimum area ensures only a plausibly object-sized region is tracked.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Data Flow",
+                questions: [
+                  {
+                    // Audit (docs/robotics-projects/IMPLEMENTATION_PLAN.md
+                    // §5.1, "Project 2 | Data Flow | 1"): the source stem is
+                    // already a yes/no question ("does the node's code need
+                    // to change?"), and the source answer opens with "No." —
+                    // a clean TRUE_FALSE fit, format-adapted from the plan's
+                    // original SHORT_ANSWER assumption, nothing invented.
+                    type: "TRUE_FALSE",
+                    prompt:
+                      "If the D435i's resolution is changed in robot_bringup/config/realsense.yaml, does color_tracker_node's code need to change?",
+                    correctAnswer: false,
+                    explanation:
+                      "No — the node reads frame.shape from the actual incoming frame at runtime rather than hardcoding a resolution, so it adapts automatically. This is the same discipline as Module 0's FOV index-math fix, applied to image dimensions instead of scan angles.",
+                  },
+                ],
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Debugging",
+                questions: [
+                  {
+                    // Audit (IMPLEMENTATION_PLAN.md §5.1, "Project 2 |
+                    // Debugging | 1"): the source stem names all three
+                    // options verbatim ("image processing, centroid math,
+                    // or the publisher"), and the source answer names the
+                    // correct one and explains why — a clean SINGLE_CHOICE
+                    // fit, nothing invented.
+                    type: "SINGLE_CHOICE",
+                    prompt:
+                      "The /color_tracker/debug_image mask preview shows the target object cleanly isolated as a white blob, but the robot doesn't move at all. Which layer do you check first?",
+                    options: [
+                      { id: "a", label: "Image processing" },
+                      { id: "b", label: "Centroid math" },
+                      { id: "c", label: "The publisher" },
+                    ],
+                    correctOptionIds: ["c"],
+                    explanation:
+                      "Check the publisher layer first, specifically whether /cmd_vel is actually being published at all (ros2 topic hz /cmd_vel) and whether anything is subscribed to it (ros2 topic info /cmd_vel). A clean mask already proves image processing is working; the next thing downstream in the pipeline — and the cheapest to check — is whether a Twist message is leaving the node at all, before assuming a subtler bug in the centroid or steering math.",
+                  },
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt:
+                      "The robot tracks correctly indoors near a window during the day, but loses the target entirely in the evening under artificial light. What's the most likely cause, and what's the fix?",
+                    acceptedAnswers: [
+                      "stale hsv calibration for the current lighting, re-run hsv_calibrator",
+                    ],
+                    explanation:
+                      "The HSV calibration was performed under different lighting than the current test — natural daylight and artificial lighting produce different color casts. The fix is re-running hsv_calibrator under the current lighting, exactly as the Lab Safety Check names as a required trigger, not re-tuning the tracking node's logic.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          // Same cross-section slug-collision reasoning: both Module 0 and
+          // Project 1 already use "can-you-build-it-yourself" within this
+          // course.
+          slug: "project-2-can-you-build-it-yourself",
+          title: "Can You Build It Yourself?",
+          durationMinutes: 30,
+          contentBlocks: [
+            {
+              type: "EXERCISE",
+              exercise: {
+                title:
+                  "Re-calibrate and re-verify the tracker for a new colored object",
+                instructions:
+                  "Re-calibrate and re-verify the tracker for a NEW colored object, without following this document's steps verbatim.",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body:
+                      "Re-calibrate and re-verify the tracker for a NEW colored object, without following this document's steps verbatim.",
+                  },
+                  successCriteria: [
+                    "Choose a different-colored object than the one you calibrated first.",
+                    "Run hsv_calibrator and determine new hsv_lower/hsv_upper values using only its own on-screen instructions.",
+                    "Update config/color_tracker.yaml and relaunch.",
+                    "Confirm Checkpoint 4 (mask isolation, centroid stability) passes for the new object before attempting Checkpoint 5 or any floor test.",
+                    "Test safely: wheels lifted first, low speed on a fully cleared floor second.",
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 interface SeedCourse {
@@ -6563,6 +8508,21 @@ const COURSES: SeedCourse[] = [
       "Real robotics hardware — evaluated, connected, configured, and integrated with ROS 2, not just described.",
     description:
       "A scalable robotics hardware knowledge library and practical lab, starting with the RPLIDAR A2 and Orbbec Astra Pro on ROS 2 Jazzy and Ubuntu 24.04. Every driver claim is verified against upstream sources rather than assumed, and legacy hardware is taught openly rather than hidden.",
+    status: "DRAFT",
+    visibility: "PUBLIC",
+  },
+  {
+    slug: "hands-on-robotics-projects",
+    title: "Hands-On Robotics Projects with ROS 2: From Sensors to Autonomous Robots",
+    subtitle:
+      "Build, run, and debug four real robotics projects on one physical rig — obstacle avoidance to autonomous navigation.",
+    description:
+      "A project-first, lab-first ROS 2 Jazzy course built on one fixed rig (Jetson, RPLIDAR S3, Intel RealSense D435i, a custom differential-drive base): reactive obstacle avoidance, visual object tracking, SLAM mapping, and Nav2 autonomous navigation, each incrementally built, run, and verified with an explicit hardware-then-ROS checkpoint discipline. Every lesson distinguishes theoretically designed content from physically validated content — nothing here is claimed as proven until it has actually run on the real robot.",
+    // DRAFT, not PUBLISHED: every lesson's own validation banner says
+    // "not physically validated" — publishing the course live while every
+    // banner disclaims it would be a mixed signal to a real learner. Flip
+    // to PUBLISHED once Phase 6 (docs/robotics-projects/
+    // PHASE_6_PHYSICAL_VALIDATION_CHECKLIST.md) substantially passes.
     status: "DRAFT",
     visibility: "PUBLIC",
   },
