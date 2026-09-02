@@ -146,8 +146,10 @@ services:
       # Docker-internal Redis address
       REDIS_URL: redis://redis:6379
 
-      # Auth.js canonical application URL
-      AUTH_URL: http://13.62.237.158:3000
+      # Auth.js canonical application URL — read from .env so the same
+      # compose file works for a local run (default: localhost) and an
+      # AWS deploy (set AUTH_URL to the instance's real origin in .env).
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
 
       # Production mode
       NODE_ENV: production
@@ -161,4 +163,3 @@ services:
 # -----------------------------------------------------------------------
 volumes:
   lms-postgres-data:
-```
