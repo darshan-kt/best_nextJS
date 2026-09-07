@@ -6,6 +6,7 @@ import { Camera, ImageOff, Radar, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader, PageShell } from "@/components/shared/page-shell";
+import { SiteChrome } from "@/components/marketing/site-chrome";
 import { HardwareSupportBanner } from "@/components/hardware/hardware-support-banner";
 import {
   getHardwareDevicesForComparison,
@@ -57,34 +58,36 @@ export default async function HardwareComparePage({
     slugs.length > 0 ? await getHardwareDevicesForComparison(slugs) : [];
 
   return (
-    <PageShell>
-      <PageHeader
-        title="Compare hardware"
-        description="Specifications side by side, pulled live from each device's own record."
-      />
-
-      {devices.length < 2 ? (
-        <EmptyState
-          icon={<Scale className="size-6" aria-hidden="true" />}
-          title={
-            devices.length === 0
-              ? "No devices selected"
-              : "Add at least one more device"
-          }
-          description="Open the hardware catalog and pick two or more devices to compare."
-          action={
-            <Link
-              href="/hardware"
-              className="text-body-sm font-medium text-accent-foreground hover:underline"
-            >
-              Browse the catalog
-            </Link>
-          }
+    <SiteChrome>
+      <PageShell>
+        <PageHeader
+          title="Compare hardware"
+          description="Specifications side by side, pulled live from each device's own record."
         />
-      ) : (
-        <ComparisonTable devices={devices} />
-      )}
-    </PageShell>
+
+        {devices.length < 2 ? (
+          <EmptyState
+            icon={<Scale className="size-6" aria-hidden="true" />}
+            title={
+              devices.length === 0
+                ? "No devices selected"
+                : "Add at least one more device"
+            }
+            description="Open the hardware catalog and pick two or more devices to compare."
+            action={
+              <Link
+                href="/hardware"
+                className="text-body-sm font-medium text-accent-foreground hover:underline"
+              >
+                Browse the catalog
+              </Link>
+            }
+          />
+        ) : (
+          <ComparisonTable devices={devices} />
+        )}
+      </PageShell>
+    </SiteChrome>
   );
 }
 

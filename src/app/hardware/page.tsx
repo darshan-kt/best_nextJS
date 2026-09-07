@@ -3,6 +3,7 @@ import { Cpu } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader, PageShell } from "@/components/shared/page-shell";
+import { SiteChrome } from "@/components/marketing/site-chrome";
 import { DeviceCard } from "@/components/hardware/device-card";
 import { listPubliclyVisibleHardware } from "@/features/hardware/queries";
 
@@ -40,27 +41,29 @@ export default async function HardwareCatalogPage() {
   const devices = await listPubliclyVisibleHardware();
 
   return (
-    <PageShell>
-      <PageHeader
-        title="Hardware Catalog"
-        description="Real robotics hardware, with verified specifications and ROS 2 integration details."
-      />
-
-      {devices.length === 0 ? (
-        <EmptyState
-          icon={<Cpu className="size-6" aria-hidden="true" />}
-          title="No devices published yet"
-          description="The catalog is being built. Published devices will appear here as soon as their course goes live."
+    <SiteChrome>
+      <PageShell>
+        <PageHeader
+          title="Hardware Catalog"
+          description="Real robotics hardware, with verified specifications and ROS 2 integration details."
         />
-      ) : (
-        <ul className="grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {devices.map((device) => (
-            <li key={device.id} className="flex">
-              <DeviceCard device={device} href={`/hardware/${device.slug}`} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </PageShell>
+
+        {devices.length === 0 ? (
+          <EmptyState
+            icon={<Cpu className="size-6" aria-hidden="true" />}
+            title="No devices published yet"
+            description="The catalog is being built. Published devices will appear here as soon as their course goes live."
+          />
+        ) : (
+          <ul className="grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {devices.map((device) => (
+              <li key={device.id} className="flex">
+                <DeviceCard device={device} href={`/hardware/${device.slug}`} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </PageShell>
+    </SiteChrome>
   );
 }

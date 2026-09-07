@@ -326,3 +326,30 @@ function buildSearchFilter(query: string) {
     { description: { contains: query, mode } },
   ];
 }
+
+export interface CatalogStats {
+  courseCount: number;
+  lessonCount: number;
+  hardwareDeviceCount: number;
+}
+
+/**
+ * Real, catalogue-wide counts for the marketing homepage's trust band.
+ *
+ * Deliberately plain counts rather than vanity metrics (enrollments,
+ * "students taught") — those would need to be true, and nothing in this
+ * codebase tracks them at that granularity yet. Counting what already
+ * exists (published courses, published lessons, catalogued hardware) is
+ * the honest version of "how much is actually here" (§20, §29).
+ */
+export async function getCatalogStats(): Promise<CatalogStats> {
+  const [courseCount, lessonCount, hardwareDeviceCount] = await Promise.all([
+    prisma.course.count({ where: CATALOG_VISIBILITY }),
+    prisma.lesson.count({
+      where: { isPublished: true, course: CATALOG_VISIBILITY },
+    }),
+    prisma.hardwareDevice.count(),
+  ]);
+
+  return { courseCount, lessonCount, hardwareDeviceCount };
+}

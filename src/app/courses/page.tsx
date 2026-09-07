@@ -6,6 +6,7 @@ import { BookOpen, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader, PageShell } from "@/components/shared/page-shell";
+import { SiteChrome } from "@/components/marketing/site-chrome";
 import { getCurrentActor } from "@/features/auth/session";
 import { CatalogSearch } from "@/features/courses/components/catalog-search";
 import { CourseCard } from "@/features/courses/components/course-card";
@@ -43,26 +44,28 @@ export default async function CoursesPage({
   const params = parseCatalogSearchParams(await searchParams);
 
   return (
-    <PageShell>
-      <PageHeader
-        title="Courses"
-        description="Browse the catalogue and find something to learn next."
-      >
-        <CatalogSearch query={params.q} />
-      </PageHeader>
+    <SiteChrome>
+      <PageShell>
+        <PageHeader
+          title="Courses"
+          description="Browse the catalogue and find something to learn next."
+        >
+          <CatalogSearch query={params.q} />
+        </PageHeader>
 
-      {/*
-        Keyed on the active search so that changing it remounts the
-        boundary and shows skeletons again, rather than leaving the
-        previous page's results on screen while the new query runs.
-      */}
-      <Suspense
-        key={`${params.q ?? ""}:${params.page}`}
-        fallback={<CourseGridSkeleton />}
-      >
-        <CatalogResults params={params} />
-      </Suspense>
-    </PageShell>
+        {/*
+          Keyed on the active search so that changing it remounts the
+          boundary and shows skeletons again, rather than leaving the
+          previous page's results on screen while the new query runs.
+        */}
+        <Suspense
+          key={`${params.q ?? ""}:${params.page}`}
+          fallback={<CourseGridSkeleton />}
+        >
+          <CatalogResults params={params} />
+        </Suspense>
+      </PageShell>
+    </SiteChrome>
   );
 }
 

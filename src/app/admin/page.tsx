@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PageHeader, PageShell } from "@/components/shared/page-shell";
+import { SiteChrome } from "@/components/marketing/site-chrome";
 import { prisma } from "@/db/client";
 import { requireAdminAccess } from "@/features/auth/guards";
 
@@ -33,32 +34,34 @@ export default async function AdminPage() {
   ];
 
   return (
-    <PageShell width="narrow">
-      <PageHeader
-        title="Admin"
-        description={`Signed in as ${actor.roles.join(", ") || "no roles"}.`}
-        actions={
-          <Button asChild variant="outline">
-            <Link href="/dashboard">Back to dashboard</Link>
-          </Button>
-        }
-      />
+    <SiteChrome>
+      <PageShell width="narrow">
+        <PageHeader
+          title="Admin"
+          description={`Signed in as ${actor.roles.join(", ") || "no roles"}.`}
+          actions={
+            <Button asChild variant="outline">
+              <Link href="/dashboard">Back to dashboard</Link>
+            </Button>
+          }
+        />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader>
-              <CardDescription>{stat.label}</CardDescription>
-              {/* The figure is the point of the card, so it takes a
-                  deliberate step off the scale rather than an ad-hoc
-                  `text-3xl`. */}
-              <CardTitle className="text-title tabular-nums">
-                {stat.value.toLocaleString()}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
-    </PageShell>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {stats.map((stat) => (
+            <Card key={stat.label}>
+              <CardHeader>
+                <CardDescription>{stat.label}</CardDescription>
+                {/* The figure is the point of the card, so it takes a
+                    deliberate step off the scale rather than an ad-hoc
+                    `text-3xl`. */}
+                <CardTitle className="text-title tabular-nums">
+                  {stat.value.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </PageShell>
+    </SiteChrome>
   );
 }

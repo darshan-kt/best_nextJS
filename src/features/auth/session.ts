@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/db/client";
@@ -11,8 +12,14 @@ import type { Actor } from "./policy";
  *
  * Returns null when nobody is signed in. Callers that require a user
  * should use `requireUser()` instead of null-checking this themselves.
+ *
+ * `cache()` scopes one session read to one request: `auth()` decodes and
+ * verifies the JWT on every call, and a page wrapped in `SiteChrome` asks
+ * for the actor at least twice — once for the header, once for the page's
+ * own authorization. Memoising collapses that back to a single decode
+ * without either caller needing to know about the other.
  */
-export async function getCurrentActor(): Promise<Actor | null> {
+export const getCurrentActor = cache(async function getCurrentActor(): Promise<Actor | null> {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -23,7 +30,7 @@ export async function getCurrentActor(): Promise<Actor | null> {
     id: session.user.id,
     roles: session.user.roles ?? [],
   };
-}
+});
 
 /**
  * Requires an authenticated user, redirecting to sign-in when absent.

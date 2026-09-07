@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageShell } from "@/components/shared/page-shell";
+import { SiteChrome } from "@/components/marketing/site-chrome";
 import { SIGN_IN_PATH } from "@/features/auth/config";
 import { can } from "@/features/auth/policy";
 import { getCurrentActor } from "@/features/auth/session";
@@ -100,85 +101,87 @@ export default async function CourseDetailPage({
     : new Set<string>();
 
   return (
-    <PageShell width="narrow" className="gap-10">
-      <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-        <Link href="/courses">
-          <ArrowLeft aria-hidden="true" />
-          All courses
-        </Link>
-      </Button>
+    <SiteChrome>
+      <PageShell width="narrow" className="gap-10">
+        <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+          <Link href="/courses">
+            <ArrowLeft aria-hidden="true" />
+            All courses
+          </Link>
+        </Button>
 
-      <header className="flex flex-col gap-4">
-        {isEnrolled ? (
-          <Badge variant="accent" className="w-fit">
-            <CheckCircle2 aria-hidden="true" />
-            {enrollment?.status === "COMPLETED" ? "Completed" : "Enrolled"}
-          </Badge>
-        ) : null}
+        <header className="flex flex-col gap-4">
+          {isEnrolled ? (
+            <Badge variant="accent" className="w-fit">
+              <CheckCircle2 aria-hidden="true" />
+              {enrollment?.status === "COMPLETED" ? "Completed" : "Enrolled"}
+            </Badge>
+          ) : null}
 
-        <h1 className="font-heading text-title text-balance text-foreground sm:text-title-lg">
-          {course.title}
-        </h1>
+          <h1 className="font-heading text-title text-balance text-foreground sm:text-title-lg">
+            {course.title}
+          </h1>
 
-        {course.subtitle ? (
-          <p className="text-lede text-pretty text-muted-foreground">
-            {course.subtitle}
+          {course.subtitle ? (
+            <p className="text-lede text-pretty text-muted-foreground">
+              {course.subtitle}
+            </p>
+          ) : null}
+
+          <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-body-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <dt className="sr-only">Instructor</dt>
+              <GraduationCap className="size-4" aria-hidden="true" />
+              <dd>{course.instructor.name ?? "The course team"}</dd>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <dt className="sr-only">Lessons</dt>
+              <BookOpen className="size-4" aria-hidden="true" />
+              <dd>
+                {course.lessonCount}{" "}
+                {course.lessonCount === 1 ? "lesson" : "lessons"}
+              </dd>
+            </div>
+
+            {course.totalDurationMinutes > 0 ? (
+              <div className="flex items-center gap-1.5">
+                <dt className="sr-only">Total length</dt>
+                <Clock className="size-4" aria-hidden="true" />
+                <dd>{Math.round(course.totalDurationMinutes / 60)} hours</dd>
+              </div>
+            ) : null}
+          </dl>
+        </header>
+
+        {course.description ? (
+          <p className="max-w-2xl text-pretty text-body leading-relaxed text-foreground">
+            {course.description}
           </p>
         ) : null}
 
-        <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-body-sm text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <dt className="sr-only">Instructor</dt>
-            <GraduationCap className="size-4" aria-hidden="true" />
-            <dd>{course.instructor.name ?? "The course team"}</dd>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <dt className="sr-only">Lessons</dt>
-            <BookOpen className="size-4" aria-hidden="true" />
-            <dd>
-              {course.lessonCount}{" "}
-              {course.lessonCount === 1 ? "lesson" : "lessons"}
-            </dd>
-          </div>
-
-          {course.totalDurationMinutes > 0 ? (
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">Total length</dt>
-              <Clock className="size-4" aria-hidden="true" />
-              <dd>{Math.round(course.totalDurationMinutes / 60)} hours</dd>
-            </div>
-          ) : null}
-        </dl>
-      </header>
-
-      {course.description ? (
-        <p className="max-w-2xl text-pretty text-body leading-relaxed text-foreground">
-          {course.description}
-        </p>
-      ) : null}
-
-      <EnrollmentPanel
-        slug={course.slug}
-        signedIn={actor !== null}
-        canLearn={canLearn}
-        isEnrolled={isEnrolled}
-        completedLessonCount={completedLessonIds.size}
-        totalLessonCount={course.lessonCount}
-      />
-
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-title-sm font-semibold text-foreground">
-          Curriculum
-        </h2>
-
-        <CurriculumOutline
-          sections={course.sections}
-          unlocked={canLearn}
-          completedLessonIds={completedLessonIds}
+        <EnrollmentPanel
+          slug={course.slug}
+          signedIn={actor !== null}
+          canLearn={canLearn}
+          isEnrolled={isEnrolled}
+          completedLessonCount={completedLessonIds.size}
+          totalLessonCount={course.lessonCount}
         />
-      </section>
-    </PageShell>
+
+        <section className="flex flex-col gap-4">
+          <h2 className="font-heading text-title-sm font-semibold text-foreground">
+            Curriculum
+          </h2>
+
+          <CurriculumOutline
+            sections={course.sections}
+            unlocked={canLearn}
+            completedLessonIds={completedLessonIds}
+          />
+        </section>
+      </PageShell>
+    </SiteChrome>
   );
 }
 
