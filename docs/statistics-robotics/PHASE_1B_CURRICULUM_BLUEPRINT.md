@@ -4,6 +4,14 @@
 > **STATUS: DRAFT, awaiting review.** Depends on
 > `PHASE_1A_ARCHITECTURE.md` (approved 2026-09-07).
 >
+> **Revision 2, 2026-09-07** — corrected the lesson count (42, not 41) and
+> the new-block dependency figures, which were wrong in revision 1; added
+> the per-lesson block-type mapping; added the M4.6 hardware
+> cross-reference that revision 1 omitted; recorded M2.6's unowned
+> `/cmd_vel` prerequisite; resolved the §32 storage question in-document;
+> and promoted the two added lessons from a delivery note to an explicit
+> decision. See READINESS at the foot of this document.
+>
 > This document specifies **what each lesson teaches and which blocks it
 > contains**. It is not lesson content — no prose, no quiz text and no
 > Python source is written here. Content authoring begins at Phase 1G.
@@ -24,26 +32,57 @@ in place of a hand-drawn image (spec §54), with no controls.
 
 ## 0. SIZING
 
-| Module | Lessons | Est. minutes | New-block load |
+| Module | Lessons | Est. minutes | New-block instances |
 | --- | --- | --- | --- |
-| M0 Why Statistics Matters | 3 | 35 | 1 SIM |
-| M1 Random Variables & Probability | 7 | 105 | 5 SIM |
-| M2 Uniform | 7 | 120 | 4 SIM, 1 DATA, 1 LAB |
-| M3 Gaussian *(flagship)* | 11 | 220 | 6 SIM, 3 DATA, 1 LAB |
-| M4 Exponential | 8 | 140 | 4 SIM, 2 DATA, 1 LAB |
+| M0 Why Statistics Matters | 3 | 35 | 1 SIM (1 static) |
+| M1 Random Variables & Probability | 7 | 105 | 8 SIM (1 static) |
+| M2 Uniform | 7 | 120 | 4 SIM (1 static), 1 DATA, 1 LAB |
+| M3 Gaussian *(flagship)* | 12 | 240 | 9 SIM (2 static), 6 DATA, 1 LAB |
+| M4 Exponential | 8 | 140 | 3 SIM (1 static), 4 DATA, 1 LAB |
 | M5 Three Ways to Be Random | 3 | 45 | 3 SIM, 1 DATA |
 | M6 Mini-Capstone | 2 | 90+ | 3 DATA |
-| **Total** | **41** | **~755 min** | **26 SIM, 10 DATA, 3 LAB** |
+| **Total** | **42** | **~775 min** | **28 SIM, 15 DATA, 3 LAB** |
+
+> **Correction, 2026-09-07.** The first version of this table said 41
+> lessons, gave M3 eleven, and claimed "32 of 41 are authorable with
+> existing block types alone; only 9 hard-require a new type." All three
+> were wrong, and the last was close to inverted. Counted directly from
+> the lesson sections below: M3 has **twelve** lessons, the course has
+> **42**, and the new-block dependency is far heavier than that sentence
+> implied — see the table immediately below. The error mattered: it made
+> Phases 1D and 1E look optional when they are on the critical path for
+> three quarters of the course.
 
 Phase 1A estimated 38 lessons; the blueprint lands at **41** — M1 and M4
 each gained a lesson during objective mapping, and M3 gained the
 `gaussian-mechanism` lesson (see §M3). This is comparable in size to
 `ros2-fundamentals` (7 modules). Flagged against risk 6.
 
-**Reuse ratio:** of 41 lessons, **32 are authorable with existing block
-types alone.** Only 9 lessons hard-require a new block type to be
-meaningful — which is what makes 1C/1D/1E worth building before 1G rather
-than after.
+**New-block dependency, counted per lesson (not per block):**
+
+| Category | Lessons | Meaning |
+| --- | --- | --- |
+| **Hard-require a new block type** | **25** | Contains an interactive `SIM`, a `DATA`, or a `LAB`. The lesson loses its point without it. |
+| Static `SIM` only | 6 | `M0.1, M1.2, M2.2, M3.1, M3.4, M4.3`. Could degrade to a pre-rendered `IMAGE` from `figures.py` at the cost of interactivity, so these are a soft dependency. |
+| Need nothing new | 11 | `M0.2, M0.3, M1.1, M1.7, M2.1, M2.7, M3.12, M4.1, M4.8, M5.1, M6.2` |
+
+So **25 of 42 lessons are blocked on Phases 1D/1E**, and a further 6 are
+degraded without them. That is the real argument for building the block
+types before authoring content, and it is stronger than the original
+(wrong) sentence made it look.
+
+### Which lessons use which new block type
+
+| Block type | Lessons | Count |
+| --- | --- | --- |
+| `DISTRIBUTION_SIM` — **interactive** | M1.3, M1.4, M1.5, M1.6, M2.3, M2.4, M2.5, M3.2, M3.3, M3.5, M3.6, M3.7, M3.10, M4.4, M4.5, M5.2 | 16 |
+| `DISTRIBUTION_SIM` — `[static]` | M0.1, M1.2, M2.2, M3.1, M3.4, M4.3 | 6 |
+| `DATASET_EXPLORER` | M2.6, M3.9, M3.10, M3.11, M4.2, M4.7, M5.3, M6.1 | 8 |
+| `LAB_PROTOCOL` | M2.6, M3.8, M4.6 | 3 |
+
+M2.6 uses both `DATA` and `LAB`; M3.10 uses both `SIM` and `DATA`. Full
+Zod schemas for all three types are in `PHASE_1A_ARCHITECTURE.md`
+§18.2 (the two lightweight) and §18.3 (the relational-shared).
 
 ---
 
@@ -327,6 +366,16 @@ generator) · `CODE` bash (ROS 2 goal dispatch, run **locally**) · `DATA`
 `HISTOGRAM`, `SUMMARY_STATS`; overlay `UNIFORM` / `FITTED_FROM_DATA`) ·
 `TEXT` (interpretation) · `CALLOUT` WARNING (safety recap — this is the
 only lab that moves the robot).
+
+**Cross-reference gap — this lab has nothing to link to.** M3.8 and M4.6
+hand LiDAR bring-up off to `robotics-hardware-and-sensors`, but that course
+covers **only** the RPLIDAR A2 and the Orbbec Astra Pro. Base motion,
+`/cmd_vel`, `/odom` and wheel encoders appear in none of its 44 lessons, so
+there is no lesson to cite. This lab must therefore either teach its own
+minimal `/cmd_vel` grounding or lean on `ros2-fundamentals` Module 4
+(`turtlesim`, which teaches `/cmd_vel` on a simulated robot rather than a
+physical base). **Resolve before authoring M2.6** — it is the only lab with
+an unowned hardware prerequisite.
 
 **Dependencies** — dataset `uniform-targets-workspace-2x2`; risk 1.
 `simulationFallbackLessonSlug: "uniform-explore"`.
@@ -617,6 +666,12 @@ overlay) · `FILE` (`exponential_explore.py`) · `TEXT` (λ̂ = 1/x̄ and why) �
 python (event-detection collector) · `LAB` (LAB 3 — all 15 sections) ·
 `CALLOUT` WARNING (validation banner) · `FILE`.
 
+**Cross-references (1A §21)** — this lab brings up the same LiDAR as M3.8,
+so it re-teaches none of it: it links to `rplidar-a2-ubuntu-setup`,
+`rplidar-a2-ros2-integration` and `rplidar-a2-debugging` in
+`robotics-hardware-and-sensors`, and to M3.8 for the collection workflow
+the learner has already run once. It starts from a working `/scan`.
+
 **Open design question** — the event source (1A §22, item 5). A patrolling
 robot produces *periodic* encounters; the lab is designed around
 externally-caused crossings. **If the assumption still fails, M4.7 is where
@@ -721,6 +776,68 @@ limitations, plus a link to the learner's own repository or notebook.
 
 ---
 
+## DECISION REQUIRED — TWO LESSONS BEYOND APPROVED 1A SCOPE
+
+`PHASE_1A_ARCHITECTURE.md` §3 was approved with a 38-lesson structure.
+This blueprint contains 42. Four of the difference is a counting error in
+1A's own sketch (corrected in §0 above); **two are genuine additions and
+need an explicit yes or no.** They are recorded here rather than in a
+delivery note because they change module scope, and scope changes are the
+reviewer's call, not the author's.
+
+### Addition 1 — M3.2 `gaussian-mechanism` (16 min)
+
+**What it adds.** *Why* many small independent additive errors produce a
+bell shape, demonstrated with a slider that sums k uniform errors, plus an
+explicit statement of when the mechanism does **not** apply (one dominant
+error source, multiplicative errors, bounded quantities).
+
+**Why I added it.** M3's terminal objective is "argue with evidence whether
+a Gaussian is a defensible model." An argument needs a mechanism to appeal
+to. Without this lesson the learner knows the Gaussian as a *shape they
+recognize*, and "is it Gaussian?" collapses into "does the histogram look
+bell-shaped?" — which is exactly the reasoning spec §63 forbids.
+
+**If you decline it:**
+- M3 drops to 11 lessons, ~224 min.
+- M3.11 `is-gaussian-defensible` weakens from an argument to a
+  shape-comparison. Its objective must be rewritten downward: "identify
+  deviations between data and a fitted Gaussian" rather than "argue whether
+  the model is warranted."
+- The mechanism content does not disappear cleanly — roughly 6 min of it
+  has to be absorbed into M3.3 `gaussian-intuition`, which is currently a
+  no-formula lesson and would lose that property.
+- Knock-on: M5.3 `choosing-a-model` and M6 both ask learners to justify a
+  choice *from mechanism*. Those lean on this lesson; declining it makes
+  them harder to write honestly.
+
+**My recommendation: keep.** It is the lesson that makes the flagship
+module's terminal objective reachable.
+
+### Addition 2 — M4.2 `waiting-times-from-event-logs` (16 min)
+
+**What it adds.** The data transformation: timestamps → inter-arrival
+times, and why Δt rather than the timestamps is the random variable.
+
+**Why I added it.** In 1A this was folded into `exponential-theory`. It is
+the step learners actually get wrong, and merging a data-wrangling step
+into a theory lesson buries it.
+
+**If you decline it:**
+- M4 drops to 7 lessons, ~124 min.
+- M4.3 `exponential-theory` absorbs the transformation and grows to ~26
+  min, mixing "how to reshape your data" with "what the model says" in one
+  lesson.
+- M4.7 `analyzing-waiting-times` becomes the first place a learner meets Δt
+  on real data, with no prior practice on a clean example.
+- Lower risk than declining Addition 1: the content survives the merge, it
+  is just less well placed.
+
+**My recommendation: keep, but this one is genuinely optional.** Declining
+it costs pedagogy, not correctness.
+
+---
+
 ## SEQUENCING FOR IMPLEMENTATION
 
 | Order | Build | Why here |
@@ -737,13 +854,68 @@ promises what the author intended rather than what was built.
 
 ---
 
+## STORAGE (§32) DEPENDENCY — RESOLVED, NO LAB IS BLOCKED
+
+Asked three times, so recorded here rather than in chat.
+
+**No lab in this blueprint submits anything to the application.** M2.6,
+M3.8 and M4.6 are `LAB_PROTOCOL` content: the learner reads the protocol,
+runs the collector locally, and analyses the data in their own Python. The
+module challenges (M2.7, M3.12, M4.8) are `EXERCISE:INDEPENDENT` —
+self-directed and ungraded, matching the ROS 2 and hardware courses'
+existing precedent.
+
+| Data movement | Mechanism | Needs §32? |
+| --- | --- | --- |
+| Collector node → student's disk | local `ros2 run … --out file.csv` | no |
+| Student's CSV → their analysis | local Python (`statsrobotics`) | no |
+| Course → student (`.py`, datasets) | `FILE` block, root-relative `public/` path | no |
+| Author's recorded dataset → app | a git commit, not an upload | no |
+| Student's work → app | **M6.2 only** | **yes — deferred** |
+
+So the capstone's text/JSON + links workaround is not *extended* to the
+labs; **the labs never needed it**, because nothing in them crosses the
+network into the application.
+
+**The consequence, stated plainly:** a learner who reasons badly in the
+Gaussian challenge (M3.12) receives no correction until the capstone. If
+graded module challenges are wanted, that pulls `ExerciseSubmission` from
+Phase 1J forward to 1G, and *then* the §32 gap does bite — a learner
+attaching a CSV rather than pasting summary statistics needs real storage.
+That is a scope decision, not a technical blocker, and it is open.
+
+---
+
 ## OPEN ITEMS CARRIED FROM PHASE 1A
 
-| # | Item | Blocks in this blueprint |
-| --- | --- | --- |
-| 1 | Recorded datasets do not exist | M2.6, M3.9, M4.7, M6.1 |
-| 2 | LiDAR model unconfirmed | M3.8, M4.6 |
-| 5 | Lab 3 event source undecided | M4.6, M4.7 |
+| # | Item | Blocks in this blueprint | Status |
+| --- | --- | --- | --- |
+| 1A-1 | Recorded datasets do not exist | M2.6, M3.9, M3.11, M4.2, M4.7, M5.3, M6.1 | OPEN, external |
+| 1A-2 | LiDAR model unconfirmed | M3.8, M4.6 | OPEN, external |
+| 1A-5 | Lab 3 event source undecided | M4.6, M4.7 | OPEN, design |
+| 1B-1 | Two added lessons need approval | M3.2, M4.2 | **OPEN, reviewer decision** |
+| 1B-2 | M2.6 has no course to cross-reference for `/cmd_vel` + `/odom` | M2.6 | **OPEN, design** |
+| 1B-3 | Graded module challenges vs self-directed | M2.7, M3.12, M4.8 | OPEN, scope |
 
-Every other lesson in this blueprint — **32 of 41** — is authorable with no
-open item resolved.
+**11 of 42 lessons** depend on no open item and no new block type. A
+further **25** are blocked only on Phases 1D/1E, which are in progress and
+depend on none of the above.
+
+---
+
+## READINESS
+
+**Not yet ready for approval.** Three items need a reviewer decision, not
+more authoring:
+
+1. **1B-1** — approve or decline `gaussian-mechanism` and
+   `waiting-times-from-event-logs` (see the decision section above).
+2. **1B-2** — decide where M2.6's `/cmd_vel` grounding comes from.
+3. **1B-3** — confirm module challenges stay ungraded in Phase 1.
+
+Items 1A-1, 1A-2 and 1A-5 do **not** block approval of this blueprint;
+they block *authoring* of the specific lessons listed, which is Phase
+1G–1I work.
+
+Once 1B-1 through 1B-3 are answered, this document is complete and the
+lesson-level structure can be treated as locked.
