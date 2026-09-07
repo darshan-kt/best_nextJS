@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { distributionSimBlockSchema } from "@/features/statistics/schemas";
+
 /**
  * Payload shapes for the lightweight content-block types (§11).
  *
@@ -190,6 +192,12 @@ export const lightweightBlockSchemas = {
   EMBED: embedBlockSchema,
   CALLOUT: calloutBlockSchema,
   FILE: fileBlockSchema,
+  /// Statistical Distributions course (Phase 1D). Lives in
+  /// `features/statistics/schemas.ts` rather than here because it
+  /// validates against the distribution registry — the payload and the
+  /// mathematics are one contract, and splitting them across two features
+  /// would let them drift.
+  DISTRIBUTION_SIM: distributionSimBlockSchema,
 } as const;
 
 export type LightweightBlockType = keyof typeof lightweightBlockSchemas;

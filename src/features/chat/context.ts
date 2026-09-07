@@ -79,6 +79,20 @@ function extractBlockText(block: RenderableBlock): string | null {
       // summary, not the full spec table — enough to answer "what does
       // this lesson cover" without dumping a data table into the prompt.
       return `Hardware device: ${block.device.name}. ${block.device.summary}`;
+    case "DISTRIBUTION_SIM":
+      // The prompt and the model's assumptions, not the parameter ranges:
+      // enough for the assistant to help a learner who asks "what am I
+      // supposed to be noticing here", without dumping slider bounds into
+      // the context.
+      return `This lesson includes an interactive ${block.data.distribution.toLowerCase()} distribution simulation titled "${block.data.title}": ${block.data.prompt}`;
+
+    case "DATASET_EXPLORER":
+      // Deliberately does NOT state whether the overlaid model fits. That
+      // is the question M3.9 and M4.7 ask the learner to answer, and an
+      // assistant that volunteers the conclusion removes the lesson (spec
+      // §63).
+      return `This lesson analyses a dataset titled "${block.dataset.title}" (${block.dataset.sampleCount} samples, ${block.dataset.level.toLowerCase()}): ${block.dataset.summary}`;
+
     case "INVALID":
     case "UNSUPPORTED":
       return null;

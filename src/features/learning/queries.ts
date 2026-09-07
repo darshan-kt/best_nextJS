@@ -1,7 +1,20 @@
 import { prisma } from "@/db/client";
 import type { ContentBlockType } from "@/db/generated/enums";
 import { exerciseConfigSchema, type ExerciseConfig } from "@/features/exercises/schemas";
+import {
+  datasetSelect,
+  toDatasetDetail,
+  type DatasetDetail,
+} from "@/features/datasets/queries";
+import {
+  datasetExplorerBlockSchema,
+  type DatasetExplorerBlockData,
+} from "@/features/datasets/schemas";
 import type { HardwareDeviceDetail } from "@/features/hardware/queries";
+import {
+  distributionSimBlockSchema,
+  type DistributionSimBlockData,
+} from "@/features/statistics/schemas";
 import {
   deviceCardBlockDataSchema,
   specTableBlockDataSchema,
@@ -106,6 +119,19 @@ export type RenderableBlock =
       data: SpecTableBlockData;
     }
   | { id: string; position: number; kind: "DEVICE_CARD"; device: HardwareDeviceDetail }
+  | {
+      id: string;
+      position: number;
+      kind: "DISTRIBUTION_SIM";
+      data: DistributionSimBlockData;
+    }
+  | {
+      id: string;
+      position: number;
+      kind: "DATASET_EXPLORER";
+      dataset: DatasetDetail;
+      data: DatasetExplorerBlockData;
+    }
   /** JSON present but did not match its type's schema — a bad row, not a
    *  bad request; rendered as an inline notice rather than failing the
    *  whole lesson (§28). */
@@ -127,6 +153,7 @@ export async function getLessonContentBlocks(
       quiz: { select: { id: true, title: true, description: true } },
       exercise: { select: { title: true, instructions: true, config: true } },
       hardwareDevice: { select: hardwareDeviceSelect },
+      dataset: { select: datasetSelect },
     },
   });
 
@@ -230,6 +257,46 @@ export async function getLessonContentBlocks(
         return block.hardwareDevice && parsedData.success
           ? { id, position, kind: "DEVICE_CARD", device: block.hardwareDevice }
           : { id, position, kind: "INVALID", blockType: block.type };
+      }
+
+      case "DISTRIBUTION_SIM": {
+        const parsed = distributionSimBlockSchema.safeParse(block.data);
+        return parsed.success
+          ? { id, position, kind: "DISTRIBUTION_SIM", data: parsed.data }
+          : { id, position, kind: "INVALID", blockType: block.type };
+      }
+
+      case "DATASET_EXPLORER": {
+        if (!block.dataset) {
+          return { id, position, kind: "INVALID", blockType: block.type };
+        }
+
+        const dataset = toDatasetDetail(block.dataset);
+        const parsed = datasetExplorerBlockSchema.safeParse(block.data);
+        if (!dataset || !parsed.success) {
+          return { id, position, kind: "INVALID", blockType: block.type };
+        }
+
+        // Cross-check the block against the dataset it points at. The Zod
+        // schema cannot do this — it validates the block in isolation and
+        // has no view of the row — so a block naming a column the dataset
+        // does not declare would otherwise render an empty chart with no
+        // indication anything was wrong (§28).
+        const declared = new Set(dataset.columns.map((column) => column.key));
+        const referenced = [parsed.data.valueColumn, parsed.data.secondaryColumn]
+          .filter((key): key is string => typeof key === "string");
+
+        if (!referenced.every((key) => declared.has(key))) {
+          return { id, position, kind: "INVALID", blockType: block.type };
+        }
+
+        return {
+          id,
+          position,
+          kind: "DATASET_EXPLORER",
+          dataset,
+          data: parsed.data,
+        };
       }
 
       default:

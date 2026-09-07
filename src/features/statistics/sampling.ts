@@ -207,3 +207,60 @@ export function defaultValues(kind: DistributionKind): Record<string, number> {
     DISTRIBUTIONS[kind].parameters.map((p) => [p.key, p.defaultValue])
   );
 }
+
+/**
+ * A 2D point set: two independent draws per point from the same
+ * distribution.
+ *
+ * M2.5's uniform workspace is the only Phase 1 use, and the block schema
+ * ties `SCATTER_2D` to UNIFORM for exactly that reason. Both axes share
+ * one parameter set — a workspace with different x and y bounds is a real
+ * thing, but it needs two parameter sets in the block payload, and adding
+ * that before a lesson asks for it would be shape invented ahead of need.
+ *
+ * Uses one generator for both coordinates, drawing x then y per point, so
+ * the pair stream is reproducible from the seed like everything else here.
+ */
+export function runSimulation2D<K extends DistributionKind>(
+  input: SimulationInput<K>
+): { error: string | null; points: { x: number; y: number }[]; domain: [number, number] } {
+  const spec = DISTRIBUTIONS[input.kind];
+  const params = toParams(input.kind, input.values);
+  const error = spec.validate(params);
+  const domain = (input.domain ?? spec.plotDomain(params)) as [number, number];
+
+  if (error) return { error, points: [], domain };
+
+  const count = Math.max(
+    0,
+    Math.min(MAX_SIMULATION_SAMPLES, Math.floor(input.sampleCount))
+  );
+  const rng = createRng(input.seed);
+  const points = new Array<{ x: number; y: number }>(count);
+
+  for (let i = 0; i < count; i += 1) {
+    points[i] = { x: spec.sample(rng, params), y: spec.sample(rng, params) };
+  }
+
+  return { error: null, points, domain };
+}
+
+/**
+ * Thin an ordered series down to at most `limit` evenly-spaced entries.
+ *
+ * A Q-Q plot of 5,000 samples is 5,000 marks, which `PointSeries` refuses
+ * (`MAX_SVG_POINTS`) — correctly, since that many SVG nodes is what the
+ * canvas path exists for. But a Q-Q plot does not need every order
+ * statistic: its shape, including the tail curvature that carries the
+ * information, is fully legible from a few hundred evenly-spaced ones.
+ * Thinning preserves the first and last points, which is where the
+ * departure from the model is largest and therefore least discardable.
+ */
+export function thinSeries<T>(series: readonly T[], limit: number): T[] {
+  if (series.length <= limit) return [...series];
+
+  const step = (series.length - 1) / (limit - 1);
+  return Array.from({ length: limit }, (_, index) =>
+    series[Math.round(index * step)]
+  );
+}

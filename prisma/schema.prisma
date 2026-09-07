@@ -81,6 +81,45 @@ enum ContentBlockType {
   /// model's own comment.
   SPEC_TABLE
   DEVICE_CARD
+  /// Statistical Distributions with Robotics (Phase 1D/1E,
+  /// `docs/statistics-robotics/PHASE_1A_ARCHITECTURE.md` §18).
+  /// `DISTRIBUTION_SIM` is lightweight — its payload is JSON validated by
+  /// `distributionSimBlockSchema`. `DATASET_EXPLORER` is relational-shared:
+  /// it points at a `Dataset` row through a plain many-to-one FK, the same
+  /// shape `hardwareDeviceId` uses and deliberately not the 1:1 shape
+  /// quiz/exercise use, because one dataset legitimately backs blocks in
+  /// several lessons.
+  ///
+  /// `LAB_PROTOCOL` is the third type this course needs and is NOT here
+  /// yet: it has no schema, no renderer and no grounding case, and adding a
+  /// dangling value would force `contentBlockCoverage` in
+  /// `block-renderer.test.ts` to carry an exemption list — weakening the
+  /// exact invariant that test exists to hold. It arrives in Phase 1F with
+  /// its implementation. `ALTER TYPE ... ADD VALUE` is additive and does
+  /// not rewrite the table, so deferring costs one cheap migration.
+  DISTRIBUTION_SIM
+  DATASET_EXPLORER
+}
+
+/// §18. Which of the three evidence levels a dataset represents
+/// (PHASE_1A_ARCHITECTURE.md §10). The course teaches these as distinct
+/// kinds of claim, not as a quality ranking: a synthetic dataset is not a
+/// worse recorded one, it answers a different question.
+enum DatasetLevel {
+  /// Mathematically generated. Reproducible from a seed; no robot involved.
+  SYNTHETIC
+  /// Captured from a real robot by the course author and shipped with the
+  /// course, so a learner with no hardware still analyses real measurements.
+  RECORDED
+  /// Collected by a learner on their own robot. No rows exist yet: Phase 1
+  /// has no upload path (§32 has no storage provider), so this value is
+  /// declared and unused, exactly as `MessageSender.TUTOR` is deferred.
+  PHYSICAL
+}
+
+enum DatasetFormat {
+  CSV
+  JSON
 }
 
 /// §18. CODE / MATCHING / ORDERING / DRAG_DROP / SIMULATION are future
@@ -440,6 +479,12 @@ model LessonContentBlock {
   /// rather than the 1:1 shape quiz/exercise use.
   hardwareDeviceId String?
 
+  /// Statistical Distributions course: backs DATASET_EXPLORER blocks. Plain
+  /// many-to-one for the same reason as `hardwareDeviceId` above — M3.9
+  /// alone renders one dataset three ways (histogram, eCDF, Q-Q), and the
+  /// capstone references datasets a lesson already used.
+  datasetId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -450,9 +495,67 @@ model LessonContentBlock {
   /// lesson still references should fail loudly, the same reasoning as
   /// `Course.instructorId`'s existing Restrict.
   hardwareDevice HardwareDevice? @relation(fields: [hardwareDeviceId], references: [id], onDelete: Restrict)
+  /// Restrict, matching `hardwareDevice`: deleting a dataset a published
+  /// lesson still analyses should fail loudly (§41).
+  dataset        Dataset?        @relation(fields: [datasetId], references: [id], onDelete: Restrict)
 
   @@index([lessonId, position])
   @@index([type])
+  @@index([hardwareDeviceId])
+  @@index([datasetId])
+}
+
+// ---------------------------------------------------------------------------
+// Datasets (Statistical Distributions with Robotics, Phase 1E)
+//
+// A catalog entity like `HardwareDevice`, and for the same reason: the same
+// dataset is referenced from several lessons and must not have its numbers
+// or its provenance copied into each one.
+//
+// The numeric payload is NOT here. It lives as a versioned static file
+// under `public/datasets/`, referenced by `sourceUri` — see
+// PHASE_1A_ARCHITECTURE.md §10. Five thousand float64 samples is 40-80 KB;
+// in a Json column it would be dragged along by every Dataset query, could
+// not be CDN-cached, and would make Postgres a numeric-array file server.
+// What stays here is what is genuinely relational: provenance, the hardware
+// link, and which blocks cite it. `checksumSha256` is what keeps the row and
+// the file from drifting apart silently (verified in CI).
+// ---------------------------------------------------------------------------
+
+model Dataset {
+  id      String       @id @default(cuid())
+  /// Addressed as /datasets/<slug>, and the seed's upsert key.
+  slug    String       @unique
+  title   String
+  summary String
+  level   DatasetLevel
+
+  sourceUri      String
+  format         DatasetFormat
+  sampleCount    Int
+  /// Lowercase hex SHA-256 of the file at `sourceUri`.
+  checksumSha256 String
+
+  /// [{key,label,unit,kind}] — Zod-validated on read, like every other Json
+  /// column in this schema (§9).
+  columns Json
+
+  /// Spec §47 (reproducibility). Required in practice for RECORDED and
+  /// PHYSICAL, enforced by a Zod refinement at the write boundary rather
+  /// than a DB CHECK — the same layer `HardwareDevice.supportStatusNote`'s
+  /// own conditional requirement lives in.
+  provenance Json?
+
+  /// Which sensor produced it, when the device is in the hardware catalog.
+  hardwareDeviceId String?
+  hardwareDevice   HardwareDevice? @relation(fields: [hardwareDeviceId], references: [id], onDelete: Restrict)
+
+  contentBlocks LessonContentBlock[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([level])
   @@index([hardwareDeviceId])
 }
 
@@ -531,6 +634,7 @@ model HardwareDevice {
   specs         HardwareDeviceSpec[]
   topics        HardwareDeviceTopic[]
   contentBlocks LessonContentBlock[]
+  datasets      Dataset[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
