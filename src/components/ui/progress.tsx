@@ -13,6 +13,13 @@ function Progress({
   return (
     <ProgressPrimitive.Root
       data-slot="progress"
+      // `value` is forwarded, not just consumed below. It was destructured
+      // out of props for the indicator transform and never passed on, so
+      // Radix saw no value, marked the bar `data-state="indeterminate"` and
+      // omitted `aria-valuenow` — the bar looked right and announced
+      // nothing. axe does not flag it, because an indeterminate progressbar
+      // is a legal state; it is only wrong here because the value is known.
+      value={value}
       className={cn(
         "relative flex h-2 w-full items-center overflow-hidden rounded-full bg-muted",
         className

@@ -248,6 +248,26 @@ a failure whose details are *identical* across runs that should have changed
 something. When that happens, confirm what is actually listening (`ss -ltnp |
 grep :PORT`, then `ps -o lstart` on the pid) before believing the result.
 
+### P5. The course assistant is dead in this environment — invalid `GEMINI_API_KEY`
+
+`e2e/assistant.spec.ts` fails, and the reason is not the test. The Gemini API
+rejects every request with `API_KEY_INVALID` / `"API key not valid"`, so the
+assistant never replies. The value in `.env` is 12 characters; a real key is
+around 39, so it reads as a placeholder rather than an expired credential.
+
+The message history shows exactly when it broke: the conversation on
+`typescript-foundations` has two complete STUDENT -> ASSISTANT pairs from
+2026-08-26, then nothing but unanswered STUDENT messages from 2026-08-28
+onward. Each spec run leaves one more, which is why the bubble count climbs by
+one per run — the accumulation is a SYMPTOM of the broken key, not an
+independent test-state problem. An earlier triage in this repository called it
+"a state-dependent assertion, a test defect"; that was wrong, and fixing the
+assertion would have hidden a broken feature.
+
+**To close:** supply a real `GEMINI_API_KEY`, confirm the assistant replies,
+then delete the orphaned STUDENT messages so the spec's count assertion starts
+from a clean conversation. The spec itself is fine and should not be relaxed.
+
 ---
 
 ## Closed items, for reference

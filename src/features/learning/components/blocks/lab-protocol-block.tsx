@@ -205,7 +205,7 @@ export function LabProtocolBlock({
         <p className="text-body-sm">
           Every statistical objective in this lab is reachable without hardware.{" "}
           <Link
-            className="text-primary underline underline-offset-2"
+            className="text-accent-foreground underline underline-offset-2"
             href={`/courses/${courseSlug}/learn/${data.simulationFallbackLessonSlug}`}
           >
             Take the simulation route
@@ -224,7 +224,7 @@ export function LabProtocolBlock({
             {data.crossReferences.map((reference) => (
               <li key={`${reference.courseSlug}/${reference.lessonSlug}`}>
                 <Link
-                  className="text-primary text-body-sm underline underline-offset-2"
+                  className="text-accent-foreground text-body-sm underline underline-offset-2"
                   href={`/courses/${reference.courseSlug}/learn/${reference.lessonSlug}`}
                 >
                   {reference.label}
@@ -249,7 +249,7 @@ export function LabProtocolBlock({
                 <li key={item.label}>
                   {item.deviceSlug ? (
                     <Link
-                      className="text-primary underline underline-offset-2"
+                      className="text-accent-foreground underline underline-offset-2"
                       href={`/hardware/${item.deviceSlug}`}
                     >
                       {item.label}
