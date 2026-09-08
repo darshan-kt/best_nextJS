@@ -211,8 +211,42 @@ and the lesson route honours it — a learner enrolled in a DRAFT course can rea
 its lessons. `/hardware/[slug]` filters on PUBLISHED + PUBLIC only, with no
 enrollment check, so the same learner cannot open the device pages belonging to
 the course they are enrolled in. That inconsistency is what makes P2 visible.
+**Checked 2026-09-08: P3 does NOT depend on P2.** An enrolled learner can
+already read all 40 lessons of that DRAFT course — `course:learn` grants on
+an ACTIVE or COMPLETED enrollment regardless of course status — and those
+lessons carry the same unverified hardware claims the device pages would.
+The catalogue page is a subset of content the learner can already reach, so
+honouring enrollment here widens no exposure; it removes an inconsistency.
+P3 is therefore solvable whatever happens to the hardware course's
+publication status, and is not blocked behind it.
+
 **To close:** decide whether the hardware catalogue should honour enrollment
-the way the lesson route does. A policy decision, not a rendering one.
+the way the lesson route does. A policy decision, not a rendering one. Note
+that it lands in two places, not one — the route itself (today anonymous,
+with no session lookup at all, and `generateMetadata` uses the same query),
+and `DEVICE_CARD`'s `catalogPageIsReachable`, which is computed
+viewer-independently and would need the viewer's enrollment threaded in
+before a link could come back. `PUBLIC_HOME_SECTION_FILTER` has three call
+sites; whether the public `/hardware` INDEX should change too, or only the
+detail page, is part of the decision.
+
+### P4. Stale-build false negatives — a named pattern, not an open bug
+
+**The pattern:** a verification run reports "still failing" for a fix that is
+correct in the working tree, because something other than the build you just
+made was answering on the port. It happened twice in one session (2026-09-08).
+First, Playwright's `reuseExistingServer` silently adopted a `docker compose`
+container serving an hour-old image on :3000. Then, after moving to :3100, a
+leftover server on that port predated the real fix by sixteen minutes and
+served the pre-fix render. Both times the output was indistinguishable from a
+genuine failure, and the tempting response — "the fix did not work, try
+something else" — would have replaced correct code with something worse.
+
+**Fixed** by `E2E_PORT` in `playwright.config.ts`, so the target is chosen
+rather than inherited. Recorded here as a lesson rather than a bug: the tell is
+a failure whose details are *identical* across runs that should have changed
+something. When that happens, confirm what is actually listening (`ss -ltnp |
+grep :PORT`, then `ps -o lstart` on the pid) before believing the result.
 
 ---
 
