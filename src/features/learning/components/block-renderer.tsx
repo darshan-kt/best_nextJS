@@ -13,6 +13,7 @@ import { SpecTableBlock } from "./blocks/spec-table-block";
 import { DeviceCardBlock } from "./blocks/device-card-block";
 import { DistributionSimBlock } from "./blocks/distribution-sim-block";
 import { DatasetExplorerBlock } from "./blocks/dataset-explorer-block";
+import { LabProtocolBlock } from "./blocks/lab-protocol-block";
 import { UnsupportedBlock } from "./blocks/unsupported-block";
 
 /**
@@ -39,7 +40,9 @@ import { UnsupportedBlock } from "./blocks/unsupported-block";
  * `DISTRIBUTION_SIM` and `DATASET_EXPLORER` were added by the Statistical
  * Distributions course (PHASE_1A_ARCHITECTURE.md §18): the first is
  * lightweight JSON, the second references a `Dataset` row the same way
- * SPEC_TABLE references a device.
+ * SPEC_TABLE references a device. `LAB_PROTOCOL` (Phase 1F) is lightweight
+ * too — a physical lab is instructional content the learner runs on their
+ * own machine, so it references nothing here and posts nothing back.
  *
  * `quizContext` exists only for the `QUIZ` case (§44, Milestone 8): the
  * already-resolved actor/enrollment from the lesson page's own
@@ -100,13 +103,27 @@ export function BlockRenderer({
       return <SpecTableBlock device={block.device} data={block.data} />;
 
     case "DEVICE_CARD":
-      return <DeviceCardBlock device={block.device} />;
+      return (
+        <DeviceCardBlock
+          device={block.device}
+          catalogPageIsReachable={block.catalogPageIsReachable}
+        />
+      );
 
     case "DISTRIBUTION_SIM":
       return <DistributionSimBlock data={block.data} />;
 
     case "DATASET_EXPLORER":
       return <DatasetExplorerBlock dataset={block.dataset} data={block.data} />;
+
+    case "LAB_PROTOCOL":
+      // `courseSlug` comes from the already-resolved lesson-page context
+      // rather than a second query: the block links to its own simulation
+      // fallback lesson, and a lesson slug is only addressable together
+      // with the course it belongs to.
+      return (
+        <LabProtocolBlock data={block.data} courseSlug={quizContext.courseSlug} />
+      );
 
     case "INVALID":
       return <UnsupportedBlock blockType={block.blockType} invalid />;

@@ -25,7 +25,9 @@
     "docker:up": "docker compose --profile full up --build",
     "docker:down": "docker compose --profile full down",
     "postinstall": "prisma generate",
-    "verify:ros2": "tsx scripts/verify-ros2-terminal-output.ts"
+    "verify:ros2": "tsx scripts/verify-ros2-terminal-output.ts",
+    "verify:datasets": "tsx scripts/verify-datasets.ts",
+    "generate:datasets": "tsx scripts/generate-datasets.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "2.11.3",

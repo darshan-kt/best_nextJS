@@ -13,7 +13,9 @@ import type { DatasetExplorerBlockData } from "../schemas";
 
 /**
  * Renders a real dataset: preview, histogram, empirical CDF, Q-Q plot,
- * summary statistics, 2D scatter.
+ * summary statistics, 2D scatter, time series. That list is every member
+ * of `datasetViewSchema` — keep it that way, because a view the schema
+ * accepts and this file ignores fails silently rather than loudly.
  *
  * An async Server Component. The file is read and parsed on the server
  * (see `loader.ts`), so a lesson analysing 5,000 LiDAR readings ships the
@@ -234,6 +236,40 @@ export async function DatasetExplorer({ dataset, data }: DatasetExplorerProps) {
               secondaryColumn?.label ?? "y"
             } against ${column?.label ?? "x"}.`}
             description="Look for even coverage rather than clusters or gaps — unevenness is the finding."
+          />
+        ) : null}
+
+        {/*
+          TIME_SERIES: the value against the clock, in the order it was
+          recorded.
+
+          `datasetViewSchema` has accepted this view since Phase 1E and
+          `secondaryColumn` is *required* for it, but no branch rendered it
+          until M4.2 needed one — a block could validate, seed, and then
+          silently drop the only figure it existed to show. Zod cannot
+          catch that: the schema describes the payload, not whether anyone
+          reads it.
+
+          Drawn as points rather than a connected line, deliberately. These
+          are discrete events; a line between two of them would draw a
+          value at instants when nothing happened, and M4.2's whole subject
+          is that the gaps — not a continuous signal — are the quantity.
+        */}
+        {data.views.includes("TIME_SERIES") && secondary.length > 0 ? (
+          <ScatterPlot
+            points={secondary.map((t, index) => ({ x: t, y: values[index] }))}
+            domain={[Math.min(...secondary), Math.max(...secondary)]}
+            yDomain={domain}
+            xLabel={
+              secondaryColumn
+                ? `${secondaryColumn.label}${secondaryColumn.unit ? ` (${secondaryColumn.unit})` : ""}`
+                : undefined
+            }
+            yLabel={column?.label}
+            label={`${payload.rowCount.toLocaleString()} values of ${
+              column?.label ?? "the measurement"
+            } plotted against ${secondaryColumn?.label ?? "time"}, in recorded order.`}
+            description="Look for drift, bursts or a changing spread over time. A process whose behaviour changes as you watch is not one distribution."
           />
         ) : null}
 

@@ -263,6 +263,225 @@ describe("exponential", () => {
   });
 });
 
+describe("irwin-hall", () => {
+  const spec = DISTRIBUTIONS.IRWIN_HALL;
+
+  /**
+   * Every expected value below is hand-derived from the convolution of k
+   * uniforms, not read back out of this implementation. That matters more
+   * here than anywhere else in this file: the whole point of the entry is
+   * that the bell shape is a consequence of summation, so a density that
+   * happens to look bell-shaped while being subtly wrong would corrupt the
+   * one lesson it exists for.
+   */
+  it("is the flat uniform at k = 1", () => {
+    expect(spec.pdf(0.5, { k: 1 })).toBeCloseTo(1, 15);
+    expect(spec.pdf(0, { k: 1 })).toBeCloseTo(1, 15);
+    expect(spec.pdf(1, { k: 1 })).toBeCloseTo(1, 15);
+    expect(spec.pdf(1.5, { k: 1 })).toBe(0);
+    expect(spec.pdf(-0.5, { k: 1 })).toBe(0);
+  });
+
+  it("is the triangle f(x) = x, then 2 - x, at k = 2", () => {
+    // The convolution of two unit boxes, by hand.
+    for (const x of [0, 0.25, 0.5, 0.75]) {
+      expect(spec.pdf(x, { k: 2 })).toBeCloseTo(x, 13);
+    }
+    for (const x of [1.25, 1.5, 1.75]) {
+      expect(spec.pdf(x, { k: 2 })).toBeCloseTo(2 - x, 13);
+    }
+    expect(spec.pdf(1, { k: 2 })).toBeCloseTo(1, 13);
+  });
+
+  it("matches the three-piece quadratic at k = 3", () => {
+    // x^2/2 on [0,1]; (-2x^2 + 6x - 3)/2 on [1,2]; (3-x)^2/2 on [2,3].
+    expect(spec.pdf(0.5, { k: 3 })).toBeCloseTo(0.125, 13);
+    expect(spec.pdf(1.5, { k: 3 })).toBeCloseTo(0.75, 13);
+    expect(spec.pdf(2.5, { k: 3 })).toBeCloseTo(0.125, 13);
+    expect(spec.pdf(1, { k: 3 })).toBeCloseTo(0.5, 13);
+  });
+
+  it("is symmetric about k/2 and integrates to 1, at every k the lesson uses", () => {
+    for (const k of [1, 2, 4, 12, 30]) {
+      const params = { k };
+      for (const offset of [0.1, 0.4, 0.9]) {
+        const width = (k / 2) * offset;
+        expect(spec.pdf(k / 2 - width, params)).toBeCloseTo(
+          spec.pdf(k / 2 + width, params),
+          13
+        );
+      }
+
+      // Trapezoid over the FULL support, not the plot domain: the density
+      // must carry all of its mass, independently of what is framed.
+      const steps = 60_000;
+      const width = k / steps;
+      let area = 0;
+      for (let i = 0; i < steps; i += 1) {
+        area +=
+          ((spec.pdf(i * width, params) + spec.pdf((i + 1) * width, params)) / 2) *
+          width;
+      }
+      expect(area).toBeCloseTo(1, 6);
+    }
+  });
+
+  it("puts exactly half its mass below k/2", () => {
+    for (const k of [1, 2, 4, 12, 30]) {
+      expect(spec.cdf(k / 2, { k })).toBeCloseTo(0.5, 14);
+    }
+    // Hand-checked interior values, from the piecewise integrals.
+    expect(spec.cdf(1, { k: 2 })).toBeCloseTo(0.5, 14);
+    expect(spec.cdf(0.5, { k: 2 })).toBeCloseTo(0.125, 14);
+    expect(spec.cdf(1, { k: 3 })).toBeCloseTo(1 / 6, 13);
+  });
+
+  it("saturates outside its bounded support", () => {
+    expect(spec.cdf(-1, { k: 5 })).toBe(0);
+    expect(spec.cdf(6, { k: 5 })).toBe(1);
+    expect(spec.support({ k: 30 })).toEqual([0, 30]);
+  });
+
+  it("inverts its own CDF to double precision", () => {
+    for (const k of [1, 2, 4, 12, 30]) {
+      for (const p of [1e-5, 0.001, 0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 0.99999]) {
+        expect(spec.cdf(spec.quantile(p, { k }), { k })).toBeCloseTo(p, 13);
+      }
+      expect(spec.quantile(0.5, { k })).toBeCloseTo(k / 2, 10);
+    }
+  });
+
+  it("matches the closed-form mean k/2 and variance k/12", () => {
+    for (const k of [1, 2, 4, 12, 30]) {
+      expect(spec.mean({ k })).toBe(k / 2);
+      expect(spec.variance({ k })).toBe(k / 12);
+    }
+    // k = 12 is the anchor M3.2's comparison figure is pinned to: the
+    // standard deviation is exactly 1, so the matched Gaussian is
+    // mu = 6, sigma = 1 with no rounding anywhere.
+    expect(spec.variance({ k: 12 })).toBe(1);
+  });
+
+  it("SAMPLES BY ACTUALLY SUMMING UNIFORM DRAWS", () => {
+    // The lesson's entire claim is that the shape comes from addition. So
+    // this asserts the mechanism directly rather than inferring it from
+    // the resulting histogram: a sample must equal the sum of the next k
+    // draws of an identically seeded generator, exactly.
+    for (const k of [1, 2, 7, 30]) {
+      const sampler = createRng(20_260_908);
+      const witness = createRng(20_260_908);
+
+      for (let trial = 0; trial < 25; trial += 1) {
+        let expected = 0;
+        for (let i = 0; i < k; i += 1) expected += witness();
+        expect(spec.sample(sampler, { k })).toBe(expected);
+      }
+    }
+  });
+
+  it("draws only inside [0, k], because a sum of bounded terms is bounded", () => {
+    const rng = createRng(7);
+    for (let i = 0; i < 5_000; i += 1) {
+      const value = spec.sample(rng, { k: 12 });
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it("recovers the sample mean and standard deviation the model predicts", () => {
+    const rng = createRng(99);
+    const samples = Array.from({ length: 20_000 }, () => spec.sample(rng, { k: 12 }));
+
+    expect(mean(samples)).toBeCloseTo(6, 1);
+    expect(standardDeviation(samples)).toBeCloseTo(1, 1);
+  });
+
+  it("rejects a k that is not a whole number of error sources", () => {
+    expect(spec.validate({ k: 12 })).toBeNull();
+    expect(spec.validate({ k: 2.5 })).toMatch(/whole number/);
+    expect(spec.validate({ k: 0 })).toMatch(/at least 1/);
+    expect(spec.validate({ k: -3 })).toMatch(/at least 1/);
+    expect(spec.validate({ k: Number.NaN })).toMatch(/finite/);
+    // The cap is a resource guard, not a mathematical one: evaluation is
+    // O(k^2) and k arrives from an author-controlled JSON payload.
+    expect(spec.validate({ k: 201 })).toMatch(/capped/);
+  });
+
+  it("fits k from the sample mean, rounded to a whole count", () => {
+    const rng = createRng(4);
+    const samples = Array.from({ length: 5_000 }, () => spec.sample(rng, { k: 9 }));
+    expect(spec.fit(samples).k).toBe(9);
+    expect(spec.fit([]).k).toBe(1);
+  });
+
+  it("frames the mass rather than the support, so the bell is not a spike", () => {
+    // At k = 30 the support is 30 wide and sigma is 1.58. A frame drawn on
+    // the support would render the bell as a spike in an empty axis at
+    // exactly the lesson where its shape has to be read.
+    const [low, high] = spec.plotDomain({ k: 30 });
+    expect(low).toBeGreaterThan(5);
+    expect(high).toBeLessThan(25);
+    expect(high - low).toBeLessThan(30);
+
+    // At small k there is no tail to cut, so the whole block is framed.
+    const [smallLow, smallHigh] = spec.plotDomain({ k: 1 });
+    expect(smallLow).toBeLessThan(0);
+    expect(smallHigh).toBeGreaterThan(1);
+  });
+
+  /**
+   * THE LESSON'S OWN CLAIM, AS A TEST.
+   *
+   * M3.2 asserts that summing more independent uniform errors takes the
+   * shape closer to a bell. That is a checkable statement about this
+   * implementation, so it is checked here rather than left to the
+   * learner's eye and the author's confidence.
+   *
+   * Note the direction of the dependency: the Gaussian appears only as the
+   * YARDSTICK. Nothing in the Irwin-Hall entry consults it, which is the
+   * whole reason the lesson demonstrates a mechanism instead of assuming
+   * its conclusion.
+   */
+  it("converges toward the normal as k rises, monotonically", () => {
+    const gaussian = DISTRIBUTIONS.GAUSSIAN;
+
+    const distanceToNormal = (k: number): number => {
+      const mu = k / 2;
+      const sigma = Math.sqrt(k / 12);
+      let worst = 0;
+
+      for (let i = 0; i <= 600; i += 1) {
+        const z = -3 + (i * 6) / 600;
+        // Standardized, so the comparison is of SHAPE alone — both the
+        // centre and the width of the Irwin-Hall move with k.
+        const observed = sigma * spec.pdf(mu + z * sigma, { k });
+        const reference = gaussian.pdf(z, { mu: 0, sigma: 1 });
+        worst = Math.max(worst, Math.abs(observed - reference));
+      }
+
+      return worst;
+    };
+
+    const ladder = [1, 2, 4, 12, 30].map(distanceToNormal);
+
+    for (let i = 1; i < ladder.length; i += 1) {
+      expect(ladder[i]).toBeLessThan(ladder[i - 1]);
+    }
+
+    // Measured, not aspirational: 0.199, 0.031, 0.014, 0.0050, 0.0020.
+    expect(ladder[0]).toBeGreaterThan(0.15);
+    expect(ladder[ladder.length - 1]).toBeLessThan(0.005);
+  });
+
+  it("is still not a Gaussian, and says so in its assumptions", () => {
+    // Bounded support is the honest limit of the demonstration, and M3.2's
+    // warning callout rests on it. If this ever stops being true the
+    // lesson's "this is not a proof of the CLT" paragraph is wrong.
+    expect(spec.support({ k: 12 })).toEqual([0, 12]);
+    expect(spec.framing.assumptions.join(" ")).toMatch(/Central Limit Theorem/);
+  });
+});
+
 describe("registry invariants", () => {
   it("keys every entry by its own kind", () => {
     for (const kind of DISTRIBUTION_KINDS) {
@@ -270,10 +489,14 @@ describe("registry invariants", () => {
     }
   });
 
-  it("ships exactly the three Phase 1 distributions", () => {
+  it("ships exactly the four Phase 1 distributions", () => {
+    // A tripwire, not a tautology. Adding a registry entry changes what
+    // every lesson in the course can be authored against, so it should be
+    // a deliberate edit here rather than something that slips in.
     expect([...DISTRIBUTION_KINDS].sort()).toEqual([
       "EXPONENTIAL",
       "GAUSSIAN",
+      "IRWIN_HALL",
       "UNIFORM",
     ]);
   });
@@ -305,6 +528,9 @@ describe("registry invariants", () => {
     expect(
       DISTRIBUTIONS.EXPONENTIAL.validate(defaults("EXPONENTIAL") as never)
     ).toBeNull();
+    expect(
+      DISTRIBUTIONS.IRWIN_HALL.validate(defaults("IRWIN_HALL") as never)
+    ).toBeNull();
   });
 
   it("states a framing question and at least two assumptions for each", () => {
@@ -326,6 +552,8 @@ describe("registry invariants", () => {
       { spec: DISTRIBUTIONS.UNIFORM, params: { a: 0, b: 1 } },
       { spec: DISTRIBUTIONS.GAUSSIAN, params: { mu: 0, sigma: 1 } },
       { spec: DISTRIBUTIONS.EXPONENTIAL, params: { lambda: 1 } },
+      { spec: DISTRIBUTIONS.IRWIN_HALL, params: { k: 1 } },
+      { spec: DISTRIBUTIONS.IRWIN_HALL, params: { k: 12 } },
     ] as const;
 
     for (const { spec, params } of cases) {

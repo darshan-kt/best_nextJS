@@ -53,3 +53,6 @@ next-env.d.ts
 
 # Agent worktrees — full nested checkouts, never part of this tree.
 .claude/worktrees/
+
+# Python bytecode from running the course's example scripts locally.
+__pycache__/

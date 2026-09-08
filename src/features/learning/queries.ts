@@ -10,6 +10,10 @@ import {
   datasetExplorerBlockSchema,
   type DatasetExplorerBlockData,
 } from "@/features/datasets/schemas";
+import {
+  labProtocolBlockSchema,
+  type LabProtocolBlockData,
+} from "@/features/labs/schemas";
 import type { HardwareDeviceDetail } from "@/features/hardware/queries";
 import {
   distributionSimBlockSchema,
@@ -65,6 +69,23 @@ const hardwareDeviceSelect = {
     orderBy: { sortOrder: "asc" as const },
     select: { topicName: true, messageType: true, description: true },
   },
+  /**
+   * Whether `/hardware/<slug>` is actually reachable for this device.
+   *
+   * `DEVICE_CARD` renders a link to that route, and the route resolves
+   * through `getHardwareDeviceBySlug`, which only returns a device whose
+   * home section belongs to a PUBLISHED + PUBLIC course. A card for a
+   * device in a DRAFT course therefore linked to a 404 — including from
+   * inside the very course that owns the device, which is where all eight
+   * of them currently are.
+   *
+   * Selected here rather than re-queried per card: `getLessonContentBlocks`
+   * already has the device row in hand, so this is one extra join for the
+   * whole lesson instead of one query per block (§26).
+   */
+  homeSection: {
+    select: { course: { select: { status: true, visibility: true } } },
+  },
 } as const;
 
 /**
@@ -118,7 +139,14 @@ export type RenderableBlock =
       device: HardwareDeviceDetail;
       data: SpecTableBlockData;
     }
-  | { id: string; position: number; kind: "DEVICE_CARD"; device: HardwareDeviceDetail }
+  | {
+      id: string;
+      position: number;
+      kind: "DEVICE_CARD";
+      device: HardwareDeviceDetail;
+      /** False when `/hardware/<slug>` would 404 for this viewer. */
+      catalogPageIsReachable: boolean;
+    }
   | {
       id: string;
       position: number;
@@ -135,6 +163,12 @@ export type RenderableBlock =
   /** JSON present but did not match its type's schema — a bad row, not a
    *  bad request; rendered as an inline notice rather than failing the
    *  whole lesson (§28). */
+  | {
+      id: string;
+      position: number;
+      kind: "LAB_PROTOCOL";
+      data: LabProtocolBlockData;
+    }
   | { id: string; position: number; kind: "INVALID"; blockType: ContentBlockType }
   /** Any future type this player doesn't have a renderer for yet. */
   | { id: string; position: number; kind: "UNSUPPORTED"; blockType: ContentBlockType };
@@ -255,7 +289,36 @@ export async function getLessonContentBlocks(
       case "DEVICE_CARD": {
         const parsedData = deviceCardBlockDataSchema.safeParse(block.data ?? {});
         return block.hardwareDevice && parsedData.success
-          ? { id, position, kind: "DEVICE_CARD", device: block.hardwareDevice }
+          ? {
+              id,
+              position,
+              kind: "DEVICE_CARD",
+              device: block.hardwareDevice,
+              // Same predicate as `PUBLIC_HOME_SECTION_FILTER`, which is
+              // what `/hardware/<slug>` itself filters on. Kept as a
+              // boolean rather than the raw status so the renderer states
+              // the question it actually cares about — "can the viewer
+              // open this?" — instead of re-deriving it.
+              // `homeSection` is nullable, and a device without one has no
+              // catalogue page at all — `PUBLIC_HOME_SECTION_FILTER` cannot
+              // match it — so null is "not reachable" rather than an edge
+              // case worth a separate branch.
+              catalogPageIsReachable:
+                block.hardwareDevice.homeSection?.course.status === "PUBLISHED" &&
+                block.hardwareDevice.homeSection?.course.visibility === "PUBLIC",
+            }
+          : { id, position, kind: "INVALID", blockType: block.type };
+      }
+
+      case "LAB_PROTOCOL": {
+        // Lightweight, like DISTRIBUTION_SIM: the payload is the block.
+        // Nothing is cross-checked against a row here because a lab points
+        // at no row — the device and fallback-lesson slugs it carries are
+        // verified at SEED time instead (`seedContentBlock`), which is the
+        // only moment both sides of each link are in scope.
+        const parsed = labProtocolBlockSchema.safeParse(block.data);
+        return parsed.success
+          ? { id, position, kind: "LAB_PROTOCOL", data: parsed.data }
           : { id, position, kind: "INVALID", blockType: block.type };
       }
 

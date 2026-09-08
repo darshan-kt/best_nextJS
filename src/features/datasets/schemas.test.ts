@@ -1,6 +1,13 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { datasetExplorerBlockSchema, datasetInputSchema } from "./schemas";
+import {
+  datasetExplorerBlockSchema,
+  datasetInputSchema,
+  datasetViewSchema,
+} from "./schemas";
 
 /**
  * Dataset and `DATASET_EXPLORER` validation, following the adversarial
@@ -189,5 +196,38 @@ describe("datasetExplorerBlockSchema", () => {
     expect(datasetExplorerBlockSchema.safeParse({ ...VALID_BLOCK, title: "" }).success).toBe(false);
     expect(datasetExplorerBlockSchema.safeParse({ ...VALID_BLOCK, valueColumn: "" }).success).toBe(false);
     expect(datasetExplorerBlockSchema.safeParse({ ...VALID_BLOCK, views: [] }).success).toBe(false);
+  });
+
+  /**
+   * VIEW COVERAGE — the `DATASET_EXPLORER` counterpart to
+   * `block-renderer.test.ts`'s block-type coverage, and it exists because
+   * the same hole opened here.
+   *
+   * `datasetViewSchema` gained `TIME_SERIES` in Phase 1E. `DatasetExplorer`
+   * never grew a branch for it, and nothing failed: the schema validated
+   * the payload, the seed wrote the row, and the renderer drew every OTHER
+   * view in the list while silently dropping that one. A block whose whole
+   * purpose was the time series would have shipped showing a table and a
+   * summary, and the first person to notice would have been a learner.
+   *
+   * Zod cannot close this. It describes what a payload may contain, not
+   * whether anything reads it. So, like the block-type test, this reads the
+   * renderer's source and insists every view the schema admits is named
+   * there. Blunt, and fails for exactly the right reason.
+   */
+  it("renders every view datasetViewSchema accepts", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/features/datasets/components/dataset-explorer.tsx"),
+      "utf8"
+    );
+
+    for (const view of datasetViewSchema.options) {
+      expect(
+        source.includes(`data.views.includes("${view}")`),
+        `dataset-explorer.tsx has no branch for the "${view}" view. A view the ` +
+          `schema accepts but the renderer ignores fails silently — the block ` +
+          `validates, seeds, and then draws nothing.`
+      ).toBe(true);
+    }
   });
 });

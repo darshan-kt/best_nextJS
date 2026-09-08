@@ -18,7 +18,15 @@ import type {
  * own `course:learn` check before any block is read.
  */
 
-const PUBLIC_HOME_SECTION_FILTER = {
+/**
+ * Exported so that seed-time link checking uses THIS rule rather than a
+ * copy of it. `LAB_PROTOCOL` blocks may link a required-hardware entry to
+ * `/hardware/<slug>`, and that route resolves through
+ * `getHardwareDeviceBySlug`, which applies this filter — so "the device row
+ * exists" is not the predicate a link needs, and checking the weaker one
+ * ships a 404 to a learner.
+ */
+export const PUBLIC_HOME_SECTION_FILTER = {
   homeSection: {
     course: {
       status: "PUBLISHED" as const,

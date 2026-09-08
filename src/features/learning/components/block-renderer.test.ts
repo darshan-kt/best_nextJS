@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { ContentBlockType } from "@/db/generated/enums";
-import { lightweightBlockSchemas } from "@/features/learning/schemas";
+import { lightweightBlockSchemas } from "@/features/learning/block-registry";
 
 /**
  * BLOCK-TYPE COVERAGE.
@@ -54,7 +54,7 @@ const SWITCH_SITES = [
 ] as const;
 
 describe("content block type coverage", () => {
-  it("has at least the eleven types the course content relies on", () => {
+  it("has at least the fourteen types the course content relies on", () => {
     // A guard against the enum silently shrinking: every value below is
     // referenced by seeded course content.
     expect(BLOCK_TYPES).toEqual(
@@ -72,6 +72,7 @@ describe("content block type coverage", () => {
         "DEVICE_CARD",
         "DISTRIBUTION_SIM",
         "DATASET_EXPLORER",
+        "LAB_PROTOCOL",
       ])
     );
   });
@@ -101,11 +102,16 @@ describe("content block type coverage", () => {
     }
   });
 
-  it("keeps LAB_PROTOCOL out of the enum until it has an implementation", () => {
-    // Phase 1F adds it, together with its schema, renderer and grounding
-    // case. Declaring it early would force this file to carry an exemption
-    // list, which would weaken the very invariant it exists to hold — see
-    // the enum comment in prisma/schema.prisma.
-    expect(BLOCK_TYPES).not.toContain("LAB_PROTOCOL");
-  });
+  /**
+   * The guard that used to live here — "keeps LAB_PROTOCOL out of the enum
+   * until it has an implementation" — was removed in Phase 1F, and removing
+   * it was the point rather than a casualty.
+   *
+   * It existed so that a declared-but-unimplemented enum value could not sit
+   * in the schema forcing this file to carry an exemption list. Phase 1F
+   * landed the value together with its schema, its renderer, its grounding
+   * case and its parse case, so LAB_PROTOCOL is now covered by exactly the
+   * same three assertions every other block type is subject to, above. The
+   * protection did not weaken; it graduated.
+   */
 });

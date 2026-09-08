@@ -90,15 +90,17 @@ enum ContentBlockType {
   /// quiz/exercise use, because one dataset legitimately backs blocks in
   /// several lessons.
   ///
-  /// `LAB_PROTOCOL` is the third type this course needs and is NOT here
-  /// yet: it has no schema, no renderer and no grounding case, and adding a
-  /// dangling value would force `contentBlockCoverage` in
-  /// `block-renderer.test.ts` to carry an exemption list — weakening the
-  /// exact invariant that test exists to hold. It arrives in Phase 1F with
-  /// its implementation. `ALTER TYPE ... ADD VALUE` is additive and does
-  /// not rewrite the table, so deferring costs one cheap migration.
+  /// `LAB_PROTOCOL` (Phase 1F) arrived last and deliberately arrived with
+  /// its implementation — schema, renderer, grounding case and seed
+  /// support in the same change — so `block-renderer.test.ts` never had to
+  /// carry an exemption list for it. It is lightweight like
+  /// `DISTRIBUTION_SIM`: a physical lab references nothing in this
+  /// database, because the learner reads the protocol here and runs it on
+  /// their own machine. Nothing about a lab crosses the network into this
+  /// application in either direction.
   DISTRIBUTION_SIM
   DATASET_EXPLORER
+  LAB_PROTOCOL
 }
 
 /// §18. Which of the three evidence levels a dataset represents

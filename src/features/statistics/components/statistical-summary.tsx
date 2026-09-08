@@ -32,14 +32,30 @@ export interface StatisticalSummaryProps {
   className?: string;
 }
 
-/** Four significant figures: enough to see sampling variability move. */
+/**
+ * Four significant figures: enough to see sampling variability move.
+ *
+ * TRAILING ZEROS ARE KEPT, DELIBERATELY.
+ *
+ * `toPrecision(4)` produces "2.000"; passing that back through `Number`
+ * and `toString` — as this did — collapses it to "2". In a table whose
+ * whole purpose is comparing a sampled quantity against a modelled one,
+ * that is a loss of information rather than tidier formatting: "2 m" reads
+ * as an exact integer, "2.000 m" reads as a measurement resolved to the
+ * millimetre, and only the second is what the number means.
+ *
+ * It also broke a lesson. `samples-and-sampling` asks the learner to draw
+ * repeatedly at n = 30 and write down μ̂ each time; every draw whose mean
+ * rounded to 2.000 rendered as a bare "2", so the exercise appeared to
+ * show a mean that never moved.
+ */
 function formatValue(value: number, unit?: string): string {
   if (!Number.isFinite(value)) return "—";
 
   const text =
     Math.abs(value) >= 1e5 || (Math.abs(value) < 1e-3 && value !== 0)
       ? value.toExponential(2)
-      : Number(value.toPrecision(4)).toString();
+      : value.toPrecision(4);
 
   return unit ? `${text} ${unit}` : text;
 }

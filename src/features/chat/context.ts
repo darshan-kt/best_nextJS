@@ -93,6 +93,19 @@ function extractBlockText(block: RenderableBlock): string | null {
       // §63).
       return `This lesson analyses a dataset titled "${block.dataset.title}" (${block.dataset.sampleCount} samples, ${block.dataset.level.toLowerCase()}): ${block.dataset.summary}`;
 
+    case "LAB_PROTOCOL":
+      // The objective and the fact that this is hands-on hardware work —
+      // not the procedure. An assistant that recites the steps invites a
+      // learner to follow them from the chat panel instead of from the
+      // page, and the page is where the safety section is. The validation
+      // status is included deliberately: "designed, never run" is exactly
+      // the context needed before answering "should this have worked?".
+      return `This lesson contains a physical robot lab titled "${block.data.title}" (${
+        block.data.validationStatus === "PHYSICALLY_VALIDATED"
+          ? "physically validated"
+          : "theoretically designed, not yet run on hardware"
+      }). Objective: ${block.data.objective} The learner runs it on their own robot; nothing is submitted to this platform.`;
+
     case "INVALID":
     case "UNSUPPORTED":
       return null;

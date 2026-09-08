@@ -12,7 +12,12 @@
  * form of "design the architecture so they can be added later"
  * (PHASE_1A_ARCHITECTURE.md §12).
  *
- * Phase 1 deliberately ships three: UNIFORM, GAUSSIAN, EXPONENTIAL.
+ * Phase 1 ships four: UNIFORM, GAUSSIAN, EXPONENTIAL, IRWIN_HALL.
+ *
+ * The fourth arrived last and by the route this file was designed for. It
+ * is a registry entry and nothing else — no component, no chart primitive,
+ * no block-renderer branch and no database migration were touched to add
+ * it. That is the extensibility claim above, tested rather than asserted.
  *
  * NUMERICAL ACCURACY
  *
@@ -25,7 +30,11 @@
 import type { Rng } from "./rng";
 import { mean as sampleMean, standardDeviation as sampleStandardDeviation } from "./summary";
 
-export type DistributionKind = "UNIFORM" | "GAUSSIAN" | "EXPONENTIAL";
+export type DistributionKind =
+  | "UNIFORM"
+  | "GAUSSIAN"
+  | "EXPONENTIAL"
+  | "IRWIN_HALL";
 
 export interface UniformParams {
   /** Lower bound, inclusive. */
@@ -43,10 +52,25 @@ export interface ExponentialParams {
   lambda: number;
 }
 
+export interface IrwinHallParams {
+  /**
+   * How many independent Uniform(0, 1) draws are summed. A positive
+   * integer, and the only parameter this distribution has.
+   *
+   * Named `k` rather than `n` deliberately: `n` is already the sample-count
+   * control every simulation carries (`SAMPLE_COUNT_PARAMETER`), and the
+   * block schema exempts that key from its registry check. Two different
+   * meanings of `n` in one block payload would be an authoring trap with no
+   * error message.
+   */
+  k: number;
+}
+
 export interface DistributionParamsByKind {
   UNIFORM: UniformParams;
   GAUSSIAN: GaussianParams;
   EXPONENTIAL: ExponentialParams;
+  IRWIN_HALL: IrwinHallParams;
 }
 
 export type DistributionParams =
@@ -539,14 +563,292 @@ const exponential: DistributionSpec<"EXPONENTIAL"> = {
   },
 };
 
+/* ------------------------------------------------------------ irwin-hall -- */
+
+/**
+ * Densities of the Irwin-Hall family at x, evaluated by the B-spline
+ * recurrence, returning BOTH the order-k density and the order-(k+1) row
+ * the CDF is assembled from.
+ *
+ * THE RECURRENCE, AND WHY NOT THE TEXTBOOK FORMULA
+ *
+ * The Irwin-Hall density is the cardinal B-spline of order k, so it obeys
+ *
+ *     f_m(y) = [ y * f_{m-1}(y) + (m - y) * f_{m-1}(y - 1) ] / (m - 1)
+ *
+ * with f_1 the indicator on [0, 1). Every coefficient is non-negative
+ * wherever a term is non-zero, so this is exact and numerically stable at
+ * every k.
+ *
+ * The formula usually printed instead is the alternating binomial sum
+ * `(1/(k-1)!) * SUM (-1)^j C(k,j) (x-j)^(k-1)`. It is algebraically the
+ * same function and computationally unusable at the sizes this lesson
+ * needs: at k = 30, x = 15 its largest term is around 2e42 against an
+ * answer of 0.25, and measured against this recurrence it loses roughly
+ * eight significant digits to cancellation. A density that is wrong in the
+ * fourth digit still draws a convincing bell, which is exactly why
+ * PHASE_1A_ARCHITECTURE.md rates mathematical correctness a High risk: the
+ * failure is invisible in the figure.
+ *
+ * ONE PASS FOR TWO ANSWERS
+ *
+ * The scheme walks orders 2..k+1 over a shifted array, so the order-k row
+ * — the density — is computed on the way to the order-(k+1) row the CDF
+ * needs. Returning both halves the cost of `quantile`, which evaluates the
+ * pair once per Newton step: 5,000 quantiles at k = 30 measured at 129 ms
+ * rather than 183.
+ *
+ * Cost is O(k^2) with an O(k) allocation, which is why `validate` caps k.
+ */
+function irwinHallEvaluate(x: number, k: number): { density: number; lower: number } {
+  const shifts = Math.floor(x);
+  const order = k + 1;
+  const width = order + shifts;
+
+  // Level 1: the uniform's own density at each shift. Half-open on
+  // purpose — [0, 1] at both ends would double-count the knot and hand
+  // f_2(1) the value 2.
+  const values = new Float64Array(width + 1);
+  for (let j = 0; j <= width; j += 1) {
+    const y = x - j;
+    values[j] = y >= 0 && y < 1 ? 1 : 0;
+  }
+
+  let density = 0;
+  for (let m = 2; m <= order; m += 1) {
+    const last = width - (m - 1);
+    for (let j = 0; j <= last; j += 1) {
+      const y = x - j;
+      values[j] = (y * values[j] + (m - y) * values[j + 1]) / (m - 1);
+    }
+    if (m === k) density = values[0];
+  }
+  // k = 1 never enters the loop at order k, and inside (0, 1) the sum of a
+  // single uniform draw has density 1 by definition.
+  if (k === 1) density = 1;
+
+  /**
+   * F_k(x) = SUM_{j >= 0} f_{k+1}(x - j).
+   *
+   * Not quadrature and not a second approximation: differentiating the
+   * order-(k+1) spline gives f_{k+1}'(y) = f_k(y) - f_k(y - 1), so the
+   * shifted sum telescopes to exactly f_k and vanishes at -infinity. The
+   * CDF is therefore as exact as the density, from the same pass.
+   */
+  let cumulative = 0;
+  for (let j = 0; j <= shifts; j += 1) cumulative += values[j];
+
+  return { density, lower: Math.min(1, Math.max(0, cumulative)) };
+}
+
+/**
+ * Irwin-Hall: the sum of k independent Uniform(0, 1) draws.
+ *
+ * WHY THIS ENTRY EXISTS, AND WHY IT IS NOT A GAUSSIAN
+ *
+ * M3.2 `gaussian-mechanism` has to show that many small, independent,
+ * additive errors produce a bell shape. Seeding that lesson with a Gaussian
+ * generator would assume its conclusion: the histogram would be bell-shaped
+ * because `sample` drew from a bell, not because anything was added, and
+ * the learner would be looking at the answer rather than at the mechanism.
+ *
+ * So `sample` below is the mechanism, written out: k uniform draws, added.
+ * `pdf`, `cdf`, `quantile`, `mean` and `variance` are the exact
+ * consequences of that sum — not approximations to a normal, and not a
+ * normal in disguise. The bell that appears as the learner raises k is
+ * produced by addition; nothing in this file put it there.
+ *
+ * The Gaussian is the limit, and the limit is never invoked. A lesson that
+ * wants the comparison draws a separate GAUSSIAN block on a pinned shared
+ * axis (the M5.2 pattern) — at k = 12 the mean is 6 and the standard
+ * deviation is exactly 1, so mu = 6, sigma = 1 is an exact match rather
+ * than an eyeballed one, and the learner is comparing two independently
+ * generated things.
+ *
+ * This is deliberately NOT a proof of the Central Limit Theorem, and M3.2
+ * says so in a warning callout. It is one family of summands, converging
+ * unusually fast because the uniform is bounded and symmetric. What it
+ * demonstrates is that summation alone is enough to produce the shape.
+ */
+const irwinHall: DistributionSpec<"IRWIN_HALL"> = {
+  kind: "IRWIN_HALL",
+  label: "Sum of uniform errors (Irwin-Hall)",
+  variety: "CONTINUOUS",
+  parameters: [
+    {
+      key: "k",
+      label: "Error sources summed (k)",
+      suggestedMin: 1,
+      suggestedMax: 30,
+      suggestedStep: 1,
+      // Opens on the state that is NOT a bell. The convergence is
+      // something the learner produces by moving the slider, rather than
+      // something already on screen when the lesson loads.
+      defaultValue: 1,
+      description:
+        "How many independent error sources are added together. One is a flat block; two is a triangle; by twelve the shape is a bell nobody put there.",
+    },
+  ],
+
+  /**
+   * k must be a positive integer, and is capped.
+   *
+   * The cap is not mathematical — the distribution is defined for every k.
+   * It is a resource guard. Evaluation is O(k^2) with an O(k) allocation,
+   * and k reaches here from a JSON block payload whose slider bounds an
+   * author chooses; an unbounded integer there hangs the tab rather than
+   * returning a wrong number (§9, §29). Two hundred is far past the point
+   * where any change is visible: by k = 30 the shape is already
+   * indistinguishable from its limit at histogram resolution.
+   */
+  validate: ({ k }) => {
+    if (!Number.isFinite(k)) return "k must be a finite number.";
+    if (!Number.isInteger(k)) return "k must be a whole number of error sources.";
+    if (k < 1) return "k must be at least 1 — there has to be something to add.";
+    if (k > 200) return "k is capped at 200; the shape stops changing long before that.";
+    return null;
+  },
+
+  // A sum of k values each in [0, 1] cannot leave [0, k]. Bounded support
+  // is one of the three conditions M3.2 names as a place the Gaussian
+  // mechanism breaks down, and it is visible here rather than asserted.
+  support: ({ k }) => [0, k],
+
+  /**
+   * Frames the mass, not the support.
+   *
+   * These differ sharply here and the difference matters. At k = 30 the
+   * support is 30 units wide while the standard deviation is 1.58, so a
+   * frame drawn on the support would render the bell as a spike in an
+   * empty axis at exactly the lesson where its shape has to be read. Four
+   * standard deviations either side of the mean, clipped to the support,
+   * shows the whole block at k = 1 and the whole bell at k = 30.
+   */
+  plotDomain: ({ k }) => {
+    const spread = Math.sqrt(k / 12);
+    const low = Math.max(0, k / 2 - 4 * spread);
+    const high = Math.min(k, k / 2 + 4 * spread);
+    const pad = (high - low) * 0.05;
+    return [low - pad, high + pad];
+  },
+
+  pdf: (x, { k }) => {
+    // k = 1 is the uniform, and the uniform's own entry above is inclusive
+    // at both bounds; matching that keeps the two agreeing at x = 1.
+    if (k === 1) return x >= 0 && x <= 1 ? 1 : 0;
+    if (x <= 0 || x >= k) return 0;
+    return irwinHallEvaluate(x, k).density;
+  },
+
+  cdf: (x, { k }) => {
+    if (x <= 0) return 0;
+    if (x >= k) return 1;
+    return irwinHallEvaluate(x, k).lower;
+  },
+
+  /**
+   * No closed form exists, so this is a Newton solve kept inside a
+   * bisection bracket: Newton for the speed, the maintained bracket so a
+   * step that would leave the interval falls back to a halving rather than
+   * diverging. Each iteration costs one `irwinHallEvaluate`, which returns
+   * the density and the CDF together — the derivative is free.
+   *
+   * Round-trip |F(F^-1(p)) - p| measured at 4e-15 worst case across
+   * k in {1, 2, 4, 12, 30} and p from 1e-5 to 1 - 1e-5, asserted in the
+   * tests rather than assumed.
+   */
+  quantile: (p, { k }) => {
+    if (p <= 0) return 0;
+    if (p >= 1) return k;
+
+    let low = 0;
+    let high = k;
+    let x = k * p;
+
+    for (let i = 0; i < 100; i += 1) {
+      const { density, lower } = irwinHallEvaluate(x, k);
+      const error = lower - p;
+
+      if (error > 0) high = x;
+      else low = x;
+      if (Math.abs(error) < 1e-14) break;
+
+      let next = density > 1e-300 ? x - error / density : (low + high) / 2;
+      if (!(next > low && next < high)) next = (low + high) / 2;
+      if (Math.abs(next - x) < 1e-15) {
+        x = next;
+        break;
+      }
+      x = next;
+    }
+
+    return x;
+  },
+
+  /**
+   * THE MECHANISM ITSELF. k uniform draws, added.
+   *
+   * This is the one line M3.2 exists to demonstrate, and it is written the
+   * long way on purpose: no inverse transform, no normal approximation, no
+   * shortcut that would make the resulting shape a property of the
+   * algorithm rather than of the summation. The learner raising k is
+   * literally adding more terms to this loop.
+   */
+  sample: (rng, { k }) => {
+    let total = 0;
+    for (let i = 0; i < k; i += 1) total += rng();
+    return total;
+  },
+
+  // Exact, and worth reading beside the shape: both are linear in k, so
+  // the distribution widens as sqrt(k) while its centre moves as k. That
+  // is why the bell appears to sharpen relative to its own support.
+  mean: ({ k }) => k / 2,
+  variance: ({ k }) => k / 12,
+
+  /**
+   * Method of moments on the MEAN: k = round(2 * sample mean).
+   *
+   * Both moments identify k (mean = k/2, variance = k/12), so the choice
+   * needs a reason. The mean-based estimator is far tighter: at k = 12 and
+   * n = 1000 its standard error is about 0.063 against about 0.52 for the
+   * variance-based one, an eightfold difference, because the fourth-moment
+   * term that governs the variance of a sample variance dominates here.
+   * Rounding is part of the estimator rather than presentation — k counts
+   * error sources and a fitted 11.4 of them is not a thing.
+   */
+  fit: (samples) => {
+    const m = sampleMean(samples);
+    if (!Number.isFinite(m) || m <= 0) return { k: 1 };
+    return { k: Math.min(200, Math.max(1, Math.round(2 * m))) };
+  },
+
+  framing: {
+    question: "WHY does a bell shape keep appearing?",
+    mechanism:
+      "Many small independent errors add together, and the sum concentrates near the middle simply because there are far more ways to land there than at either extreme.",
+    assumptions: [
+      "The error sources are added, not multiplied.",
+      "The sources are independent of one another.",
+      "No single source is much larger than the rest.",
+      "Each source is bounded, so the sum is bounded too — which is why this is a mechanism for the shape, not a proof of the Central Limit Theorem.",
+    ],
+  },
+};
+
 /* ------------------------------------------------------------- registry -- */
 
 /**
  * The registry. One entry per distribution the course teaches.
  *
- * Adding a fourth is: one `DistributionKind` value, one params interface,
- * one entry here, one Prisma enum value, and one content module. Nothing
- * that renders a distribution needs to change.
+ * Adding a fourth was: one `DistributionKind` value, one params interface,
+ * one entry here, one value in `distributionKindSchema`, and one content
+ * module. Nothing that renders a distribution changed.
+ *
+ * That prediction was written before IRWIN_HALL existed and held, with one
+ * correction worth keeping: there is no Prisma enum value. `ContentBlockType`
+ * carries DISTRIBUTION_SIM and the distribution kind lives inside the block's
+ * validated JSON payload, so a new distribution needs no migration at all.
  */
 export const DISTRIBUTIONS: {
   [K in DistributionKind]: DistributionSpec<K>;
@@ -554,6 +856,7 @@ export const DISTRIBUTIONS: {
   UNIFORM: uniform,
   GAUSSIAN: gaussian,
   EXPONENTIAL: exponential,
+  IRWIN_HALL: irwinHall,
 };
 
 export const DISTRIBUTION_KINDS = Object.keys(DISTRIBUTIONS) as DistributionKind[];

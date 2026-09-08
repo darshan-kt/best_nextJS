@@ -2,6 +2,7 @@ export { DistributionPlot, type DistributionPlotProps, type PlotView } from "./d
 export {
   DistributionSimulator,
   type DistributionSimulatorProps,
+  type SimulatorView,
 } from "./distribution-simulator";
 export {
   ParameterControl,

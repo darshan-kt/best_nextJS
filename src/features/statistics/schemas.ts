@@ -22,6 +22,7 @@ export const distributionKindSchema = z.enum([
   "UNIFORM",
   "GAUSSIAN",
   "EXPONENTIAL",
+  "IRWIN_HALL",
 ]);
 
 export const distributionViewSchema = z.enum([
@@ -34,6 +35,11 @@ export const distributionViewSchema = z.enum([
 ]);
 export type DistributionView = z.infer<typeof distributionViewSchema>;
 
+/**
+ * One learner-facing slider as the LESSON declares it, overlaid on the
+ * registry's `ParameterSpec` by `DistributionSimulator`. See that
+ * component's `controls` prop for why both exist.
+ */
 export const parameterControlSchema = z
   .object({
     key: z.string().min(1),
@@ -57,6 +63,8 @@ export const parameterControlSchema = z
       path: ["default"],
     }
   );
+
+export type ParameterControlData = z.infer<typeof parameterControlSchema>;
 
 export const distributionSimBlockSchema = z
   .object({
@@ -92,6 +100,18 @@ export const distributionSimBlockSchema = z
      * renders entirely on the server.
      */
     interactive: z.boolean().default(true),
+    /**
+     * Shows a "Draw again" control, which redraws at the SAME parameters
+     * and the same n from a different seed.
+     *
+     * M1.6 and M3.7 are built on this and have no other expression: their
+     * whole point is that two samples of identical size from an identical
+     * model disagree, and that the disagreement shrinks with n. A slider
+     * cannot show it, because every slider in this component changes the
+     * thing being sampled. Off by default — a theory figure that reshuffles
+     * itself invites the reading that the model is unstable.
+     */
+    allowResample: z.boolean().default(false),
     unit: z.string().optional(),
     xLabel: z.string().optional(),
   })
@@ -99,9 +119,24 @@ export const distributionSimBlockSchema = z
     message: "xDomain must be [min, max] with min < max",
     path: ["xDomain"],
   })
+  /**
+   * SCATTER_2D plots two independent draws as one point, which is the
+   * uniform module's 2D workspace. It is meaningless for a Gaussian or an
+   * Exponential, so it is rejected there.
+   *
+   * This used to be a BICONDITIONAL — every UNIFORM block was *required*
+   * to carry the scatter view, on the reasoning that "a uniform sim
+   * without it is almost certainly an authoring mistake". Authoring the
+   * uniform module disproved that: `uniform-theory` draws the flat density
+   * beside its cumulative ramp, `uniform-mean-and-variance` demonstrates
+   * (a+b)/2 and (b−a)²/12, `uniform-explore` is about histogram
+   * unevenness, and `side-by-side` compares three distributions on shared
+   * axes. Four legitimate uniform figures, none of which is about two
+   * dimensions. The rule now says what it always meant.
+   */
   .refine(
     (block) =>
-      block.views.includes("SCATTER_2D") === (block.distribution === "UNIFORM"),
+      !block.views.includes("SCATTER_2D") || block.distribution === "UNIFORM",
     {
       message:
         "SCATTER_2D is the 2D workspace view and is meaningful only for UNIFORM",

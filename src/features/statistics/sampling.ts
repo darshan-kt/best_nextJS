@@ -208,6 +208,24 @@ export function defaultValues(kind: DistributionKind): Record<string, number> {
   );
 }
 
+export interface Simulation2DResult {
+  error: string | null;
+  points: { x: number; y: number }[];
+  /** The plotted frame — the caller's pinned axis, or the registry's own. */
+  domain: [number, number];
+  /**
+   * Where values can actually occur, which is NOT the frame.
+   *
+   * A lesson that pins `xDomain` so a narrowed workspace visibly shrinks
+   * inside a fixed frame makes these two differ on purpose, and a caption
+   * that quotes the frame while the points came from the support is
+   * simply wrong — for a canvas, whose accessible name is the figure's
+   * entire content to a screen-reader user, wrong in the one place it
+   * cannot be checked by looking.
+   */
+  support: [number, number];
+}
+
 /**
  * A 2D point set: two independent draws per point from the same
  * distribution.
@@ -223,13 +241,13 @@ export function defaultValues(kind: DistributionKind): Record<string, number> {
  */
 export function runSimulation2D<K extends DistributionKind>(
   input: SimulationInput<K>
-): { error: string | null; points: { x: number; y: number }[]; domain: [number, number] } {
+): Simulation2DResult {
   const spec = DISTRIBUTIONS[input.kind];
   const params = toParams(input.kind, input.values);
   const error = spec.validate(params);
   const domain = (input.domain ?? spec.plotDomain(params)) as [number, number];
 
-  if (error) return { error, points: [], domain };
+  if (error) return { error, points: [], domain, support: domain };
 
   const count = Math.max(
     0,
@@ -242,7 +260,7 @@ export function runSimulation2D<K extends DistributionKind>(
     points[i] = { x: spec.sample(rng, params), y: spec.sample(rng, params) };
   }
 
-  return { error: null, points, domain };
+  return { error: null, points, domain, support: spec.support(params) as [number, number] };
 }
 
 /**

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="640" fill="#ffffff"/>
+  <text x="64" y="62" font-size="34" font-weight="800" fill="#134e4a">LAB 2 · setup geometry</text>
+  <text x="64" y="94" font-size="19" fill="#64748b">Every dimension here is a number you must write down. They are the difference between a measurement and an anecdote.</text>
+
+  <defs>
+    <marker id="dim" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0f766e"/>
+    </marker>
+  </defs>
+
+  <!-- floor -->
+  <line x1="80" y1="470" x2="1200" y2="470" stroke="#cbd5e1" stroke-width="3"/>
+  <text x="80" y="500" font-size="15" fill="#94a3b8">floor</text>
+
+  <!-- wall / target board -->
+  <rect x="1010" y="180" width="26" height="290" fill="#e2e8f0" stroke="#475569" stroke-width="2"/>
+  <text x="1052" y="250" font-size="18" font-weight="700" fill="#0f172a">Matte flat target</text>
+  <text x="1052" y="276" font-size="15" fill="#475569">Non-glossy, non-black.</text>
+  <text x="1052" y="298" font-size="15" fill="#475569">A gloss or dark surface</text>
+  <text x="1052" y="320" font-size="15" fill="#475569">changes the return energy</text>
+  <text x="1052" y="342" font-size="15" fill="#b91c1c">and therefore the noise.</text>
+
+  <!-- robot / lidar -->
+  <rect x="150" y="392" width="120" height="78" rx="8" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+  <circle cx="210" cy="378" r="22" fill="#ccfbf1" stroke="#0f766e" stroke-width="2"/>
+  <text x="150" y="512" font-size="17" font-weight="700" fill="#0f766e">2D LiDAR, stationary</text>
+  <text x="150" y="536" font-size="15" fill="#475569">Powered, level, and not touched</text>
+  <text x="150" y="558" font-size="15" fill="#475569">for the whole run.</text>
+
+  <!-- beam -->
+  <line x1="232" y1="378" x2="1006" y2="378" stroke="#0f766e" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="560" y="366" font-size="16" font-weight="700" fill="#0f766e">beam at 0° (straight ahead)</text>
+
+  <!-- range dimension -->
+  <line x1="210" y1="430" x2="1010" y2="430" stroke="#0f766e" stroke-width="2" marker-start="url(#dim)" marker-end="url(#dim)"/>
+  <rect x="520" y="410" width="176" height="30" fill="#ffffff"/>
+  <text x="536" y="432" font-size="18" font-weight="700" fill="#0f766e">d — measure it</text>
+
+  <!-- height dimension -->
+  <line x1="1120" y1="378" x2="1120" y2="470" stroke="#0f766e" stroke-width="2" marker-start="url(#dim)" marker-end="url(#dim)"/>
+  <text x="1136" y="430" font-size="16" fill="#0f766e">h</text>
+
+  <!-- perpendicularity -->
+  <path d="M 980 378 L 980 348 L 1010 348" fill="none" stroke="#b91c1c" stroke-width="2"/>
+  <text x="820" y="330" font-size="16" font-weight="700" fill="#b91c1c">90° — beam perpendicular to the surface</text>
+
+  <g transform="translate(64,150)">
+    <rect x="0" y="0" width="330" height="150" rx="12" fill="#fffbeb" stroke="#b45309" stroke-width="2"/>
+    <text x="20" y="34" font-size="17" font-weight="700" fill="#b45309">Record before you start</text>
+    <text x="20" y="64" font-size="15" fill="#475569">d — LiDAR to target, by tape</text>
+    <text x="20" y="88" font-size="15" fill="#475569">h — beam height above floor</text>
+    <text x="20" y="112" font-size="15" fill="#475569">target material and colour</text>
+    <text x="20" y="136" font-size="15" fill="#475569">room lighting, ambient temp</text>
+  </g>
+</svg>

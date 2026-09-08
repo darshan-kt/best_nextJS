@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { distributionSimBlockSchema } from "@/features/statistics/schemas";
 
 /**
  * Payload shapes for the lightweight content-block types (§11).
@@ -180,24 +179,29 @@ export const fileBlockSchema = z.object({
 export type FileBlockData = z.infer<typeof fileBlockSchema>;
 
 /**
- * One schema per lightweight type, keyed the same way the `switch` in
- * `BlockRenderer` is — adding a type means adding one entry here and one
- * case there, not touching every call site (§11).
+ * Inline visual content inside body text — reuses the *existing*
+ * lightweight block schemas rather than inventing a parallel visual-content
+ * model. A diagram inside a debugging scenario, one inside a lab step, and
+ * an IMAGE content block elsewhere in a lesson have identical shapes; there
+ * is no reason for them to be validated or rendered by different code.
+ *
+ * Defined here rather than in the first feature that needed it
+ * (`features/exercises`), which is where it lived until Phase 1F. It is
+ * built out of `imageBlockSchema` and `codeBlockSchema` above, so this is
+ * its natural home — and `labProtocolBlockSchema` reusing it from
+ * `features/labs` would otherwise close an import cycle back through
+ * exercises. `features/exercises/schemas.ts` re-exports both.
  */
-export const lightweightBlockSchemas = {
-  TEXT: textBlockSchema,
-  IMAGE: imageBlockSchema,
-  VIDEO: videoBlockSchema,
-  CODE: codeBlockSchema,
-  EMBED: embedBlockSchema,
-  CALLOUT: calloutBlockSchema,
-  FILE: fileBlockSchema,
-  /// Statistical Distributions course (Phase 1D). Lives in
-  /// `features/statistics/schemas.ts` rather than here because it
-  /// validates against the distribution registry — the payload and the
-  /// mathematics are one contract, and splitting them across two features
-  /// would let them drift.
-  DISTRIBUTION_SIM: distributionSimBlockSchema,
-} as const;
+export const inlineVisualSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("IMAGE"), data: imageBlockSchema }),
+  z.object({ kind: z.literal("CODE"), data: codeBlockSchema }),
+]);
+export type InlineVisual = z.infer<typeof inlineVisualSchema>;
 
-export type LightweightBlockType = keyof typeof lightweightBlockSchemas;
+/** Body text with optional inline visuals — the common shape everywhere a
+ *  bare string is not enough: an exercise goal, a lab interpretation. */
+export const richTextSchema = z.object({
+  body: z.string().min(1),
+  visuals: z.array(inlineVisualSchema).optional(),
+});
+export type RichText = z.infer<typeof richTextSchema>;

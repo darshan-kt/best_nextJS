@@ -266,3 +266,54 @@ Validation
   render correctly
 
 Not proceeding to Projec
+
+
+
+
+
+
+
+
+
+"""
+Statistical Distribution
+
+Before seeding: answer the SCATTER_2D question directly, not as a
+known limitation. State explicitly: does the interactive 2D scatter
+(needed by M2.5 — student adjusts workspace bounds, targets regenerate
+live) get wired into DistributionSimulator, or does M2.5 actually only
+need DATASET_EXPLORER's static/recorded view and the "interactive"
+framing in the blueprint was wrong? Pick one and wire it — don't leave
+this as a third consecutive "known limitation."
+
+Then:
+
+1. Wire runSimulation2D into whichever component STEP above lands on.
+
+2. Write scripts/verify-datasets.ts (checksum drift detection) —
+   this was scoped in 1A decision (8) and flagged as missing twice now.
+   Keep it simple: read the dataset metadata rows, recompute checksums
+   against the static files, fail loudly on mismatch. This is what CI
+   should run, not what a student's browser should discover at render
+   time.
+
+3. Seed ONE real lesson using both DISTRIBUTION_SIM and
+   DATASET_EXPLORER — pick whichever M-numbered lesson from the 1B
+   blueprint exercises both most directly (M3.9 or M3.10 look like
+   candidates from the earlier breakdown, since M3.10 was flagged as
+   using both SIM and DATA). Use the actual seeded dataset from this
+   phase for the DATASET_EXPLORER content.
+
+4. Load the seeded lesson through the real BlockRenderer path (not
+   just tests) and report what broke. This is explicitly meant to
+   surface plumbing bugs the test suite can't reach — treat anything
+   found here as expected and worth reporting in detail, not as a
+   sign something went wrong upstream.
+
+State your plan in §36 format before starting, specifically answering
+the SCATTER_2D question as step 1 above before touching any code.
+
+Validate with existing tiers plus whatever the verify-datasets script
+itself proves. Report using §37 format.
+
+"""

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { codeBlockSchema, imageBlockSchema } from "@/features/learning/schemas";
+import { richTextSchema } from "@/features/learning/schemas";
 
 /**
  * `Exercise.config` payload shapes (§19, §11 of ROS2_COURSE_DESIGN.md).
@@ -23,25 +23,30 @@ import { codeBlockSchema, imageBlockSchema } from "@/features/learning/schemas";
  */
 
 /**
- * Inline visual content within exercise text — reuses the *existing*
- * lightweight block schemas rather than inventing a parallel visual-content
- * model. A diagram inside a debugging scenario and an IMAGE content block
- * elsewhere in a lesson have identical shapes; there is no reason for them
- * to be validated or rendered by different code.
+ * `inlineVisualSchema` and `richTextSchema` MOVED to
+ * `features/learning/schemas.ts` when `LAB_PROTOCOL` arrived (Phase 1F),
+ * and are re-exported here so this module's public surface is unchanged.
+ *
+ * They had to move. Both are defined in terms of `imageBlockSchema` and
+ * `codeBlockSchema`, which live in `learning/schemas.ts`; once
+ * `labProtocolBlockSchema` reused `richTextSchema` — as
+ * PHASE_1A_ARCHITECTURE.md §18.3 specifies, so that a diagram inside a lab
+ * step and one inside an exercise step stay one shape — the import graph
+ * would have closed a cycle: learning -> labs -> exercises -> learning.
+ * That is not a lint preference; with ES modules the exercises module would
+ * evaluate while `imageBlockSchema` was still uninitialised and
+ * `z.discriminatedUnion` would throw at import time.
+ *
+ * Their new home is also the more honest one: a shape built out of
+ * lightweight block schemas belongs beside them, not in the first feature
+ * that happened to need it.
  */
-export const inlineVisualSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("IMAGE"), data: imageBlockSchema }),
-  z.object({ kind: z.literal("CODE"), data: codeBlockSchema }),
-]);
-export type InlineVisual = z.infer<typeof inlineVisualSchema>;
-
-/** Body text with optional inline visuals — the common shape everywhere
- *  an exercise needs more than a bare string (a step, a goal, a scenario). */
-const richTextSchema = z.object({
-  body: z.string().min(1),
-  visuals: z.array(inlineVisualSchema).optional(),
-});
-export type RichText = z.infer<typeof richTextSchema>;
+export {
+  inlineVisualSchema,
+  richTextSchema,
+  type InlineVisual,
+  type RichText,
+} from "@/features/learning/schemas";
 
 const guidedStepSchema = z.object({
   title: z.string().min(1),

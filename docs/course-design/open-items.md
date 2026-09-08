@@ -4,7 +4,7 @@ One place for everything deliberately left open, so nothing is silently
 forgotten or assumed to be working. Items are removed only when closed, and
 closing one means saying where and how.
 
-Last reviewed: **2026-08-28**
+Last reviewed: **2026-09-08**
 
 ---
 
@@ -163,6 +163,56 @@ because it already owns messages and interfaces, and QoS is the other half of
 "what governs whether two endpoints connect" — the same boundary Module 6
 Flag 4 drew between Module 6 (reading a definition) and Module 9 (everything
 else about interfaces).
+
+---
+
+## Platform-wide items
+
+This register began as a ROS 2 Fundamentals document and is the only open-items
+register in the repository, so cross-course items are recorded here rather than
+in a second file nobody would think to read.
+
+### P1. 39 orphaned `Quiz` rows in the dev database
+
+`Quiz` rows exist with no `LessonContentBlock` pointing at them — 39 as of
+2026-09-08, all created 2026-08-26, none since. They appear to be an
+accumulation from Milestone 8 reseeds, where re-seeding a QUIZ block created a
+fresh `Quiz` row and left the previous one unreferenced. Harmless to rendering
+(nothing can reach them) and invisible to the learner, but they are dead rows
+that will keep accumulating if the cause is still live. **To close:** confirm
+whether `seedContentBlock` still orphans a row on every QUIZ reseed, fix it if
+so, then delete the existing 39 — checking first that no `QuizAttempt` rows
+reference them, since deleting a quiz someone has attempted destroys their
+attempt history.
+
+### P2. Eight `DEVICE_CARD` blocks render without a link
+
+Every seeded `DEVICE_CARD` points at a device whose home course
+(`robotics-hardware-and-sensors`) is DRAFT, so `/hardware/<slug>` 404s and the
+cards were linking to it — including from inside that same course. As of
+2026-09-08 `DeviceCardBlock` omits the link when the catalogue page is not
+reachable, so the cards render their content without a click target.
+
+**This resolves itself with no content edit** the moment that course goes
+PUBLISHED + PUBLIC — `catalogPageIsReachable` is computed per request. Nothing
+to restore by hand.
+
+The course is not publishable today, and that is the item worth tracking:
+`docs/hardware/JAZZY_DEVICE_VERIFICATION.md` states nothing in it was ever run
+against physical hardware and marks three claims "UNVERIFIED — needs a human
+with the physical device"; the RViz2 captures required as a visual standard by
+`docs/hardware/PHOTOGRAPHY_CHECKLIST.md` do not exist. **To close:** execute
+that verification and capture list against real devices, then publish.
+
+### P3. `/hardware/[slug]` has no enrollment path
+
+§12 holds that "enrollment, not publish status, is what makes a course theirs",
+and the lesson route honours it — a learner enrolled in a DRAFT course can read
+its lessons. `/hardware/[slug]` filters on PUBLISHED + PUBLIC only, with no
+enrollment check, so the same learner cannot open the device pages belonging to
+the course they are enrolled in. That inconsistency is what makes P2 visible.
+**To close:** decide whether the hardware catalogue should honour enrollment
+the way the lesson route does. A policy decision, not a rendering one.
 
 ---
 

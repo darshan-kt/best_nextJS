@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 460" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="460" fill="#ffffff"/>
+  <text x="64" y="62" font-size="34" font-weight="800" fill="#134e4a">How every module in this course runs</text>
+  <text x="64" y="94" font-size="19" fill="#64748b">Observe first. The model comes third, not first.</text>
+
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0f766e"/>
+    </marker>
+  </defs>
+
+  <g font-size="16">
+    <g transform="translate(64,170)">
+      <rect x="0" y="0" width="188" height="110" rx="12" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+      <text x="94" y="46" text-anchor="middle" font-size="19" font-weight="700" fill="#0f766e">Observe</text>
+      <text x="94" y="76" text-anchor="middle" font-size="14" fill="#475569">something surprising</text>
+    </g>
+    <line x1="260" y1="225" x2="292" y2="225" stroke="#0f766e" stroke-width="3" marker-end="url(#a2)"/>
+    <g transform="translate(300,170)">
+      <rect x="0" y="0" width="188" height="110" rx="12" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+      <text x="94" y="46" text-anchor="middle" font-size="19" font-weight="700" fill="#0f766e">Question</text>
+      <text x="94" y="76" text-anchor="middle" font-size="14" fill="#475569">make it answerable</text>
+    </g>
+    <line x1="496" y1="225" x2="528" y2="225" stroke="#0f766e" stroke-width="3" marker-end="url(#a2)"/>
+    <g transform="translate(536,170)">
+      <rect x="0" y="0" width="188" height="110" rx="12" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="94" y="46" text-anchor="middle" font-size="19" font-weight="700" fill="#1d4ed8">Model</text>
+      <text x="94" y="76" text-anchor="middle" font-size="14" fill="#475569">propose a mechanism</text>
+    </g>
+    <line x1="732" y1="225" x2="764" y2="225" stroke="#0f766e" stroke-width="3" marker-end="url(#a2)"/>
+    <g transform="translate(772,170)">
+      <rect x="0" y="0" width="188" height="110" rx="12" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+      <text x="94" y="46" text-anchor="middle" font-size="19" font-weight="700" fill="#c2410c">Test</text>
+      <text x="94" y="76" text-anchor="middle" font-size="14" fill="#475569">against real data</text>
+    </g>
+    <line x1="968" y1="225" x2="1000" y2="225" stroke="#0f766e" stroke-width="3" marker-end="url(#a2)"/>
+    <g transform="translate(1008,170)">
+      <rect x="0" y="0" width="208" height="110" rx="12" fill="#fefce8" stroke="#a16207" stroke-width="2"/>
+      <text x="104" y="46" text-anchor="middle" font-size="19" font-weight="700" fill="#a16207">Interpret</text>
+      <text x="104" y="76" text-anchor="middle" font-size="14" fill="#475569">state what it does not</text>
+    </g>
+  </g>
+
+  <path d="M 1112 292 L 1112 340 L 158 340 L 158 292" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-dasharray="6 5" marker-end="url(#a2)"/>
+  <text x="640" y="366" text-anchor="middle" font-size="15" fill="#64748b">the interpretation is what makes the next question worth asking</text>
+
+  <g transform="translate(64,388)">
+    <rect x="0" y="0" width="1152" height="52" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="24" y="32" font-size="16" fill="#475569">Every module ends by naming what its model does <tspan font-weight="700" fill="#0f172a">not</tspan> explain. That is not a disclaimer — it is the finding that makes the next module necessary.</text>
+  </g>
+</svg>

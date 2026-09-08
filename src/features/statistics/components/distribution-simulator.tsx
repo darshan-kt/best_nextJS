@@ -4,9 +4,12 @@ import { useDeferredValue, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { DISTRIBUTIONS, type DistributionKind } from "../distributions";
-import { defaultValues, runSimulation } from "../sampling";
+import { DISTRIBUTIONS, type DistributionKind, type ParameterSpec } from "../distributions";
+import type { ParameterControlData } from "../schemas";
+import { defaultValues, runSimulation, runSimulation2D } from "../sampling";
+import { summarize } from "../summary";
 import { DistributionPlot, type PlotView } from "./distribution-plot";
+import { ScatterPlot } from "./diagnostic-plots";
 import { ParameterControl, SAMPLE_COUNT_PARAMETER } from "./parameter-control";
 import { StatisticalSummary } from "./statistical-summary";
 
@@ -47,6 +50,25 @@ import { StatisticalSummary } from "./statistical-summary";
  * a reduced-motion preference removes it entirely.
  */
 
+/**
+ * The chart views a simulator can switch between.
+ *
+ * `PlotView` covers the two 1D frames `DistributionPlot` draws. The 2D
+ * scatter is not a third variant of those: it plots pairs, not a density
+ * over one axis, and it renders to canvas rather than SVG — so it is a
+ * peer here rather than a member of `PlotView`, and `ScatterPlot` draws
+ * it. The block schema binds `SCATTER_2D` to UNIFORM, which is M2.5's
+ * workspace and the only Phase 1 use.
+ */
+export type SimulatorView = PlotView | "SCATTER_2D";
+
+/** Enum values are storage; these are what a learner reads on the button. */
+const VIEW_LABELS: Record<SimulatorView, string> = {
+  PDF: "Density",
+  CDF: "Cumulative",
+  SCATTER_2D: "2D workspace",
+};
+
 export interface DistributionSimulatorProps {
   kind: DistributionKind;
   title: string;
@@ -55,14 +77,40 @@ export interface DistributionSimulatorProps {
   seed?: number;
   binCount?: number;
   initialSampleCount?: number;
-  /** Parameter keys rendered read-only, for one-idea-at-a-time lessons. */
-  lockedParameters?: readonly string[];
+  /**
+   * Offers a "Draw again" button: a new sample from the same model at the
+   * same n. See `allowResample` on the block schema for why this is a
+   * first-class control rather than something a slider could stand in for.
+   */
+  allowResample?: boolean;
+  /**
+   * The lesson's own control declarations, keyed by parameter.
+   *
+   * WHY THESE ARE NOT IGNORED
+   *
+   * The registry declares what a parameter *is* — sigma exists, it is a
+   * standard deviation, it cannot be negative. A block declares what this
+   * lesson wants of it: a workspace slider that runs 0 to 3 metres and
+   * starts at 2.5, not the registry's general-purpose -5 to 5 starting at
+   * 1. Both are legitimate and neither can replace the other, so the
+   * effective spec is the registry entry with the authored control laid
+   * over it.
+   *
+   * Dropping these was a real defect, not a simplification: M2.5's prose
+   * describes a 2.5-metre-square room and the simulator opened on a
+   * 1-metre one, with a slider that would take a learner to -5 m.
+   */
+  controls?: readonly ParameterControlData[];
   /** Pins the x-axis, so several simulators can share axes. */
   domain?: readonly [number, number];
-  views?: readonly PlotView[];
+  views?: readonly SimulatorView[];
   unit?: string;
   xLabel?: string;
   className?: string;
+}
+
+function formatBound(value: number): string {
+  return Number.isFinite(value) ? Number(value.toPrecision(3)).toString() : "?";
 }
 
 export function DistributionSimulator({
@@ -71,8 +119,9 @@ export function DistributionSimulator({
   prompt,
   seed = 42,
   binCount = 40,
-  initialSampleCount = SAMPLE_COUNT_PARAMETER.defaultValue,
-  lockedParameters = [],
+  initialSampleCount,
+  allowResample = false,
+  controls = [],
   domain,
   views = ["PDF"],
   unit,
@@ -81,9 +130,69 @@ export function DistributionSimulator({
 }: DistributionSimulatorProps) {
   const spec = DISTRIBUTIONS[kind];
 
-  const [values, setValues] = useState<Record<string, number>>(() => defaultValues(kind));
-  const [sampleCount, setSampleCount] = useState(initialSampleCount);
-  const [view, setView] = useState<PlotView>(views[0] ?? "PDF");
+  // Registry entry overlaid with the lesson's control, per parameter. Built
+  // once from props rather than per render: this is a pure function of the
+  // block payload, which does not change while the lesson is open.
+  const { effectiveSpecs, sampleCountSpec, lockedKeys, initialValues } = useMemo(() => {
+    const byKey = new Map(controls.map((control) => [control.key, control]));
+
+    return {
+      effectiveSpecs: spec.parameters.map((parameter): ParameterSpec => {
+        const control = byKey.get(parameter.key);
+        if (!control) return parameter;
+
+        return {
+          ...parameter,
+          label: control.label,
+          unit: control.unit ?? parameter.unit,
+          suggestedMin: control.min,
+          suggestedMax: control.max,
+          suggestedStep: control.step,
+          defaultValue: control.default,
+        };
+      }),
+      // `n` is a control an author may declare (the block schema exempts it
+      // from the registry check for exactly this reason), so it is overlaid
+      // the same way. A lesson that pins n at 30 to make small-sample
+      // instability the subject has to be able to say so.
+      sampleCountSpec: ((): ParameterSpec => {
+        const control = byKey.get(SAMPLE_COUNT_PARAMETER.key);
+        if (!control) return SAMPLE_COUNT_PARAMETER;
+
+        return {
+          ...SAMPLE_COUNT_PARAMETER,
+          label: control.label,
+          suggestedMin: control.min,
+          suggestedMax: control.max,
+          suggestedStep: control.step,
+          defaultValue: control.default,
+        };
+      })(),
+      lockedKeys: new Set(
+        controls.filter((control) => control.locked).map((control) => control.key)
+      ),
+      initialValues: {
+        ...defaultValues(kind),
+        ...Object.fromEntries(
+          controls
+            .filter((control) => byKey.has(control.key))
+            .map((control) => [control.key, control.default])
+        ),
+      },
+    };
+  }, [kind, spec, controls]);
+
+  const [values, setValues] = useState<Record<string, number>>(() => initialValues);
+  const [sampleCount, setSampleCount] = useState(
+    initialSampleCount ?? sampleCountSpec.defaultValue
+  );
+
+  // Bumped by "Draw again". Added to the block's seed rather than replacing
+  // it, so a lesson quoting the numbers from its first draw still gets them
+  // on load — reproducibility (spec §47) survives the button existing.
+  const [redraw, setRedraw] = useState(0);
+  const effectiveSeed = seed + redraw;
+  const [view, setView] = useState<SimulatorView>(views[0] ?? "PDF");
 
   // Dragging a slider produces many changes per second. Deferring the
   // recompute keeps the control itself responsive and lets React drop
@@ -100,11 +209,45 @@ export function DistributionSimulator({
         kind,
         values: deferredValues,
         sampleCount: deferredSampleCount,
-        seed,
+        seed: effectiveSeed,
         binCount,
         domain,
       }),
-    [kind, deferredValues, deferredSampleCount, seed, binCount, domain]
+    [kind, deferredValues, deferredSampleCount, effectiveSeed, binCount, domain]
+  );
+
+  // Only drawn when the learner is actually looking at it. The 2D draw
+  // consumes two samples per point, so computing it alongside every PDF
+  // render would double the sampling cost of a simulator that never shows
+  // a scatter (§26).
+  const isScatter = view === "SCATTER_2D";
+  const scatter = useMemo(
+    () =>
+      isScatter
+        ? runSimulation2D({
+            kind,
+            values: deferredValues,
+            sampleCount: deferredSampleCount,
+            seed: effectiveSeed,
+            binCount,
+            domain,
+          })
+        : null,
+    [isScatter, kind, deferredValues, deferredSampleCount, effectiveSeed, binCount, domain]
+  );
+
+  // §24 calls the statistics panel "the accessible content of the figure",
+  // so in the scatter view it has to describe the scatter rather than a
+  // separate 1D draw the learner cannot see. The x marginal is what a
+  // reader would compute off the horizontal axis; y is an independent
+  // draw from the same distribution, which is the lesson's whole point
+  // and is said in the note beside it rather than left to be inferred.
+  const summaryResult = useMemo(
+    () =>
+      scatter && !scatter.error
+        ? { ...result, summary: summarize(scatter.points.map((point) => point.x)) }
+        : result,
+    [result, scatter]
   );
 
   const handleChange = (key: string, value: number) =>
@@ -139,39 +282,83 @@ export function DistributionSimulator({
                       : "hover:bg-accent"
                   )}
                 >
-                  {candidate}
+                  {VIEW_LABELS[candidate]}
                 </button>
               ))}
             </div>
           ) : null}
 
-          <DistributionPlot
-            result={result}
-            view={view}
-            showHistogram={view === "PDF"}
-            showMean={view === "PDF"}
-            xLabel={xLabel}
-            distributionLabel={spec.label}
-          />
+          {view === "SCATTER_2D" ? (
+            scatter === null || scatter.error ? (
+              <p role="status" className="text-destructive text-body-sm">
+                {scatter?.error ?? "This view is unavailable."}
+              </p>
+            ) : (
+              <ScatterPlot
+                points={scatter.points}
+                domain={scatter.domain}
+                xLabel={xLabel ?? "x"}
+                yLabel="y"
+                // The accessible name carries the DATA, not the picture:
+                // a canvas is opaque to assistive technology, so the
+                // bounds and the count are the figure's whole content for
+                // a screen-reader user (`ScatterCanvas`, §24).
+                label={`${scatter.points.length.toLocaleString()} points, each drawn from two independent ${spec.label.toLowerCase()} draws over ${formatBound(
+                  scatter.support[0]
+                )} to ${formatBound(scatter.support[1])}${
+                  unit ? ` ${unit}` : ""
+                } on both axes, plotted on fixed axes running ${formatBound(
+                  scatter.domain[0]
+                )} to ${formatBound(scatter.domain[1])}${unit ? ` ${unit}` : ""}.`}
+                description="Two independent 1D draws, plotted as one 2D point. Look for even coverage: clusters, gaps or an edge the points avoid would each mean something other than uniform is happening."
+              />
+            )
+          ) : (
+            <DistributionPlot
+              result={result}
+              view={view}
+              showHistogram={view === "PDF"}
+              showMean={view === "PDF"}
+              xLabel={xLabel}
+              distributionLabel={spec.label}
+            />
+          )}
         </div>
 
         <div className="min-w-0">
           <div className="flex flex-col gap-4">
-            {spec.parameters.map((parameter) => (
+            {effectiveSpecs.map((parameter) => (
               <ParameterControl
                 key={parameter.key}
                 parameter={parameter}
                 value={values[parameter.key] ?? parameter.defaultValue}
-                locked={lockedParameters.includes(parameter.key)}
+                locked={lockedKeys.has(parameter.key)}
                 onChange={handleChange}
               />
             ))}
 
             <ParameterControl
-              parameter={SAMPLE_COUNT_PARAMETER}
+              parameter={sampleCountSpec}
               value={sampleCount}
+              locked={lockedKeys.has(sampleCountSpec.key)}
               onChange={(_key, value) => setSampleCount(value)}
             />
+
+            {allowResample ? (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setRedraw((count) => count + 1)}
+                  className="border-border hover:bg-accent rounded-md border px-3 py-1.5 text-body-sm"
+                >
+                  Draw again
+                </button>
+                <p className="text-muted-foreground mt-1.5 text-caption">
+                  Same model, same number of samples, different draw. Draw
+                  {redraw > 0 ? ` ${redraw + 1}` : " 1"}.
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <div
@@ -183,7 +370,14 @@ export function DistributionSimulator({
               isStale && "opacity-60"
             )}
           >
-            <StatisticalSummary result={result} unit={unit} />
+            <StatisticalSummary result={summaryResult} unit={unit} />
+            {isScatter ? (
+              <p className="text-muted-foreground mt-2 text-caption">
+                These describe the horizontal axis. The vertical axis is an
+                independent draw from the same distribution — the scatter is
+                two 1D processes, not one 2D one.
+              </p>
+            ) : null}
           </div>
 
           <details className="mt-4">

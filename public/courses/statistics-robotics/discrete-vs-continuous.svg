@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 620" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="620" fill="#ffffff"/>
+  <text x="64" y="62" font-size="34" font-weight="800" fill="#134e4a">Discrete and continuous</text>
+  <text x="64" y="94" font-size="19" fill="#64748b">Countable landing places, or an unbroken interval.</text>
+
+  <g transform="translate(80,160)">
+    <text x="0" y="0" font-size="21" font-weight="700" fill="#1d4ed8">Discrete — you can list the values</text>
+    <text x="0" y="30" font-size="16" fill="#64748b">Number of obstacles detected in one scan. There is no such thing as 2.5 obstacles.</text>
+    <line x1="20" y1="110" x2="1080" y2="110" stroke="#0f172a" stroke-width="2.5"/>
+    <g fill="#1d4ed8">
+      <circle cx="120" cy="110" r="10"/><circle cx="270" cy="110" r="10"/><circle cx="420" cy="110" r="10"/>
+      <circle cx="570" cy="110" r="10"/><circle cx="720" cy="110" r="10"/><circle cx="870" cy="110" r="10"/>
+    </g>
+    <g font-size="17" fill="#0f172a" text-anchor="middle" font-variant-numeric="tabular-nums">
+      <text x="120" y="148">0</text><text x="270" y="148">1</text><text x="420" y="148">2</text>
+      <text x="570" y="148">3</text><text x="720" y="148">4</text><text x="870" y="148">5</text>
+    </g>
+    <text x="960" y="148" font-size="16" fill="#94a3b8">gaps are real</text>
+  </g>
+
+  <g transform="translate(80,360)">
+    <text x="0" y="0" font-size="21" font-weight="700" fill="#0f766e">Continuous — you cannot</text>
+    <text x="0" y="30" font-size="16" fill="#64748b">Distance to the wall. Between any two values there is another one.</text>
+    <line x1="20" y1="110" x2="1080" y2="110" stroke="#0f172a" stroke-width="2.5"/>
+    <rect x="120" y="98" width="750" height="24" rx="12" fill="#0f766e" opacity="0.35"/>
+    <g font-size="17" fill="#0f172a" text-anchor="middle" font-variant-numeric="tabular-nums">
+      <text x="120" y="152">1.90</text><text x="495" y="152">2.00</text><text x="870" y="152">2.10</text>
+    </g>
+    <text x="960" y="152" font-size="16" fill="#94a3b8">no gaps</text>
+  </g>
+
+  <g transform="translate(80,548)">
+    <rect x="0" y="0" width="1120" height="56" rx="12" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+    <text x="24" y="34" font-size="16" fill="#475569"><tspan font-weight="700" fill="#c2410c">The honest caveat:</tspan> a real LiDAR reports steps of about 1 cm, so it is strictly discrete. We model it as continuous anyway, because the steps are far finer than the effect we are studying.</text>
+  </g>
+</svg>

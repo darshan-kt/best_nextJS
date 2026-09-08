@@ -138,9 +138,14 @@ describe("distributionSimBlockSchema", () => {
       ).toBe(false);
     });
 
-    it("requires SCATTER_2D on a Uniform", () => {
-      // The 2D workspace view IS the uniform module's lesson; a uniform
-      // sim without it is almost certainly an authoring mistake.
+    it("allows a Uniform with or without SCATTER_2D", () => {
+      // Deliberately NOT a biconditional. An earlier version required
+      // every UNIFORM block to carry the scatter view; seeding the uniform
+      // module produced four uniform figures that legitimately do not want
+      // it (the density/CDF pair, the mean-and-variance demo, the
+      // histogram-unevenness explorer, and the three-way comparison in
+      // `side-by-side`). The constraint is one-way: the view needs a
+      // uniform, a uniform does not need the view.
       const uniformControls = [
         { key: "a", label: "Min", min: -5, max: 5, step: 0.1, default: 0 },
         { key: "b", label: "Max", min: -5, max: 5, step: 0.1, default: 1 },
@@ -153,7 +158,7 @@ describe("distributionSimBlockSchema", () => {
           controls: uniformControls,
           views: ["PDF"],
         }).success
-      ).toBe(false);
+      ).toBe(true);
 
       expect(
         distributionSimBlockSchema.safeParse({

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="640" fill="#ffffff"/>
+  <text x="64" y="62" font-size="34" font-weight="800" fill="#134e4a">Three questions, three models</text>
+  <text x="64" y="94" font-size="19" fill="#64748b">The mechanism picks the model. The shape only confirms it.</text>
+
+  <g transform="translate(64,146)">
+    <rect x="0" y="0" width="368" height="290" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+    <text x="24" y="48" font-size="26" font-weight="800" fill="#0f766e">WHERE</text>
+    <text x="24" y="80" font-size="17" fill="#0f172a">can a value occur?</text>
+    <line x1="24" y1="100" x2="344" y2="100" stroke="#99f6e4" stroke-width="2"/>
+    <text x="24" y="132" font-size="20" font-weight="700" fill="#0f172a">Uniform</text>
+    <text x="24" y="166" font-size="15" fill="#475569">Every value in a known interval</text>
+    <text x="24" y="188" font-size="15" fill="#475569">is equally likely; nothing</text>
+    <text x="24" y="210" font-size="15" fill="#475569">outside it is possible.</text>
+    <text x="24" y="250" font-size="15" font-weight="600" fill="#0f766e">Exploration targets, sampled</text>
+    <text x="24" y="272" font-size="15" font-weight="600" fill="#0f766e">goals, randomized restarts</text>
+  </g>
+
+  <g transform="translate(456,146)">
+    <rect x="0" y="0" width="368" height="290" rx="14" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+    <text x="24" y="48" font-size="26" font-weight="800" fill="#1d4ed8">HOW</text>
+    <text x="24" y="80" font-size="17" fill="#0f172a">does it vary around typical?</text>
+    <line x1="24" y1="100" x2="344" y2="100" stroke="#bfdbfe" stroke-width="2"/>
+    <text x="24" y="132" font-size="20" font-weight="700" fill="#0f172a">Gaussian</text>
+    <text x="24" y="166" font-size="15" fill="#475569">Many small independent errors</text>
+    <text x="24" y="188" font-size="15" fill="#475569">add up, and their sum clusters</text>
+    <text x="24" y="210" font-size="15" fill="#475569">symmetrically around a centre.</text>
+    <text x="24" y="250" font-size="15" font-weight="600" fill="#1d4ed8">Sensor noise, repeated range</text>
+    <text x="24" y="272" font-size="15" font-weight="600" fill="#1d4ed8">measurements, pose error</text>
+  </g>
+
+  <g transform="translate(848,146)">
+    <rect x="0" y="0" width="368" height="290" rx="14" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+    <text x="24" y="48" font-size="26" font-weight="800" fill="#c2410c">WHEN</text>
+    <text x="24" y="80" font-size="17" fill="#0f172a">might the next one happen?</text>
+    <line x1="24" y1="100" x2="344" y2="100" stroke="#fed7aa" stroke-width="2"/>
+    <text x="24" y="132" font-size="20" font-weight="700" fill="#0f172a">Exponential</text>
+    <text x="24" y="166" font-size="15" fill="#475569">Events arrive at a constant</text>
+    <text x="24" y="188" font-size="15" fill="#475569">average rate, independently of</text>
+    <text x="24" y="210" font-size="15" fill="#475569">how long you have waited.</text>
+    <text x="24" y="250" font-size="15" font-weight="600" fill="#c2410c">Obstacle appearances, packet</text>
+    <text x="24" y="272" font-size="15" font-weight="600" fill="#c2410c">arrivals, time between faults</text>
+  </g>
+
+  <g transform="translate(64,470)">
+    <rect x="0" y="0" width="1152" height="140" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="24" y="42" font-size="20" font-weight="800" fill="#0f172a">Choose from the mechanism, not the picture</text>
+    <text x="24" y="78" font-size="16" fill="#475569">A bell-shaped histogram does not make something Gaussian. Plenty of processes produce roughly symmetric humps for reasons that have</text>
+    <text x="24" y="104" font-size="16" fill="#475569">nothing to do with summed independent errors — and when the mechanism is wrong, the model fails exactly where you most need it: in the tails.</text>
+  </g>
+</svg>

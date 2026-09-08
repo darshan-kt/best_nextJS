@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+  <text x="64" y="62" font-size="34" font-weight="800" fill="#134e4a">Four sources of uncertainty in a robot</text>
+  <text x="64" y="94" font-size="19" fill="#64748b">Different causes, different fixes. Naming the source is the first step in reducing it.</text>
+
+  <g font-size="17" fill="#0f172a">
+    <g transform="translate(64,150)">
+      <rect x="0" y="0" width="272" height="230" rx="12" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+      <text x="20" y="38" font-size="20" font-weight="700" fill="#0f766e">Sensor</text>
+      <text x="20" y="70" font-size="15" fill="#475569">The measurement is not the</text>
+      <text x="20" y="92" font-size="15" fill="#475569">quantity.</text>
+      <text x="20" y="132" font-size="15" font-weight="600">LiDAR range jitters ±2 cm</text>
+      <text x="20" y="158" font-size="15" font-weight="600">on a motionless wall.</text>
+      <text x="20" y="200" font-size="14" fill="#0f766e">Reduce: average, better sensor</text>
+    </g>
+
+    <g transform="translate(368,150)">
+      <rect x="0" y="0" width="272" height="230" rx="12" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="20" y="38" font-size="20" font-weight="700" fill="#1d4ed8">Actuator</text>
+      <text x="20" y="70" font-size="15" fill="#475569">The motion is not the</text>
+      <text x="20" y="92" font-size="15" fill="#475569">command.</text>
+      <text x="20" y="132" font-size="15" font-weight="600">Commanded 1.00 m forward,</text>
+      <text x="20" y="158" font-size="15" font-weight="600">travelled 0.97 m.</text>
+      <text x="20" y="200" font-size="14" fill="#1d4ed8">Reduce: closed-loop control</text>
+    </g>
+
+    <g transform="translate(672,150)">
+      <rect x="0" y="0" width="272" height="230" rx="12" fill="#fefce8" stroke="#a16207" stroke-width="2"/>
+      <text x="20" y="38" font-size="20" font-weight="700" fill="#a16207">Environmental</text>
+      <text x="20" y="70" font-size="15" fill="#475569">The world changed while</text>
+      <text x="20" y="92" font-size="15" fill="#475569">you were measuring it.</text>
+      <text x="20" y="132" font-size="15" font-weight="600">A glass door, a person</text>
+      <text x="20" y="158" font-size="15" font-weight="600">walking through the beam.</text>
+      <text x="20" y="200" font-size="14" fill="#a16207">Reduce: rarely — model it</text>
+    </g>
+
+    <g transform="translate(976,150)">
+      <rect x="0" y="0" width="240" height="230" rx="12" fill="#fdf2f8" stroke="#be185d" stroke-width="2"/>
+      <text x="20" y="38" font-size="20" font-weight="700" fill="#be185d">Model</text>
+      <text x="20" y="70" font-size="15" fill="#475569">Your description of the</text>
+      <text x="20" y="92" font-size="15" fill="#475569">world is incomplete.</text>
+      <text x="20" y="132" font-size="15" font-weight="600">Wheels assumed to roll</text>
+      <text x="20" y="158" font-size="15" font-weight="600">without slipping.</text>
+      <text x="20" y="200" font-size="14" fill="#be185d">Reduce: a better model</text>
+    </g>
+  </g>
+
+  <g transform="translate(64,440)">
+    <rect x="0" y="0" width="1152" height="96" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="24" y="38" font-size="19" font-weight="700" fill="#0f172a">Uncertainty is not error</text>
+    <text x="24" y="70" font-size="16" fill="#475569">An error is a mistake you could have avoided. Uncertainty is a property of the measurement that remains after every mistake is fixed.</text>
+  </g>
+
+  <g transform="translate(64,568)">
+    <rect x="0" y="0" width="1152" height="96" rx="12" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+    <text x="24" y="38" font-size="19" font-weight="700" fill="#c2410c">Precise is not accurate</text>
+    <text x="24" y="70" font-size="16" fill="#475569">A biased sensor repeats itself perfectly and is wrong every time. Low spread tells you nothing about whether the centre is in the right place.</text>
+  </g>
+</svg>

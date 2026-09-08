@@ -164,39 +164,49 @@ export function parseDatasetJson(
 }
 
 /**
+ * Read, parse and checksum a dataset file. The uncached implementation.
+ *
+ * Exported separately from `loadDatasetPayload` because it has one caller
+ * outside React: `scripts/verify-datasets.ts` runs in plain Node with no
+ * render in progress, and `cache()` is only meaningful inside one.
+ * Verifying the files through the same reader the renderer uses is the
+ * point of the script — a second implementation could agree with the
+ * database while disagreeing with what a learner actually sees.
+ */
+export async function readDatasetPayload(
+  sourceUri: string,
+  format: "CSV" | "JSON",
+  rawColumns: unknown
+): Promise<DatasetPayload> {
+  const columns = datasetColumnsSchema.parse(rawColumns);
+  const path = resolveLocalPath(sourceUri);
+
+  let text: string;
+  try {
+    text = await readFile(path, "utf8");
+  } catch {
+    throw new DatasetLoadError(`Dataset file not found: ${sourceUri}`);
+  }
+
+  const series =
+    format === "CSV"
+      ? parseDatasetCsv(text, columns)
+      : parseDatasetJson(text, columns);
+
+  const rowCount = series[columns[0].key]?.length ?? 0;
+  const checksumSha256 = createHash("sha256").update(text).digest("hex");
+
+  return { columns, series, rowCount, checksumSha256 };
+}
+
+/**
  * Load and parse a dataset's payload.
  *
  * Wrapped in React's `cache` so a lesson rendering three blocks over the
  * same dataset (M3.9 does exactly that) reads and parses the file once per
  * request rather than three times (§26).
  */
-export const loadDatasetPayload = cache(
-  async (
-    sourceUri: string,
-    format: "CSV" | "JSON",
-    rawColumns: unknown
-  ): Promise<DatasetPayload> => {
-    const columns = datasetColumnsSchema.parse(rawColumns);
-    const path = resolveLocalPath(sourceUri);
-
-    let text: string;
-    try {
-      text = await readFile(path, "utf8");
-    } catch {
-      throw new DatasetLoadError(`Dataset file not found: ${sourceUri}`);
-    }
-
-    const series =
-      format === "CSV"
-        ? parseDatasetCsv(text, columns)
-        : parseDatasetJson(text, columns);
-
-    const rowCount = series[columns[0].key]?.length ?? 0;
-    const checksumSha256 = createHash("sha256").update(text).digest("hex");
-
-    return { columns, series, rowCount, checksumSha256 };
-  }
-);
+export const loadDatasetPayload = cache(readDatasetPayload);
 
 /**
  * Load a payload, returning null instead of throwing.

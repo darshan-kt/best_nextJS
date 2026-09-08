@@ -251,7 +251,7 @@ describe("bounds", () => {
 
 describe("defaultValues", () => {
   it("returns a valid starting point for every distribution", () => {
-    for (const kind of ["UNIFORM", "GAUSSIAN", "EXPONENTIAL"] as const) {
+    for (const kind of ["UNIFORM", "GAUSSIAN", "EXPONENTIAL", "IRWIN_HALL"] as const) {
       const result = runSimulation({
         kind,
         values: defaultValues(kind),

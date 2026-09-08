@@ -41,12 +41,19 @@ export function DeviceCard({
   href,
 }: {
   device: HardwareDeviceCardSummary;
-  href: string;
+  /**
+   * Omitted when the device's own catalogue page is not reachable — a
+   * device whose home course is still DRAFT has no `/hardware/<slug>` to
+   * open. The card then renders its full content without the title link
+   * and without the whole-card hit area, rather than offering a click that
+   * lands on a 404 (`DeviceCardBlock`).
+   */
+  href?: string;
 }) {
   const CategoryIcon = CATEGORY_ICON[device.category];
 
   return (
-    <Card interactive className="h-full">
+    <Card interactive={Boolean(href)} className="h-full">
       <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
         {device.heroImageSrc ? (
           <Image
@@ -76,12 +83,16 @@ export function DeviceCard({
           <Badge variant="secondary">{CATEGORY_LABEL[device.category]}</Badge>
         </div>
         <CardTitle>
-          <Link
-            href={href}
-            className="outline-none after:absolute after:inset-0 after:rounded-xl"
-          >
-            {device.name}
-          </Link>
+          {href ? (
+            <Link
+              href={href}
+              className="outline-none after:absolute after:inset-0 after:rounded-xl"
+            >
+              {device.name}
+            </Link>
+          ) : (
+            device.name
+          )}
         </CardTitle>
       </CardHeader>
 

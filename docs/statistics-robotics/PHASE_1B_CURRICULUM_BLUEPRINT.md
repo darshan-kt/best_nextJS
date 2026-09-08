@@ -1,921 +1,563 @@
 # PHASE 1B — CURRICULUM BLUEPRINT
 ## Statistical Distributions with Robotics
 
-> **STATUS: DRAFT, awaiting review.** Depends on
-> `PHASE_1A_ARCHITECTURE.md` (approved 2026-09-07).
+> **STATUS: REVISION 3 — MAJOR SCOPE REDUCTION. APPROVED 2026-09-08.**
+> All four outstanding decisions in §10 were approved as stated. STEP 2
+> (the content rewrite) is authorised and in progress.
 >
-> **Revision 2, 2026-09-07** — corrected the lesson count (42, not 41) and
-> the new-block dependency figures, which were wrong in revision 1; added
-> the per-lesson block-type mapping; added the M4.6 hardware
-> cross-reference that revision 1 omitted; recorded M2.6's unowned
-> `/cmd_vel` prerequisite; resolved the §32 storage question in-document;
-> and promoted the two added lessons from a delivery note to an explicit
-> decision. See READINESS at the foot of this document.
+> **Revision 3, 2026-09-08.** Replaces the twelve-step signature loop with
+> a fixed **4-part template** for every lesson. The course drops from
+> **42 lessons to 7**. Revision 2's lesson-level specifications are
+> superseded in full; its standing decisions on storage (§32), the
+> hardware cross-reference obligations, and the `/cmd_vel` gap are
+> retained below because they survive the reduction.
 >
-> This document specifies **what each lesson teaches and which blocks it
-> contains**. It is not lesson content — no prose, no quiz text and no
-> Python source is written here. Content authoring begins at Phase 1G.
+> The single largest consequence, stated up front because it reverses the
+> document's biggest standing risk: **no lesson is blocked on physical
+> data capture any more.** Not because the data was captured, but because
+> the new template stops asking the question that needed it. See §5.
 
-Legend for block sequences:
+---
+
+## 0. THE TEMPLATE
+
+Every lesson, without exception, is these four parts in this order.
+
+| Part | Name | What it is | Blocks |
+| --- | --- | --- | --- |
+| 1 | **CONCEPT** | One short question, answered in plain language. No formula. | `CALLOUT` INFO (the question) · `TEXT` (the answer) |
+| 2 | **THEORY (small)** | Formula, parameters, mean and variance. Nothing else. | `TEXT` (+ `IMAGE` only where an annotated formula genuinely helps) |
+| 3 | **SIMULATION** | The existing `DISTRIBUTION_SIM` component, reused unchanged. | `SIM` |
+| 4 | **ROS 2 / ROBOT** | How to do this on the physical robot: the sensor, the topic, a short snippet, what to expect. | `TEXT` (sensor/topic) · `CODE` · `TEXT`/`CALLOUT` (what to expect) — plus `LAB` where hardware is actually handled |
+
+Two further elements hang off the four parts, both approved 2026-09-08:
+an `EXERCISE` attached to part 4 (one per lesson, practical — §8), and a
+`QUIZ` of one to two questions (§6).
+
+**Part 4 is a "here's how", not a "here's how to judge whether the model
+fits."** That distinction is the whole of this revision and every cut below
+follows from it.
+
+### What the template removes, explicitly
+
+These are out of scope wherever they appear. Listed so the STEP 2 rewrite
+has an unambiguous checklist rather than a judgement call per lesson:
+
+- CDF derivations, and reading values off a CDF
+- Z-scores, standardisation, the 68–95–99.7 rule
+- Q-Q plots, empirical CDFs, any goodness-of-fit reasoning
+- Outlier detection and robustness comparisons
+- Sampling-variability treatment beyond "more samples, steadier numbers"
+- Model-defensibility argument as an assessed skill
+- Derivations of any kind, including the uniform's mean and variance
+
+Legend, unchanged from revision 2:
 
 ```
-TEXT IMAGE CODE FILE CALLOUT EMBED QUIZ EXERCISE   existing block types
-SIM   = DISTRIBUTION_SIM      (new, Phase 1D)
-DATA  = DATASET_EXPLORER      (new, Phase 1E)
-LAB   = LAB_PROTOCOL          (new, Phase 1F)
+TEXT IMAGE CODE FILE CALLOUT QUIZ    existing block types
+SIM   = DISTRIBUTION_SIM   (built, Phase 1D)
+DATA  = DATASET_EXPLORER   (built, Phase 1E)
+LAB   = LAB_PROTOCOL       (built, Phase 1F)
 ```
 
-`SIM[static]` means `interactive: false` — an accurate programmatic figure
-in place of a hand-drawn image (spec §54), with no controls.
-
 ---
 
-## 0. SIZING
+## 1. SIZING — 42 LESSONS BECOME 7
 
-| Module | Lessons | Est. minutes | New-block instances |
+| # | Lesson | Replaces | Min |
 | --- | --- | --- | --- |
-| M0 Why Statistics Matters | 3 | 35 | 1 SIM (1 static) |
-| M1 Random Variables & Probability | 7 | 105 | 8 SIM (1 static) |
-| M2 Uniform | 7 | 120 | 4 SIM (1 static), 1 DATA, 1 LAB |
-| M3 Gaussian *(flagship)* | 12 | 240 | 9 SIM (2 static), 6 DATA, 1 LAB |
-| M4 Exponential | 8 | 140 | 3 SIM (1 static), 4 DATA, 1 LAB |
-| M5 Three Ways to Be Random | 3 | 45 | 3 SIM, 1 DATA |
-| M6 Mini-Capstone | 2 | 90+ | 3 DATA |
-| **Total** | **42** | **~775 min** | **28 SIM, 15 DATA, 3 LAB** |
+| **Section 1 — Foundations** | | | |
+| L1 | `why-statistics-matters` | M0.1–M0.3 | 10 |
+| L2 | `random-variables-and-densities` | M1.1–M1.3 | 18 |
+| L3 | `mean-variance-and-sampling` | M1.4–M1.7 | 18 |
+| **Section 2 — The three distributions** | | | |
+| L4 | `uniform-where` | M2.1–M2.7 | 22 |
+| L5 | `gaussian-how` | M3.1–M3.12 | 25 |
+| L6 | `exponential-when` | M4.1–M4.8 | 25 |
+| **Section 3 — Putting it together** | | | |
+| L7 | `three-ways-in-my-robot` | M5.1–M5.3, M6.1–M6.2 | 20 |
+| | **Total** | **42 entries** | **~138 min** |
 
-> **Correction, 2026-09-07.** The first version of this table said 41
-> lessons, gave M3 eleven, and claimed "32 of 41 are authorable with
-> existing block types alone; only 9 hard-require a new type." All three
-> were wrong, and the last was close to inverted. Counted directly from
-> the lesson sections below: M3 has **twelve** lessons, the course has
-> **42**, and the new-block dependency is far heavier than that sentence
-> implied — see the table immediately below. The error mattered: it made
-> Phases 1D and 1E look optional when they are on the critical path for
-> three quarters of the course.
+**Why seven and not some other number.**
 
-Phase 1A estimated 38 lessons; the blueprint lands at **41** — M1 and M4
-each gained a lesson during objective mapping, and M3 gained the
-`gaussian-mechanism` lesson (see §M3). This is comparable in size to
-`ros2-fundamentals` (7 modules). Flagged against risk 6.
+The template is fundamentally *one lesson per distribution*. That is three.
+Everything else is the minimum scaffolding those three need and the one
+closing lesson that uses them together:
 
-**New-block dependency, counted per lesson (not per block):**
+- **Three distribution lessons (L4–L6)** are the irreducible core. Each is
+  a complete instance of the template.
+- **Two foundations lessons (L2, L3)** exist because part 2 says "formula,
+  parameters, mean/variance". A learner who does not know what a mean or a
+  variance *is* cannot read part 2 of any distribution lesson. L2 covers
+  the random variable and the density; L3 covers mean, variance and
+  sample size. They are prerequisites for the template, not extras.
+- **One opener (L1)** because the wall-that-moved hook is the reason a
+  robotics engineer cares at all, and it is ten minutes.
+- **One closer (L7)** because the three distributions are never used
+  together anywhere else, and because it absorbs both M5 and M6 (§6).
 
-| Category | Lessons | Meaning |
+**Six is the floor** if you want maximum compression: merge L2 and L3 into
+a single `random-variables-mean-and-variance`. I do not recommend it —
+random-variable-and-density and mean-and-variance are two distinct ideas
+and one lesson carrying both plus a SIM plus a ROS 2 section is the one
+place in this structure that would feel rushed. But it is a legitimate
+choice and costs nothing structurally.
+
+**Eight or more is not justifiable** under this template. Any additional
+lesson would either re-split content the template deliberately fuses, or
+re-introduce material from the removal list in §0.
+
+---
+
+## 2. THE SEVEN LESSONS
+
+### L1 · `why-statistics-matters` — 10 min
+
+**Objective.** State that repeated measurement of a fixed quantity varies,
+and that the variation has a shape worth modelling.
+
+| Part | Blocks |
+| --- | --- |
+| CONCEPT | `CALLOUT` INFO — the wall has not moved, so why have the numbers? · `TEXT` — because every measurement is the true value plus noise, and the noise has structure |
+| THEORY | `TEXT` — three shapes cover most robot randomness: WHERE (uniform), HOW (Gaussian), WHEN (exponential). No formulas yet |
+| SIMULATION | `SIM[static]` — the wall readings as a histogram. No fitted curve, no distribution named |
+| ROS 2 | `TEXT` — `/scan` on a stationary robot · `CODE` — `ros2 topic echo /scan --field ranges[0]` · `TEXT` — expect the last two digits to move and the first two to hold |
+| — | `CALLOUT` WARNING — **a simulation is never validation** (spec §63), stated once here and relied on for the rest of the course |
+
+**Note.** That final callout is the one piece of the old course's
+scientific-integrity apparatus I recommend keeping. The new course puts a
+`SIM` of a Gaussian next to "here is how to collect LiDAR readings" in L5
+and never argues that the model fits. Without one explicit sentence saying
+the simulation is not evidence about your sensor, the juxtaposition
+*implies* the claim the course no longer makes. One block, and it closes
+the gap.
+
+---
+
+### L2 · `random-variables-and-densities` — 18 min
+
+**Objective.** Express a sensor reading as a random variable; read a
+density as "where the values pile up".
+
+| Part | Blocks |
+| --- | --- |
+| CONCEPT | `CALLOUT` INFO — what is the "X" in all these formulas? · `TEXT` — X is the measurement before you take it; x is the number you got |
+| THEORY | `TEXT` — a density says where values concentrate; total area is 1; a density value is not a probability. One sentence that a CDF is the running total, and no more |
+| SIMULATION | `SIM` — Gaussian, σ locked, PDF view, sample-count slider: watch draws pile into the density |
+| ROS 2 | `TEXT` — one topic, many readings · `CODE` — a ~15-line subscriber that collects N readings from `/scan` into a list · `TEXT` — expect a list of floats that are close but not equal |
+| — | `QUIZ` ×1 |
+
+**Cut from M1.1–M1.3.** The PMF/PDF distinction, the shaded-area figure,
+the P(X = x) = 0 discussion, reading values off a CDF, and the linked
+PDF/CDF cursor that revision 2 called "the single most valuable
+interaction in M1". The `SIM` component still supports the CDF view; this
+course simply stops using it.
+
+---
+
+### L3 · `mean-variance-and-sampling` — 18 min
+
+**Objective.** Compute mean and standard deviation from a sample; state
+why σ rather than σ² is quoted; state that more readings give steadier
+numbers.
+
+| Part | Blocks |
+| --- | --- |
+| CONCEPT | `CALLOUT` INFO — what two numbers summarise a pile of readings? · `TEXT` — where it sits, and how wide it is |
+| THEORY | `TEXT` — x̄, s², σ = √s². Units: metres vs metres², which is why σ is the number on a datasheet. No derivation, no n−1 discussion beyond naming it |
+| SIMULATION | `SIM` — Gaussian with a sample-count slider and summary stats; watch x̄ and σ̂ steady as n grows |
+| ROS 2 | `TEXT` — from a list of readings to two numbers · `CODE` — `statistics.mean` / `statistics.stdev` over the L2 subscriber's output · `TEXT` — expect σ of a few millimetres on a good LiDAR at 2 m |
+| — | `QUIZ` ×2 |
+
+**Cut from M1.4–M1.7.** The balance-point metaphor, the squared-deviation
+figure, the population-vs-sample formalism, the two-`SIM` sampling
+treatment, and the 10-question checkpoint.
+
+---
+
+### L4 · `uniform-where` — 22 min
+
+**Objective.** State the uniform's formula, parameters, mean and variance;
+generate uniform targets on a robot.
+
+| Part | Blocks |
+| --- | --- |
+| CONCEPT | `CALLOUT` INFO — a robot must explore a room it has no map of; where does it go next? · `TEXT` — every position in the workspace equally likely, by deliberate choice rather than by noise |
+| THEORY | `TEXT` — f(x) = 1/(b−a) on [a, b]; parameters a and b; mean (a+b)/2; variance (b−a)²/12. Stated, not derived |
+| SIMULATION | `SIM` — a, b and n sliders, histogram + density (the existing `uniform-explore` configuration, unchanged) |
+| ROS 2 | `LAB` (reduced) — generate targets in a taped workspace and send goals · `CODE` — the existing target generator, trimmed · `DATA` — `uniform-targets-synthetic`: `TABLE_PREVIEW` + `HISTOGRAM` + `SUMMARY_STATS`, **no overlay** — "what 800 targets look like" · `TEXT` — expect coverage that looks patchy at 40 targets and even at 800 |
+| — | `QUIZ` ×2 |
+
+**Retained from M2.5 as a `CALLOUT` WARNING:** the target *generation* is
+uniform; the robot's *motion* is not. This was a hard requirement of the
+Phase 1 brief and survives the reduction — it is a scoping statement, not
+a model-fit judgement.
+
+---
+
+### L5 · `gaussian-how` — 25 min
+
+**Objective.** State the Gaussian's formula, parameters, mean and
+variance; collect range readings from a real LiDAR and compute both.
+
+| Part | Blocks |
+| --- | --- |
+| CONCEPT | `CALLOUT` INFO — why does a still sensor move? · `TEXT` — many small independent effects add up, and adding them up produces a bell. Mechanism in prose, no k-slider demonstration |
+| THEORY | `TEXT` — the PDF with its normalising constant and exponent; parameters μ and σ; mean = μ; variance = σ². `IMAGE` — annotated formula |
+| SIMULATION | `SIM` — μ, σ and n sliders (the existing `gaussian-explore` configuration, unchanged) |
+| ROS 2 | `LAB` (reduced) — LiDAR on a stable mount, matte target at 2 m · `CODE` — the existing collector node, trimmed to the collection loop · `DATA` — 5,000 wall readings: `TABLE_PREVIEW` + `HISTOGRAM` + `SUMMARY_STATS`, **no overlay** · `TEXT` — expect a single hump a few centimetres wide, and a σ close to your sensor's quoted noise figure |
+| — | `QUIZ` ×2 |
+
+**Cut from M3 (twelve lessons to one).** The k-slider CLT demonstration,
+the formula-free intuition lesson, the no-closed-form-CDF discussion,
+z-scores and 68–95–99.7 entirely, the sampling-variability lesson, the
+three analysis lessons (M3.9–M3.11), and the 12-question checkpoint.
+
+---
+
+### L6 · `exponential-when` — 25 min
+
+**Objective.** State the exponential's formula, parameter, mean and
+variance; log events from a robot topic and turn them into waiting times.
+
+| Part | Blocks |
+| --- | --- |
+| CONCEPT | `CALLOUT` INFO — when will the next event happen? · `TEXT` — events happen at instants; the quantity worth modelling is the gap between them, not the instant |
+| THEORY | `TEXT` — f(t) = λe^(−λt) for t ≥ 0; parameter λ (events per second); mean 1/λ; variance 1/λ². Stated, not derived |
+| SIMULATION | `SIM` — λ and n sliders (the existing `exponential-explore` configuration, unchanged) |
+| ROS 2 | `LAB` (reduced) — detect crossings on `/scan` · `CODE` — the timestamp→gap conversion, which is `np.diff` on a sorted array, carried over from the seeded M4.2 · `DATA` — `robot-event-timestamps-synthetic`: `TABLE_PREVIEW` + `HISTOGRAM` + `SUMMARY_STATS`, **no overlay** · `TEXT` — expect most gaps short, a few much longer, and a mean near 1/λ |
+| — | `QUIZ` ×2 |
+
+**Decision needed — memorylessness.** It is the exponential's defining
+property and the reason the distribution is interesting, and it is *not*
+formula/parameters/mean/variance, so §0's removal list excludes it. My
+recommendation is **one sentence in CONCEPT** ("having waited already does
+not change what comes next — which is a strong assumption and often false
+on a real robot"), and no lesson, no `SIM`, no exercise. That keeps the
+honest caveat at a cost of one sentence. Cutting it entirely is defensible
+under a strict reading of the template; I would rather you decide than
+have me pick. **Flagged, not silently resolved.**
+
+**Cut from M4 (eight lessons to one).** The dedicated memorylessness
+lesson, inverse-CDF sampling, the standalone log-conversion lesson, the
+analysis lesson (M4.7), and `when-exponential-fails` — which revision 2
+marked "**mandatory, not optional**" as the module's scientific-integrity
+check. Under the new scope there is no fit claim for it to be a
+counterweight to, so it goes; but it is worth naming as a deliberate
+reversal of a previous decision rather than an oversight.
+
+---
+
+### L7 · `three-ways-in-my-robot` — 20 min
+
+**Objective.** Given a robot quantity, name which of the three
+distributions describes it and which topic it comes from.
+
+| Part | Blocks |
+| --- | --- |
+| CONCEPT | `CALLOUT` INFO — you have three models; which one does this quantity need? · `TEXT` — ask what produced the number, not what the histogram looks like |
+| THEORY | `TEXT` — one comparison table: support, parameters, mean, variance for all three side by side |
+| SIMULATION | `SIM` ×3 — uniform, Gaussian, exponential on a **shared `xDomain`** (the existing `side-by-side` configuration, unchanged) |
+| ROS 2 | `TEXT` + table — robot task → distribution → topic → what you would log. Six or so rows: exploration targets, LiDAR range noise, obstacle-crossing intervals, odometry drift, message inter-arrival times, battery-warning intervals · `CALLOUT` TIP — closing |
+| — | `QUIZ` ×3 (course close) |
+
+This lesson is the capstone. See §6.
+
+---
+
+## 3. THE 42 → 7 MAPPING
+
+Every revision-2 entry is accounted for. "Absorbed" means its surviving
+content appears inside the named lesson; "cut" means it does not appear at
+all.
+
+| Old | Slug | Fate |
 | --- | --- | --- |
-| **Hard-require a new block type** | **25** | Contains an interactive `SIM`, a `DATA`, or a `LAB`. The lesson loses its point without it. |
-| Static `SIM` only | 6 | `M0.1, M1.2, M2.2, M3.1, M3.4, M4.3`. Could degrade to a pre-rendered `IMAGE` from `figures.py` at the cost of interactivity, so these are a soft dependency. |
-| Need nothing new | 11 | `M0.2, M0.3, M1.1, M1.7, M2.1, M2.7, M3.12, M4.1, M4.8, M5.1, M6.2` |
+| M0.1 | `the-wall-that-moved` | Absorbed → **L1** (becomes L1's CONCEPT + SIM) |
+| M0.2 | `seven-kinds-of-uncertainty` | **Cut.** Taxonomy of uncertainty sources is not formula/parameters/how-to |
+| M0.3 | `how-this-course-works` | Absorbed → **L1** (only the "simulation is not validation" callout survives) |
+| M1.1 | `random-variables` | Absorbed → **L2** CONCEPT |
+| M1.2 | `discrete-and-continuous` | **Cut.** The quantization caveat existed to explain the Q-Q staircase, which is gone |
+| M1.3 | `pdf-pmf-and-cdf` | Absorbed → **L2** THEORY, minus the CDF work |
+| M1.4 | `expected-value-and-mean` | Absorbed → **L3** THEORY |
+| M1.5 | `variance-and-standard-deviation` | Absorbed → **L3** THEORY |
+| M1.6 | `samples-and-sampling` | Absorbed → **L3** SIMULATION (as "more samples, steadier numbers") |
+| M1.7 | `foundations-checkpoint` | **Cut** as a lesson → L2/L3 `QUIZ` blocks |
+| M2.1 | `where-can-a-value-occur` | Absorbed → **L4** CONCEPT |
+| M2.2 | `uniform-theory` | Absorbed → **L4** THEORY |
+| M2.3 | `uniform-mean-and-variance` | Absorbed → **L4** THEORY (result only, derivation cut) |
+| M2.4 | `uniform-explore` | Absorbed → **L4** SIMULATION |
+| M2.5 | `random-target-generation` | Absorbed → **L4** ROS 2 (incl. the scoping WARNING) |
+| M2.6 | `uniform-lab` | Absorbed → **L4** ROS 2 (`LAB`, reduced) |
+| M2.7 | `uniform-checkpoint` | **Cut** as a lesson → L4 `QUIZ` |
+| M3.1 | `why-does-a-still-sensor-move` | Absorbed → **L5** CONCEPT |
+| M3.2 | `gaussian-mechanism` | Absorbed → **L5** CONCEPT, as prose. The k-slider `SIM` is cut |
+| M3.3 | `gaussian-intuition` | Absorbed → **L5** SIMULATION |
+| M3.4 | `gaussian-theory` | Absorbed → **L5** THEORY, minus the CDF discussion |
+| M3.5 | `standard-normal-and-z-scores` | **Cut.** Named on the removal list |
+| M3.6 | `gaussian-explore` | Absorbed → **L5** SIMULATION |
+| M3.7 | `sampling-variability` | **Cut.** Its one surviving idea is in L3 |
+| M3.8 | `lidar-noise-lab` | Absorbed → **L5** ROS 2 (`LAB`, reduced) |
+| M3.9 | `analyzing-real-lidar-data` | **Dissolved → L5 ROS 2.** See §5 |
+| M3.10 | `outliers-and-robustness` | **Cut.** Named on the removal list |
+| M3.11 | `is-gaussian-defensible` | **Cut.** Named on the removal list |
+| M3.12 | `gaussian-checkpoint` | **Cut** as a lesson → L5 `QUIZ` |
+| M4.1 | `when-will-the-next-event-happen` | Absorbed → **L6** CONCEPT |
+| M4.2 | `waiting-times-from-event-logs` | **Dissolved → L6 ROS 2.** See §5 |
+| M4.3 | `exponential-theory` | Absorbed → **L6** THEORY |
+| M4.4 | `memorylessness` | **Cut** as a lesson; one sentence pending your decision (L6) |
+| M4.5 | `exponential-explore` | Absorbed → **L6** SIMULATION |
+| M4.6 | `event-timing-lab` | Absorbed → **L6** ROS 2 (`LAB`, reduced) |
+| M4.7 | `analyzing-waiting-times` | **Dissolved → L6 ROS 2.** See §5 |
+| M4.8 | `when-exponential-fails` | **Cut.** Reverses revision 2's "mandatory" marking — see L6 |
+| M5.1 | `where-how-when` | Absorbed → **L7** CONCEPT + THEORY |
+| M5.2 | `side-by-side` | Absorbed → **L7** SIMULATION |
+| M5.3 | `choosing-a-model` | Absorbed → **L7** CONCEPT |
+| M6.1 | `capstone-brief` | Absorbed → **L7** ROS 2. See §6 |
+| M6.2 | `capstone-submission` | **Cut.** See §6 |
 
-So **25 of 42 lessons are blocked on Phases 1D/1E**, and a further 6 are
-degraded without them. That is the real argument for building the block
-types before authoring content, and it is stronger than the original
-(wrong) sentence made it look.
-
-### Which lessons use which new block type
-
-| Block type | Lessons | Count |
-| --- | --- | --- |
-| `DISTRIBUTION_SIM` — **interactive** | M1.3, M1.4, M1.5, M1.6, M2.3, M2.4, M2.5, M3.2, M3.3, M3.5, M3.6, M3.7, M3.10, M4.4, M4.5, M5.2 | 16 |
-| `DISTRIBUTION_SIM` — `[static]` | M0.1, M1.2, M2.2, M3.1, M3.4, M4.3 | 6 |
-| `DATASET_EXPLORER` | M2.6, M3.9, M3.10, M3.11, M4.2, M4.7, M5.3, M6.1 | 8 |
-| `LAB_PROTOCOL` | M2.6, M3.8, M4.6 | 3 |
-
-M2.6 uses both `DATA` and `LAB`; M3.10 uses both `SIM` and `DATA`. Full
-Zod schemas for all three types are in `PHASE_1A_ARCHITECTURE.md`
-§18.2 (the two lightweight) and §18.3 (the relational-shared).
-
----
-
-## M0 — WHY STATISTICS MATTERS IN ROBOTICS
-`position: 0` · 3 lessons · ~35 min
-
-**Module objective.** Name four distinct sources of robot uncertainty with
-a sensor example of each, and explain why a repeated measurement of an
-unchanged quantity varies.
-
-**Cross-reference obligation (1A §21):** this module cites
-`robotics-hardware-and-sensors` rather than re-teaching sensor hardware.
-
----
-
-### M0.1 · `the-wall-that-moved` — 12 min
-
-*A robot facing a wall that has not moved. The LiDAR disagrees with
-itself.*
-
-**Objectives** — Observe that repeated measurements of a fixed quantity
-differ; articulate why that is surprising before it is explained; state
-that the variation has structure rather than being arbitrary.
-
-**Blocks**
-
-| # | Type | Purpose |
-| --- | --- | --- |
-| 1 | `CALLOUT` INFO | The hook question: the wall has not moved, so why have the numbers? |
-| 2 | `IMAGE` | Experimental geometry: stationary robot, wall at 2 m, beam annotated (SVG, `figures.py`) |
-| 3 | `TEXT` | The reading sequence (2.01, 1.98, 2.03 …) and what a naive reader concludes |
-| 4 | `SIM[static]` | The same readings as a histogram — shape appears without the word "Gaussian" being used |
-| 5 | `TEXT` | Three candidate explanations (the wall moved / the sensor is broken / this is normal), only one of which survives |
-| 6 | `CALLOUT` TIP | Where this goes: the variation is the subject, not an obstacle to it |
-
-**Note.** Block 4 deliberately shows a histogram with **no fitted curve and
-no distribution named.** Naming the Gaussian here would answer the question
-the whole course exists to make the learner ask.
+**Totals:** 24 absorbed, 15 cut, 3 dissolved into ROS 2 sections.
 
 ---
 
-### M0.2 · `seven-kinds-of-uncertainty` — 13 min
+## 4. THE PHYSICAL-DATA RE-EVALUATION
 
-**Objectives** — Name four distinct sources of robot uncertainty (sensor,
-actuator, environmental, model) and give a sensor example of each;
-distinguish uncertainty from error.
+This is the most consequential change in the revision, so it is stated per
+lesson rather than in aggregate.
 
-**Blocks**
+The question in each row is: *does this lesson, under the new template,
+still require data captured from a real robot?*
 
-| # | Type | Purpose |
-| --- | --- | --- |
-| 1 | `CALLOUT` INFO | **Cross-reference to `accuracy-precision-noise`** — the handoff (1A §21) |
-| 2 | `TEXT` | Uncertainty vs error: an error is a mistake, uncertainty is a property |
-| 3 | `IMAGE` | Taxonomy diagram: sensor / actuator / environmental / model uncertainty |
-| 4 | `TEXT` | Sensor uncertainty — LiDAR range, camera pixel position |
-| 5 | `TEXT` | Actuator uncertainty — commanded vs achieved motion |
-| 6 | `TEXT` | Environmental and model uncertainty |
-| 7 | `CALLOUT` WARNING | Precise but wrong: a biased sensor is consistent and useless. Reuses the hardware course's quadrant framing without re-deriving it |
-
----
-
-### M0.3 · `how-this-course-works` — 10 min
-
-**Objectives** — Distinguish the three levels of evidence (theory,
-simulation, reality) and state why they are not interchangeable; locate the
-simulation-first path.
-
-**Blocks**
-
-| # | Type | Purpose |
-| --- | --- | --- |
-| 1 | `TEXT` | The course loop: observe → question → model → test → interpret |
-| 2 | `IMAGE` | Three levels of evidence diagram (theory / simulation / reality) |
-| 3 | `CALLOUT` WARNING | **Never present simulation as validation** (spec §63) — stated once, early, and referenced later |
-| 4 | `TEXT` | Prerequisites, with links to `ros2-fundamentals` and `robotics-hardware-and-sensors` |
-| 5 | `CALLOUT` TIP | No robot? Every module has a full simulation path. Names the fallback lessons |
-
----
-
-## M1 — RANDOM VARIABLES AND PROBABILITY
-`position: 100` · 7 lessons · ~105 min
-
-**Module objective.** Define a random variable over a sensor reading;
-distinguish PMF from PDF and state why a PDF value is not a probability;
-read a CDF; compute mean, variance and standard deviation from a sample;
-distinguish sample from population statistics.
-
----
-
-### M1.1 · `random-variables` — 14 min
-
-**Objectives** — Define a random variable; express a sensor reading as one;
-distinguish the variable from a single realization of it.
-
-**Blocks** — `TEXT` (X = the LiDAR distance) · `IMAGE` (mapping outcomes to
-numbers) · `TEXT` (realizations x₁, x₂, … vs the variable X) · `CALLOUT`
-TIP (notation convention used for the rest of the course) · `TEXT`
-(three more robot random variables) · `EXERCISE` INDEPENDENT (identify the
-random variable in three scenarios).
-
----
-
-### M1.2 · `discrete-and-continuous` — 15 min
-
-**Objectives** — Classify a robot measurement as discrete or continuous;
-state why a LiDAR reading is *modeled* as continuous despite being
-quantized in practice.
-
-**Blocks** — `TEXT` · `IMAGE` (discrete vs continuous number line) ·
-`SIM[static]` (a PMF beside a PDF, same axes) · `TEXT` (the quantization
-caveat) · `CALLOUT` WARNING (**a PDF value is not a probability** — spec
-§63's named confusion, introduced here and returned to in M1.3) ·
-`EXERCISE` INDEPENDENT.
-
-**Note.** The quantization point matters and is usually skipped: a real
-LiDAR reports discrete steps, and we model it as continuous anyway. Saying
-so here prevents the M3 Q-Q plot's staircase from reading as a bug.
-
----
-
-### M1.3 · `pdf-pmf-and-cdf` — 18 min
-
-**Objectives** — Read a PDF as a density and a CDF as an accumulated
-proportion; answer "what fraction of readings fall below x" from a CDF;
-explain why the area under a PDF is 1.
-
-**Blocks** — `TEXT` · `SIM` **first interactive simulation** (Gaussian,
-σ locked, PDF + CDF views, linked cursor across both) · `TEXT` (area as
-probability) · `IMAGE` (shaded-area figure) · `CALLOUT` INFO (why P(X = x)
-= 0 for a continuous variable) · `EXERCISE` GUIDED (read three values off
-the CDF).
-
-**Note.** The linked cursor — moving x on the PDF highlights the same x on
-the CDF — is the single most valuable interaction in M1 and is a `SIM`
-feature requirement for Phase 1D.
-
----
-
-### M1.4 · `expected-value-and-mean` — 13 min
-
-**Objectives** — Distinguish E[X] (population) from x̄ (sample); compute a
-sample mean; state what the mean of LiDAR readings physically estimates.
-
-**Blocks** — `TEXT` · `IMAGE` (balance-point metaphor) · `SIM` (sample
-count slider; watch x̄ approach μ) · `TEXT` (robotics interpretation) ·
-`CALLOUT` WARNING (the mean is not the true distance — it is an estimate of
-it) · `EXERCISE`.
-
----
-
-### M1.5 · `variance-and-standard-deviation` — 15 min
-
-**Objectives** — Compute variance and σ from a sample; state why σ, not
-σ², is the number an engineer quotes; connect σ to a sensor tolerance.
-
-**Blocks** — `TEXT` · `IMAGE` (squared-deviation figure) · `SIM` (σ slider;
-spread responds) · `CALLOUT` WARNING (**never confuse variance with
-standard deviation** — spec §63) · `TEXT` (units: metres vs metres²; this
-is why σ is quoted) · `EXERCISE`.
-
----
-
-### M1.6 · `samples-and-sampling` — 16 min
-
-**Objectives** — Distinguish sample from population; predict how sample
-size affects the stability of x̄ and σ̂; state why 30 readings and 5,000
-readings support different claims.
-
-**Blocks** — `TEXT` · `SIM` (resample button at fixed n; statistics jump
-around) · `TEXT` (sampling variability named) · `SIM` (n slider; jumpiness
-shrinks) · `CALLOUT` TIP (this is why M3's lab collects 5,000, not 100) ·
-`EXERCISE`.
-
-**Note.** Two `SIM` blocks in one lesson, deliberately: the first shows
-instability at fixed n, the second shows it shrinking with n. One block
-with both controls muddles the two observations.
-
----
-
-### M1.7 · `foundations-checkpoint` — 14 min
-
-**Blocks** — `QUIZ` (10 questions) · closing `CALLOUT`.
-
-**Quiz composition** — 3 conceptual, 2 visual (read a PDF and a CDF),
-**3 `NUMERIC`** (compute x̄, σ̂, and a proportion from a CDF), 2 robotics
-interpretation. `passingScore: 70`, unlimited attempts, explanation
-required on every question.
-
----
-
-## M2 — UNIFORM DISTRIBUTION · *WHERE*
-`position: 200` · 7 lessons · ~120 min
-
-**Module objective.** State the continuous uniform PDF/CDF and derive its
-mean and variance; generate uniform samples; explain "equally likely" over
-an interval; distinguish a uniformly *generated* target from robot motion;
-account for deviation between an empirical histogram and a flat density.
-
----
-
-### M2.1 · `where-can-a-value-occur` — 12 min
-
-**Objectives** — Frame the WHERE question; identify a robot process that is
-deliberately randomized rather than incidentally noisy.
-
-**Blocks** — `CALLOUT` INFO (hook: a robot must explore a room it has no
-map of — where does it go next?) · `TEXT` · `IMAGE` (2D workspace with
-scattered targets) · `TEXT` (deliberate randomness vs measurement noise —
-the distinction that separates M2 from M3) · `CALLOUT` TIP (WHERE / HOW /
-WHEN preview).
-
----
-
-### M2.2 · `uniform-theory` — 18 min
-
-**Objectives** — State the continuous uniform PDF and CDF; state the
-discrete case; explain why the PDF is 1/(b−a) and not 1.
-
-**Blocks** — `TEXT` (intuition first) · `SIM[static]` (PDF and CDF) ·
-`TEXT` (the formula, after the shape) · `IMAGE` (discrete vs continuous
-uniform) · `CALLOUT` INFO (why the density exceeds 1 when b−a < 1 — a
-direct payoff of M1.2's "a density is not a probability") · `EXERCISE`.
-
----
-
-### M2.3 · `uniform-mean-and-variance` — 16 min
-
-**Objectives** — Derive (a+b)/2 and (b−a)²/12; predict how variance
-responds to a widened interval.
-
-**Blocks** — `TEXT` (derivation, shown not asserted) · `SIM` (a and b
-sliders; mean and variance readouts update) · `TEXT` (why the 12) ·
-`EXERCISE` · `CALLOUT` TIP.
-
----
-
-### M2.4 · `uniform-explore` — 20 min
-
-**Objectives** — Predict the effect of a, b and n on the histogram;
-generate uniform samples in Python; explain why a finite sample's histogram
-is not flat.
-
-**Blocks** — `SIM` (full: a, b, n; histogram + PDF + CDF + summary stats) ·
-`TEXT` (what to notice) · `CODE` python (NumPy generation) · `CODE` python
-(histogram plotting) · `FILE` (`uniform_explore.py`) · `CALLOUT` WARNING
-(**a finite sample is never perfectly flat** — the first theory-vs-reality
-moment, on synthetic data where nothing else can be blamed) · `EXERCISE`.
-
-**Note.** Introducing the theory-vs-reality gap on *synthetic* data is
-deliberate. When the same gap appears on real LiDAR data in M3, the learner
-already knows it is not the sensor's fault.
-
----
-
-### M2.5 · `random-target-generation` — 18 min
-
-**Objectives** — Generate 2D uniform targets; interpret a 2D scatter as two
-independent uniforms; **state precisely what is and is not being modeled as
-uniform.**
-
-**Blocks** — `TEXT` · `SIM` (2D scatter, `SCATTER_2D` view, workspace
-bounds) · `TEXT` (per-axis histograms) · **`CALLOUT` WARNING — the scoping
-caveat**: the *target generation* is uniform; the robot's *motion* is not,
-and nothing in this lab claims otherwise · `TEXT` (what would break
-uniformity: a quantized grid, rejected out-of-bounds samples, an obstacle
-mask) · `EXERCISE`.
-
-**Note.** The scoping caveat is a hard requirement from the Phase 1 brief.
-It is a `WARNING` callout in the lesson body, not a footnote.
-
----
-
-### M2.6 · `uniform-lab` — 22 min
-
-**Objectives** — Execute LAB 1; compare a generated target set against the
-theoretical density; identify at least one mechanism that distorts it.
-
-**Blocks** — `LAB` (LAB 1 — Random Robot Targets) · `CODE` python (target
-generator) · `CODE` bash (ROS 2 goal dispatch, run **locally**) · `DATA`
-(recorded target + odometry dataset: `TABLE_PREVIEW`, `SCATTER_2D`,
-`HISTOGRAM`, `SUMMARY_STATS`; overlay `UNIFORM` / `FITTED_FROM_DATA`) ·
-`TEXT` (interpretation) · `CALLOUT` WARNING (safety recap — this is the
-only lab that moves the robot).
-
-**Cross-reference gap — this lab has nothing to link to.** M3.8 and M4.6
-hand LiDAR bring-up off to `robotics-hardware-and-sensors`, but that course
-covers **only** the RPLIDAR A2 and the Orbbec Astra Pro. Base motion,
-`/cmd_vel`, `/odom` and wheel encoders appear in none of its 44 lessons, so
-there is no lesson to cite. This lab must therefore either teach its own
-minimal `/cmd_vel` grounding or lean on `ros2-fundamentals` Module 4
-(`turtlesim`, which teaches `/cmd_vel` on a simulated robot rather than a
-physical base). **Resolve before authoring M2.6** — it is the only lab with
-an unowned hardware prerequisite.
-
-**Dependencies** — dataset `uniform-targets-workspace-2x2`; risk 1.
-`simulationFallbackLessonSlug: "uniform-explore"`.
-
----
-
-### M2.7 · `uniform-checkpoint` — 14 min
-
-**Blocks** — `QUIZ` (10 questions) · `EXERCISE` INDEPENDENT (the module
-challenge) · closing `CALLOUT` (reflection).
-
-**Quiz composition** — 3 conceptual, 2 visual, 2 `NUMERIC` (mean and
-variance from given bounds), 2 robotics interpretation, 1 model selection
-("is uniform defensible for this described process?").
-
-**Challenge** — Generate a target set, compare against theory, and state
-one mechanism by which the realized targets could deviate from uniform.
-Content-only, no submission (1A §15).
-
----
-
-## M3 — NORMAL / GAUSSIAN DISTRIBUTION · *HOW*  ★ FLAGSHIP
-`position: 700` · 11 lessons · ~220 min
-
-**Module objective (terminal).** Argue with evidence whether a Gaussian is
-a defensible model for a given LiDAR dataset — not whether it fits, but
-whether the claim is warranted.
-
----
-
-### M3.1 · `why-does-a-still-sensor-move` — 12 min
-
-**Objectives** — Restate the M0 hook as a quantitative question; state what
-would count as an answer.
-
-**Blocks** — `CALLOUT` INFO (the hook, returned to with M1's vocabulary) ·
-`TEXT` · `SIM[static]` (the M0.1 histogram again, now labelled with x̄ and
-σ̂) · `TEXT` (what a good answer looks like) · `CALLOUT` TIP (module
-roadmap).
-
----
-
-### M3.2 · `gaussian-mechanism` — 16 min
-
-**Objectives** — State *why* many small independent additive errors produce
-a bell shape; identify when that mechanism does **not** apply.
-
-**Blocks** — `TEXT` (the additive-error mechanism) · `SIM` (sum of k
-uniform errors; k slider — the bell emerges) · `TEXT` (what the
-demonstration does and does not prove) · `CALLOUT` WARNING (this is *not* a
-proof of the CLT, which is module 14; it is a mechanism intuition) ·
-`TEXT` (when the mechanism fails: one dominant error source, multiplicative
-errors, bounded quantities).
-
-**Note.** Added during blueprint (not in 1A's 10-lesson sketch). Without
-it, "Gaussian" is a shape the learner recognizes rather than a mechanism
-they can argue for or against — which makes the module's terminal objective
-unreachable. This lesson is what makes `is-gaussian-defensible` an argument
-rather than an opinion.
-
----
-
-### M3.3 · `gaussian-intuition` — 14 min
-
-**Objectives** — Interpret μ and σ visually before seeing the formula;
-predict the shape change from a parameter change.
-
-**Blocks** — `SIM` (μ and σ sliders; **no formula anywhere in the lesson**)
-· `TEXT` (what μ does; what σ does) · `IMAGE` (three σ values overlaid) ·
-`EXERCISE` GUIDED (predict-then-check with the slider).
-
----
-
-### M3.4 · `gaussian-theory` — 20 min
-
-**Objectives** — State the Gaussian PDF; identify each term's role; state
-the CDF has no closed form and what follows from that.
-
-**Blocks** — `TEXT` (the formula, now that the shape is familiar) ·
-`IMAGE` (annotated formula: normalizing constant, exponent, μ, σ) ·
-`SIM[static]` (PDF and CDF) · `TEXT` (no closed-form CDF; numerical
-evaluation and why tables/`erf` exist) · `CALLOUT` INFO (units of the
-density) · `EXERCISE`.
-
----
-
-### M3.5 · `standard-normal-and-z-scores` — 20 min
-
-**Objectives** — Compute a z-score; standardize a measurement; apply
-68–95–99.7 to a tolerance question.
-
-**Blocks** — `TEXT` · `SIM` (standardization: raw axis and z axis side by
-side) · `TEXT` (68–95–99.7) · `IMAGE` (the three shaded bands) · `TEXT`
-(robotics application: "is a 2.11 m reading against μ̂=2.00, σ̂=0.02
-suspicious?") · `EXERCISE` GUIDED · `CALLOUT` WARNING (the rule assumes
-Gaussian — using it to *test* Gaussianity is circular).
-
----
-
-### M3.6 · `gaussian-explore` — 20 min
-
-**Objectives** — Generate Gaussian samples in Python; compare a sampled
-histogram against the theoretical PDF; quantify the mismatch at several n.
-
-**Blocks** — `SIM` (full: μ, σ, n; histogram + PDF overlay + CDF + summary)
-· `CODE` python (`np.random.default_rng().normal`, seeded) · `CODE` python
-(histogram + PDF overlay via `statsrobotics.figures`) · `FILE`
-(`gaussian_explore.py`) · `TEXT` (theoretical vs sampled statistics) ·
-`EXERCISE`.
-
-**Note.** The Python must be **seeded and reproducible** — the lesson
-quotes specific numbers, and they must match on the learner's machine
-(spec §47).
-
----
-
-### M3.7 · `sampling-variability` — 18 min
-
-**Objectives** — Distinguish theoretical from simulated distributions;
-predict how σ̂'s stability scales with n; state what "the sample is too
-small" means quantitatively.
-
-**Blocks** — `TEXT` · `SIM` (resample at fixed n; μ̂ and σ̂ jump) · `SIM`
-(n slider; jumpiness shrinks) · `TEXT` (standard error, informally — the
-formal treatment is module 14) · `CALLOUT` TIP (why the lab collects 5,000)
-· `EXERCISE`.
-
----
-
-### M3.8 · `lidar-noise-lab` — 30 min  ★ FLAGSHIP LAB
-
-**Objectives** — Execute LAB 2; collect ≥1,000 range readings of a static
-target; record complete provenance.
-
-**Blocks** — `CALLOUT` INFO (the experimental question, restated as
-falsifiable) · `IMAGE` (setup geometry, dimensioned) · `CODE` python (the
-`stats_robot_lab` collector node) · `LAB` (LAB 2 — all 15 sections) ·
-`CALLOUT` WARNING (validation banner: `THEORETICALLY_DESIGNED`) · `FILE`
-(collector node download) · `TEXT` (what to record before analysing).
-
-**Cross-references (1A §21)** — bring-up, udev rules, baud rate and driver
-debugging are **not re-taught**; the lab links to `rplidar-a2-ubuntu-setup`,
-`rplidar-a2-ros2-integration` and `rplidar-a2-debugging`, and starts from a
-working `/scan`.
-
-**Dependencies** — risks 1 and 2 both.
-`simulationFallbackLessonSlug: "gaussian-explore"`.
-
----
-
-### M3.9 · `analyzing-real-lidar-data` — 26 min
-
-**Objectives** — Compute μ̂ and σ̂ from real data; construct and read an
-empirical CDF and a Q-Q plot; identify at least two specific deviations
-from the Gaussian model.
-
-**Blocks** — `DATA` (recorded LiDAR wall dataset — `HISTOGRAM`,
-`SUMMARY_STATS`; overlay `GAUSSIAN` / `FITTED_FROM_DATA`) · `TEXT` (what
-the histogram alone can and cannot tell you) · `DATA` (same dataset —
-`ECDF`) · `TEXT` (reading an eCDF against a theoretical CDF) · `DATA` (same
-dataset — `QQ_PLOT`) · `TEXT` (**reading the tails** — where the
-information is) · `CALLOUT` WARNING (the quantization staircase is the
-sensor's resolution, not a modelling failure — the payoff of M1.2) ·
-`EXERCISE`.
-
-**Note.** Three `DATA` blocks over **one** dataset row. This is exactly the
-reuse the many-to-one `datasetId` FK exists for (1A §18.1).
-
-**Dependencies** — dataset `rplidar-wall-2m-5000`; risk 1.
-
----
-
-### M3.10 · `outliers-and-robustness` — 20 min
-
-**Objectives** — Distinguish an outlier from noise; quantify the mean's
-sensitivity versus the median's; state three physical mechanisms that
-produce genuine outliers.
-
-**Blocks** — `TEXT` · `SIM` (inject outliers; watch x̄ move and the median
-hold) · `DATA` (the real dataset, outliers highlighted) · `TEXT`
-(mechanisms: multipath, specular reflection, edge returns, dropped
-packets) · **`CALLOUT` WARNING — an outlier is not automatically bad data**
-(spec §26; it may be the most informative reading in the set) · `CODE`
-python (robust statistics) · `EXERCISE`.
-
----
-
-### M3.11 · `is-gaussian-defensible` — 22 min
-
-**Objectives** — Assemble the evidence from M3.9 and M3.10 into an argued
-position; state the assumptions the model requires; state what the model
-does not explain.
-
-**Blocks** — `TEXT` (the question restated: not "does it fit" but "is the
-claim warranted") · `DATA` (`experiment-comparison` view: theory vs
-simulation vs reality side by side, spec §59) · `TEXT` (assumptions:
-additive, symmetric, stationary, independent) · `TEXT` (evidence for) ·
-`TEXT` (evidence against) · `CALLOUT` INFO (a defensible answer names its
-own limits) · `EXERCISE` INDEPENDENT (write the argument) · `CALLOUT` TIP
-(reflection).
-
-**Note.** This is the module's terminal lesson and the course's
-intellectual centre. It must reach a **qualified** conclusion — neither
-"yes, LiDAR noise is Gaussian" nor a refusal to conclude. Spec §63.
-
----
-
-### M3.12 · `gaussian-checkpoint` — 16 min
-
-**Blocks** — `QUIZ` (12 questions) · closing `CALLOUT`.
-
-**Quiz composition** — 2 conceptual, 3 visual (read a histogram, an eCDF
-and a Q-Q plot), **3 `NUMERIC`** (z-score, a 68–95–99.7 proportion, σ̂
-from a small sample), 2 robotics interpretation, 1 model selection, 1
-debugging ("several extreme readings appeared — what do you investigate?").
-
----
-
-## M4 — EXPONENTIAL DISTRIBUTION · *WHEN*
-`position: 800` · 8 lessons · ~140 min
-
-**Module objective.** Convert an event log into inter-arrival times,
-estimate λ̂, and evaluate whether the exponential model is defensible —
-including recognizing when it is not.
-
----
-
-### M4.1 · `when-will-the-next-event-happen` — 12 min
-
-**Blocks** — `CALLOUT` INFO (hook) · `TEXT` (events vs measurements — the
-M3/M4 distinction) · `IMAGE` (event timeline with Δt annotated) · `TEXT`
-(robot examples) · `CALLOUT` TIP (WHERE / HOW / WHEN, third position).
-
----
-
-### M4.2 · `waiting-times-from-event-logs` — 16 min
-
-**Objectives** — Convert timestamps to inter-arrival times; explain why Δt,
-not the timestamps, is the random variable of interest.
-
-**Blocks** — `TEXT` · `IMAGE` (timestamps → differences) · `CODE` python
-(the conversion) · `DATA` (event dataset, `TIME_SERIES` view) · `TEXT`
-(what the series looks like before any model) · `EXERCISE`.
-
-**Note.** Added during blueprint. In 1A this was folded into
-`exponential-theory`; separating it keeps the *data transformation* (which
-learners get wrong) distinct from the *model*.
-
----
-
-### M4.3 · `exponential-theory` — 18 min
-
-**Objectives** — State the exponential PDF and CDF; state E[T] = 1/λ;
-explain why the density is highest at t = 0.
-
-**Blocks** — `TEXT` (intuition) · `SIM[static]` (PDF and CDF) · `TEXT` (the
-formula) · `CALLOUT` INFO (**the counter-intuitive part**: the most likely
-waiting time is near zero, yet the mean is 1/λ) · `TEXT` (λ and E[T] as
-reciprocal views) · `EXERCISE`.
-
----
-
-### M4.4 · `memorylessness` — 18 min
-
-**Objectives** — State the memoryless property; test it against intuition;
-name a robot process that violates it.
-
-**Blocks** — `TEXT` · `SIM` (conditional waiting time given elapsed time —
-the distribution does not shift) · `CALLOUT` WARNING (this is a strong
-assumption and is frequently false in robotics) · `TEXT` (violations: a
-periodic sweep, a dead time after each detection, a battery that ages) ·
-`EXERCISE`.
-
----
-
-### M4.5 · `exponential-explore` — 18 min
-
-**Blocks** — `SIM` (full: λ, n) · `CODE` python (inverse-CDF sampling, and
-why it is the natural method here) · `CODE` python (histogram + PDF
-overlay) · `FILE` (`exponential_explore.py`) · `TEXT` (λ̂ = 1/x̄ and why) ·
-`EXERCISE`.
-
----
-
-### M4.6 · `event-timing-lab` — 24 min
-
-**Blocks** — `CALLOUT` INFO (the question) · `IMAGE` (setup) · `CODE`
-python (event-detection collector) · `LAB` (LAB 3 — all 15 sections) ·
-`CALLOUT` WARNING (validation banner) · `FILE`.
-
-**Cross-references (1A §21)** — this lab brings up the same LiDAR as M3.8,
-so it re-teaches none of it: it links to `rplidar-a2-ubuntu-setup`,
-`rplidar-a2-ros2-integration` and `rplidar-a2-debugging` in
-`robotics-hardware-and-sensors`, and to M3.8 for the collection workflow
-the learner has already run once. It starts from a working `/scan`.
-
-**Open design question** — the event source (1A §22, item 5). A patrolling
-robot produces *periodic* encounters; the lab is designed around
-externally-caused crossings. **If the assumption still fails, M4.7 is where
-that becomes the lesson.**
-
-`simulationFallbackLessonSlug: "exponential-explore"`.
-
----
-
-### M4.7 · `analyzing-waiting-times` — 20 min
-
-**Blocks** — `DATA` (Δt dataset — `HISTOGRAM`, `SUMMARY_STATS`; overlay
-`EXPONENTIAL` / `FITTED_FROM_DATA`) · `TEXT` (λ̂ from the data) · `DATA`
-(same dataset — `ECDF`) · `TEXT` (reading the fit) · `DATA` (same dataset —
-`QQ_PLOT` against exponential quantiles) · `TEXT` (interpretation) ·
-`EXERCISE`.
-
-**Dependencies** — dataset `robot-event-timestamps`; risk 1.
-
----
-
-### M4.8 · `when-exponential-fails` + checkpoint — 14 min
-
-**Objectives** — Name three assumption violations and their visible
-signatures; state what to model instead when the exponential fails.
-
-**Blocks** — `TEXT` (independence, constant rate, memorylessness) ·
-`IMAGE` (what a violated assumption looks like in a histogram) · `TEXT`
-(bursty arrivals; periodic triggers; dead time) · `CALLOUT` INFO (a model
-that fails honestly is a result, not a failed lesson) · `QUIZ` (10
-questions) · `EXERCISE` INDEPENDENT (challenge) · closing `CALLOUT`.
-
-**Quiz composition** — 3 conceptual, 2 visual, 2 `NUMERIC` (λ̂ from x̄;
-P(T > t) from the CDF), 2 model selection, 1 debugging.
-
-**Note.** This lesson is **mandatory, not optional.** It is the module's
-scientific integrity check (spec §63) and the required counterweight to
-three modules in which the models mostly worked.
-
----
-
-## M5 — THREE WAYS TO BE RANDOM
-`position: 850` · 3 lessons · ~45 min
-
----
-
-### M5.1 · `where-how-when` — 14 min
-
-**Blocks** — `TEXT` (the unifying frame) · `IMAGE` (the three-question
-diagram) · `TEXT` (mechanism, not shape, selects the model) · `CALLOUT` TIP
-(the comparison table from 1A §5, rendered) · `EXERCISE`.
-
----
-
-### M5.2 · `side-by-side` — 16 min
-
-**Blocks** — `SIM` ×3 (uniform, Gaussian, exponential — **shared `xDomain`,
-one control bar**) · `TEXT` (what shared axes reveal that separate figures
-hide) · `EXERCISE`.
-
-**Note.** The shared `xDomain` is why that field exists on the block schema
-(1A §18.2). Three independently auto-scaled figures would defeat the
-lesson.
-
----
-
-### M5.3 · `choosing-a-model` — 15 min
-
-**Blocks** — `TEXT` (model selection as reasoning) · `DATA` (an
-**unlabelled** dataset — the learner classifies before revealing) ·
-`TEXT` (how to decide from mechanism) · `CALLOUT` WARNING (spec §57: no
-decision tree determines the correct distribution automatically) ·
-`EXERCISE` INDEPENDENT.
-
----
-
-## M6 — MINI-CAPSTONE: THREE WAYS IN MY ROBOT
-`position: 875` · 2 lessons · 90+ min
-
----
-
-### M6.1 · `capstone-brief` — 20 min
-
-**Blocks** — `TEXT` (the brief) · `DATA` ×3 (the three datasets, **all
-unlabelled**, `TABLE_PREVIEW` only — no overlays, no fitted curves) ·
-`TEXT` (the seven required questions) · `TEXT` (submission format and
-rubric) · `CALLOUT` TIP (a defensible "this model does not fit" earns full
-marks).
-
----
-
-### M6.2 · `capstone-submission` — 70+ min
-
-**Blocks** — `EXERCISE` (submission-backed; the first real use of
-`ExerciseSubmission`) · `CALLOUT` INFO (what happens after submission).
-
-**Submission shape (approved scope, 1A §15)** — structured text/JSON:
-per-dataset classification, distribution choice with justification,
-estimated parameters, evaluation notes, stated assumptions, stated
-limitations, plus a link to the learner's own repository or notebook.
-`evaluationMethod: HUMAN_REVIEWED`. **No file upload** — deferred with §32.
-
----
-
-## DECISION REQUIRED — TWO LESSONS BEYOND APPROVED 1A SCOPE
-
-`PHASE_1A_ARCHITECTURE.md` §3 was approved with a 38-lesson structure.
-This blueprint contains 42. Four of the difference is a counting error in
-1A's own sketch (corrected in §0 above); **two are genuine additions and
-need an explicit yes or no.** They are recorded here rather than in a
-delivery note because they change module scope, and scope changes are the
-reviewer's call, not the author's.
-
-### Addition 1 — M3.2 `gaussian-mechanism` (16 min)
-
-**What it adds.** *Why* many small independent additive errors produce a
-bell shape, demonstrated with a slider that sums k uniform errors, plus an
-explicit statement of when the mechanism does **not** apply (one dominant
-error source, multiplicative errors, bounded quantities).
-
-**Why I added it.** M3's terminal objective is "argue with evidence whether
-a Gaussian is a defensible model." An argument needs a mechanism to appeal
-to. Without this lesson the learner knows the Gaussian as a *shape they
-recognize*, and "is it Gaussian?" collapses into "does the histogram look
-bell-shaped?" — which is exactly the reasoning spec §63 forbids.
-
-**If you decline it:**
-- M3 drops to 11 lessons, ~224 min.
-- M3.11 `is-gaussian-defensible` weakens from an argument to a
-  shape-comparison. Its objective must be rewritten downward: "identify
-  deviations between data and a fitted Gaussian" rather than "argue whether
-  the model is warranted."
-- The mechanism content does not disappear cleanly — roughly 6 min of it
-  has to be absorbed into M3.3 `gaussian-intuition`, which is currently a
-  no-formula lesson and would lose that property.
-- Knock-on: M5.3 `choosing-a-model` and M6 both ask learners to justify a
-  choice *from mechanism*. Those lean on this lesson; declining it makes
-  them harder to write honestly.
-
-**My recommendation: keep.** It is the lesson that makes the flagship
-module's terminal objective reachable.
-
-### Addition 2 — M4.2 `waiting-times-from-event-logs` (16 min)
-
-**What it adds.** The data transformation: timestamps → inter-arrival
-times, and why Δt rather than the timestamps is the random variable.
-
-**Why I added it.** In 1A this was folded into `exponential-theory`. It is
-the step learners actually get wrong, and merging a data-wrangling step
-into a theory lesson buries it.
-
-**If you decline it:**
-- M4 drops to 7 lessons, ~124 min.
-- M4.3 `exponential-theory` absorbs the transformation and grows to ~26
-  min, mixing "how to reshape your data" with "what the model says" in one
-  lesson.
-- M4.7 `analyzing-waiting-times` becomes the first place a learner meets Δt
-  on real data, with no prior practice on a clean example.
-- Lower risk than declining Addition 1: the content survives the merge, it
-  is just less well placed.
-
-**My recommendation: keep, but this one is genuinely optional.** Declining
-it costs pedagogy, not correctness.
-
----
-
-## SEQUENCING FOR IMPLEMENTATION
-
-| Order | Build | Why here |
-| --- | --- | --- |
-| 1 | M2 (`uniform-*`) | Simplest mathematics; first full vertical slice; proves `SIM` + `DATA` + `LAB` end to end |
-| 2 | M1 (`foundations`) | Written *after* M2 so its examples are drawn from a module that already exists rather than guessed at |
-| 3 | M3 (`gaussian-*`) | Flagship; needs M1's vocabulary settled and risk 1 resolved |
-| 4 | M4 (`exponential-*`) | Reuses M3's goodness-of-fit machinery |
-| 5 | M0 | Written last: an introduction should promise what the course actually delivers |
-| 6 | M5, M6 | Synthesis; requires all three modules to exist |
-
-**M0 last is deliberate.** An introduction authored before its course
-promises what the author intended rather than what was built.
-
----
-
-## STORAGE (§32) DEPENDENCY — RESOLVED, NO LAB IS BLOCKED
-
-Asked three times, so recorded here rather than in chat.
-
-**No lab in this blueprint submits anything to the application.** M2.6,
-M3.8 and M4.6 are `LAB_PROTOCOL` content: the learner reads the protocol,
-runs the collector locally, and analyses the data in their own Python. The
-module challenges (M2.7, M3.12, M4.8) are `EXERCISE:INDEPENDENT` —
-self-directed and ungraded, matching the ROS 2 and hardware courses'
-existing precedent.
-
-| Data movement | Mechanism | Needs §32? |
-| --- | --- | --- |
-| Collector node → student's disk | local `ros2 run … --out file.csv` | no |
-| Student's CSV → their analysis | local Python (`statsrobotics`) | no |
-| Course → student (`.py`, datasets) | `FILE` block, root-relative `public/` path | no |
-| Author's recorded dataset → app | a git commit, not an upload | no |
-| Student's work → app | **M6.2 only** | **yes — deferred** |
-
-So the capstone's text/JSON + links workaround is not *extended* to the
-labs; **the labs never needed it**, because nothing in them crosses the
-network into the application.
-
-**The consequence, stated plainly:** a learner who reasons badly in the
-Gaussian challenge (M3.12) receives no correction until the capstone. If
-graded module challenges are wanted, that pulls `ExerciseSubmission` from
-Phase 1J forward to 1G, and *then* the §32 gap does bite — a learner
-attaching a CSV rather than pasting summary statistics needs real storage.
-That is a scope decision, not a technical blocker, and it is open.
-
----
-
-## OPEN ITEMS CARRIED FROM PHASE 1A
-
-| # | Item | Blocks in this blueprint | Status |
+| Lesson | Why it was blocked | Under the 4-part template | Still blocked? |
 | --- | --- | --- | --- |
-| 1A-1 | Recorded datasets do not exist | M2.6, M3.9, M3.11, M4.2, M4.7, M5.3, M6.1 | OPEN, external |
-| 1A-2 | LiDAR model unconfirmed | M3.8, M4.6 | OPEN, external |
-| 1A-5 | Lab 3 event source undecided | M4.6, M4.7 | OPEN, design |
-| 1B-1 | Two added lessons need approval | M3.2, M4.2 | **OPEN, reviewer decision** |
-| 1B-2 | M2.6 has no course to cross-reference for `/cmd_vel` + `/odom` | M2.6 | **OPEN, design** |
-| 1B-3 | Graded module challenges vs self-directed | M2.7, M3.12, M4.8 | OPEN, scope |
+| **M3.9** `analyzing-real-lidar-data` | Needed `rplidar-wall-2m-5000` to compute μ̂/σ̂, build an eCDF and a Q-Q plot, and identify two deviations from Gaussian | The eCDF, the Q-Q plot and the deviation-hunting are all on §0's removal list. What survives is "point the LiDAR at a wall, collect readings, compute mean and σ" — which is **exactly L5's part 4**, and is a procedure, not an analysis | **NO** |
+| **M3.10** `outliers-and-robustness` | Needed the real dataset with outliers highlighted | Outlier-robustness discussion is explicitly removed | **NO — lesson cut** |
+| **M3.11** `is-gaussian-defensible` | Needed theory-vs-simulation-vs-reality side by side to argue defensibility | Goodness-of-fit judgement is explicitly removed. This was the old course's terminal objective | **NO — lesson cut** |
+| **M4.7** `analyzing-waiting-times` | Needed `robot-event-timestamps` for histogram + eCDF + Q-Q against exponential quantiles | Same as M3.9, for the exponential. What survives is "log events, difference the timestamps, compute the mean gap" — **L6's part 4** | **NO** |
+| **M4.2** `waiting-times-from-event-logs` | Was blocked; now seeded against synthetic data | The timestamps→Δt conversion *is* "how you get this data off a ROS 2 topic". It becomes L6's part 4 code snippet | **NO** |
+| **M5.3** `choosing-a-model` | Was blocked; now seeded against synthetic data | Model selection reasoning collapses into L7's CONCEPT | **NO** |
+| **M6.1** `capstone-brief` | Was blocked; now seeded against synthetic data | Becomes L7's part 4 mapping table | **NO** |
 
-**11 of 42 lessons** depend on no open item and no new block type. A
-further **25** are blocked only on Phases 1D/1E, which are in progress and
-depend on none of the above.
+### The headline
+
+**Zero lessons remain blocked on physical data capture.** Open item 1A-1
+("recorded datasets do not exist"), which has gated this course since
+Phase 1A and which revision 2 listed against seven lessons, is **closed —
+not resolved.** The data still does not exist. The course no longer asks a
+question that needs it.
+
+The mechanism is simple and worth stating in one line so the decision is
+visible rather than buried: *every lesson that needed real data needed it
+in order to judge a model against reality, and the new template does not
+judge models.*
+
+### What that costs, stated plainly
+
+The course no longer teaches how to tell whether a distribution actually
+describes your data. That was the old course's distinguishing claim and
+its terminal objective. A learner finishing the new course can name three
+distributions, state their parameters and moments, drive the simulator,
+and collect the corresponding numbers off a robot. They cannot assess
+whether the Gaussian they were shown is the right model for the readings
+they collected, and nothing in the course will tell them it might not be —
+which is why I recommend keeping L1's "a simulation is never validation"
+callout as the one surviving guardrail.
+
+This is a trade, not a defect, and it is yours to make. I am recording it
+so that "the course does not cover model validation" is a decision on the
+record rather than something discovered later.
+
+### Consequence for the synthetic datasets
+
+The three datasets built last pass (`robot-event-timestamps-synthetic`,
+`unlabelled-sample-alpha`, `lidar-wall-readings-synthetic`) were built to
+unblock lessons that this revision cuts or dissolves. Under §2 I have kept
+two of them in part 4 as **"what to expect" figures** — `TABLE_PREVIEW` +
+`HISTOGRAM` + `SUMMARY_STATS`, no overlay, no fitted curve — which is
+consistent with the template because showing a learner what 5,000 readings
+look like is a "here's how", not a fit assessment.
+
+`unlabelled-sample-alpha` has no remaining use: it existed for a
+classification exercise that is now three sentences of L7's CONCEPT.
+**Recommend retiring the row and the file.**
+
+If you would rather part 4 carry no `DATA` blocks at all, that is a
+defensible reading of the template and it retires **Phase 1E's
+`DATASET_EXPLORER` from this course entirely** — the block type, the
+loader, `verify:datasets`, `generate:datasets` and the CI workflow all
+remain built and tested but unused by any content. Flagged, because that
+is a large asset to strand and I do not think you would want it decided
+silently.
 
 ---
 
-## READINESS
+## 5. CAPSTONE — RECOMMENDATION: MERGE, DO NOT KEEP SEPARATE
 
-**Not yet ready for approval.** Three items need a reviewer decision, not
-more authoring:
+You offered "keep a light version" or "cut entirely". I recommend a third
+option that I think is better than either: **merge the capstone into L7**,
+which is what §2 specifies.
 
-1. **1B-1** — approve or decline `gaussian-mechanism` and
-   `waiting-times-from-event-logs` (see the decision section above).
-2. **1B-2** — decide where M2.6's `/cmd_vel` grounding comes from.
-3. **1B-3** — confirm module challenges stay ungraded in Phase 1.
+**Why not keep it as its own lesson.** Under the new scope, a light
+capstone ("combine all three distributions, show how each maps to a robot
+task") and M5's comparison lesson ("the three side by side") are close to
+the same lesson. Keeping both produces two closing lessons that overlap
+heavily, in a seven-lesson course. Merging them gives one closing lesson
+that compares the three *and* maps each to a robot task, which is exactly
+the light capstone you described, delivered without redundancy.
 
-Items 1A-1, 1A-2 and 1A-5 do **not** block approval of this blueprint;
-they block *authoring* of the specific lessons listed, which is Phase
-1G–1I work.
+**Why not cut entirely.** The three distributions are never used together
+anywhere else in the reduced course. Without L7 the course ends on the
+exponential and never returns to the WHERE/HOW/WHEN frame that gives it
+its shape. It is one lesson and it needs no new components and no data.
 
-Once 1B-1 through 1B-3 are answered, this document is complete and the
-lesson-level structure can be treated as locked.
+**What is cut regardless:** M6.2 `capstone-submission` and with it the
+first planned use of `ExerciseSubmission`. The old capstone was a
+seven-question statistical-justification exercise, human-reviewed. Under
+the new scope there is nothing to justify, so the submission has no
+content. This also removes the only thing in the course that was waiting
+on the §32 storage gap — **that dependency is now moot.**
+
+---
+
+## 6. QUIZ — A CORRECTION, THEN A RECOMMENDATION
+
+**The stated rationale does not hold.** Quizzes are not required for
+progress tracking. I checked rather than assumed:
+
+- `LessonProgress` is `(enrollmentId, lessonId, completedAt)` and contains
+  no reference to a quiz or an attempt.
+- Completion is recorded by `markLessonCompleteAction`, driven by the
+  "Mark as complete" button, with no quiz involvement anywhere in
+  `src/features/progress/`.
+- `prisma/seed.ts` records the same thing from the other direction:
+  passing a quiz does not affect lesson completion, deliberately.
+
+So a lesson with no `QUIZ` block tracks progress perfectly well. Keeping
+quizzes "because the engine expects them" would be keeping them for a
+reason that is not true.
+
+**Recommendation: keep 1–2 per lesson anyway, for a different reason.**
+The reduced course has no exercises (§8), no checkpoints and no capstone
+submission. If the quizzes also go, there is no point anywhere in the
+course where a learner does something rather than reads something, and
+retrieval practice is the cheapest possible remedy — roughly 12 questions
+across 7 lessons, using the existing engine, needing no new work beyond
+authoring.
+
+If you would rather have a pure reference course with no interaction at
+all, cutting them is coherent and I would not argue against it. It is a
+one-line change to this document and removes about 12 questions of
+authoring from STEP 2.
+
+---
+
+## 7. COMPONENT AND SCHEMA IMPACT
+
+Confirmed by inspection, since you asked specifically about migration risk.
+
+| Component | Impact | Migration? |
+| --- | --- | --- |
+| `DISTRIBUTION_SIM` | **None.** Reused as-is in all seven lessons, existing block configurations carried over unchanged | No |
+| `LAB_PROTOCOL` | Field *usage* shrinks in L4–L6 | **No database migration.** See below |
+| `DATASET_EXPLORER` | Reduced to `TABLE_PREVIEW`/`HISTOGRAM`/`SUMMARY_STATS`, no overlay. Retired entirely under the §4 alternative | No |
+| Statistics core (`distributions.ts`, `sampling.ts`, `summary.ts`, `rng.ts`) | **None.** Unchanged | No |
+
+**`LAB_PROTOCOL` in detail — no migration is required.** The payload lives
+in `LessonContentBlock.data`, which is `Json?`. Nothing about the lab's
+shape is expressed in the database schema, so no `ALTER TABLE` and no
+Prisma migration can be triggered by changing what a lab contains.
+
+There are two ways to shrink lab usage, and they differ:
+
+1. **Write less in the fifteen fields, change nothing.** All fifteen stay
+   required; a reduced lab has one-line `troubleshooting` entries and a
+   two-line `interpretation`. **Zero code change.** This is what §2
+   assumes.
+2. **Make some fields optional** (`troubleshooting`, `crossReferences`,
+   `challenge`, `expectedObservations`, parts of `reproducibility`) so a
+   light protocol is not padded to satisfy Zod. This is a **Zod schema
+   edit only** — still no database migration — and relaxing
+   required→optional is backward-compatible, so the three already-seeded
+   labs keep validating untouched.
+
+I recommend (1) for STEP 2, because it is zero-risk and reversible, and
+because "write less" is what the reduction actually asks for. If the
+reduced labs end up visibly padded when they are written, (2) is available
+later without a migration at any point. `safety` stays required in either
+case — L4 and L5 still put a person next to moving hardware.
+
+---
+
+## 8. WHAT THIS ORPHANS
+
+Surfaced rather than left to be discovered during STEP 2.
+
+- **`EXERCISE` blocks — 18 of 25 cut, 7 kept.** *(Approved 2026-09-08.)*
+  An earlier draft of this section recommended cutting all 25 and
+  presented that as a consequence of the template. It is not: the four
+  parts were never an exclusive list — the `QUIZ` decision in §6 already
+  adds a fifth element — so nothing structural prevents an exercise
+  hanging off part 4. The correct rule is the same content filter applied
+  everywhere else in this document. **Cut** the 18 whose task is on §0's
+  removal list: computing z-scores, building Q-Q plots or empirical CDFs,
+  judging whether a model fits, arguing defensibility, or classifying an
+  unlabelled dataset. **Keep** 7 — one per lesson, attached to the ROS 2
+  section, of the "run this on your robot and report what you saw" kind,
+  which is exactly part 4's register.
+- **Python `*_explore.py` scripts and their `FILE` blocks** — the `SIM`
+  covers exploration and part 4 is ROS 2 code. Orphaned. The two collector
+  nodes (`lidar_noise_collector.py`, `event_timing_collector.py`) survive
+  into L5/L6 part 4.
+- **SVGs** — `uncertainty-taxonomy`, `three-levels-of-evidence`,
+  `discrete-vs-continuous`, `random-variable-mapping`,
+  `event-timeline-deltas`, `timestamps-to-gaps-arithmetic` lose their
+  lessons. `where-how-when` survives into L7; the two lab geometry
+  diagrams survive into L4–L6.
+- **`unlabelled-sample-alpha`** — retire (§4).
+- **`ExerciseSubmission` / §32 storage** — no longer on this course's
+  critical path at all (§5).
+- **Quiz banks** — roughly 42 authored questions across 4 checkpoint
+  quizzes reduce to ~12.
+
+---
+
+## 9. WHAT SURVIVES FROM REVISION 2
+
+Standing decisions that the reduction does not touch:
+
+- **Cross-reference obligation (1A §21).** L5 and L6 still start from a
+  working `/scan` and link `rplidar-a2-ubuntu-setup`,
+  `rplidar-a2-ros2-integration` and `rplidar-a2-debugging` rather than
+  re-teaching bring-up.
+- **The `/cmd_vel` gap (1B-2), still open.** L4's ROS 2 part drives a base,
+  and no course on this platform teaches `/cmd_vel` on physical hardware.
+  It must either teach its own minimal grounding or lean on
+  `ros2-fundamentals` Module 4 (turtlesim). Unresolved, and now scoped to
+  one lesson instead of one lab.
+- **Storage (§32).** No lab submits anything. With M6.2 cut, nothing in
+  the course does.
+- **Simulation-first fallback.** Every `LAB` keeps its
+  `simulationFallbackLessonSlug`; under the new structure each points at
+  its own lesson's SIMULATION part.
+
+---
+
+## 10. READINESS
+
+**Approved 2026-09-08.** All four decisions below were approved as stated
+and are what STEP 2 builds.
+
+| # | Decision | My recommendation |
+| --- | --- | --- |
+| 1 | Lesson count | **7** (6 is the floor; 8+ is not justifiable) |
+| 2 | Memorylessness in L6 | One sentence in CONCEPT, no lesson |
+| 3 | `EXERCISE` blocks | **Cut 18, keep 7** — one practical exercise per lesson on the ROS 2 section (§8) |
+| 4 | `DATA` blocks in part 4 | Keep, as "what to expect" figures; retire `unlabelled-sample-alpha` |
+
+Two further items are recorded as accepted consequences rather than open
+questions: the course no longer teaches model validation (§4), and
+`when-exponential-fails` is cut despite revision 2 marking it mandatory
+(§2, L6).
+
+On approval, STEP 2 is a content rewrite of 38 seeded lessons into 7,
+plus verification of a representative sample through the real route.

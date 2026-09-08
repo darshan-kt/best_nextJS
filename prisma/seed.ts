@@ -64,6 +64,18 @@ import {
   PROJECT_3_SLAM_LAUNCH_PY,
   PROJECT_3_SLAM_TOOLBOX_PARAMS_YAML,
 } from "../src/features/courses/content/robotics-projects/project-3-fixtures";
+import type { DatasetExplorerBlockData, DatasetInput } from "../src/features/datasets/schemas";
+import {
+  datasetExplorerBlockSchema,
+  datasetInputSchema,
+} from "../src/features/datasets/schemas";
+import type { DistributionSimBlockData } from "../src/features/statistics/schemas";
+import { PUBLIC_HOME_SECTION_FILTER } from "../src/features/hardware/queries";
+import {
+  labProtocolBlockSchema,
+  type LabProtocolBlockData,
+} from "../src/features/labs/schemas";
+import { distributionSimBlockSchema } from "../src/features/statistics/schemas";
 import {
   PROJECT_4_CMAKELISTS,
   PROJECT_4_NAV2_PARAMS_YAML,
@@ -153,7 +165,25 @@ type SeedContentBlock =
   /// `HardwareDevice` is seeded once (see `HARDWARE_DEVICES` below) and
   /// referenced from several blocks/lessons.
   | { type: "SPEC_TABLE"; deviceSlug: string; specKeys?: string[] }
-  | { type: "DEVICE_CARD"; deviceSlug: string };
+  | { type: "DEVICE_CARD"; deviceSlug: string }
+  /// Statistical Distributions course (Phase 1D/1E). DISTRIBUTION_SIM owns
+  /// its payload like TEXT does; DATASET_EXPLORER splits, like SPEC_TABLE —
+  /// view configuration in the block, the numbers and their provenance in a
+  /// `Dataset` row looked up by slug.
+  ///
+  /// Both are typed as the schemas' OUTPUT types, so every defaulted field
+  /// is written out here rather than filled in silently at parse time. A
+  /// seeded block is a database row somebody will read directly, and
+  /// `seed: 42` being visible in it is the difference between reproducible
+  /// and reproducible-by-accident.
+  | { type: "DISTRIBUTION_SIM"; data: DistributionSimBlockData }
+  | { type: "DATASET_EXPLORER"; datasetSlug: string; data: DatasetExplorerBlockData }
+  /// Physical robot labs (Phase 1F). Lightweight like DISTRIBUTION_SIM: a
+  /// lab references no row, because the learner reads it here and runs it
+  /// on their own machine. The slugs it carries — `deviceSlug` into the
+  /// hardware catalog, `simulationFallbackLessonSlug` into this course —
+  /// are checked in `seedContentBlock` rather than by a foreign key.
+  | { type: "LAB_PROTOCOL"; data: LabProtocolBlockData };
 
 /// Mirrors `exerciseConfigSchema` in `features/exercises/schemas.ts` —
 /// kept as a separate, looser type here rather than importing the Zod
@@ -528,6 +558,131 @@ const HARDWARE_DEVICES: SeedHardwareDevice[] = [
           "A point cloud published via a topic remap of depth/color/points — named 'registered' regardless of whether the depth_registration parameter (default false) actually aligns color to depth. See Module 4 Section D.",
       },
     ],
+  },
+];
+
+/// Datasets (Statistical Distributions course, Phase 1E — 1A §10).
+///
+/// The row is metadata; the numbers live in a static file under `public/`
+/// and the two are joined by `checksumSha256`. `pnpm verify:datasets`
+/// fails if they stop agreeing, so the constants below are load-bearing
+/// rather than descriptive — regenerate the file and this row must be
+/// updated with it.
+///
+/// THREE SYNTHETIC DATASETS, AND WHY NONE OF THEM IS RECORDED
+///
+/// 1A §10 lists three Phase 1 datasets (targets + odometry, LiDAR wall
+/// readings, event timestamps) and records that **none exist** — risk 1,
+/// a physical capture task that gates phases 1H and 1I. Every row below is
+/// SYNTHETIC and says so: mathematically generated, no `provenance`
+/// because there is no robot to describe, and the renderer labels each one
+/// "mathematically generated" to a learner. All four regenerate from
+/// `pnpm generate:datasets`, so "is this the file the course meant to
+/// ship" is answerable rather than asserted.
+///
+/// Revision 3 of the blueprint retired a fourth, `unlabelled-sample-alpha`:
+/// it existed for a classification exercise that the 4-part template
+/// reduces to three sentences of L7's CONCEPT part. `pruneDatasets` below
+/// deletes the row, so the retirement is reproducible rather than a manual
+/// cleanup somebody has to remember.
+///
+/// The line this file holds is not "synthetic is bad". It is that a
+/// synthetic dataset may stand in wherever the LESSON'S QUESTION does not
+/// depend on the data being real:
+///
+///   * `uniform-targets-synthetic` (M2.4-M2.6) — synthetic is
+///     pedagogically correct here anyway: M2.4 introduces the
+///     theory-vs-reality gap somewhere nothing can be blamed on a sensor.
+///   * `robot-event-timestamps-synthetic` (M4.2) — the lesson teaches the
+///     timestamps-to-differences transformation, which is right or wrong
+///     regardless of provenance.
+///   * `lidar-wall-readings-synthetic` (M6.1) — an explicit PLACEHOLDER,
+///     named as one in the lesson a learner reads, not only here.
+///
+/// None of them stands in for `rplidar-wall-2m-5000` where the QUESTION is
+/// about reality. M3.9-M3.11 and M4.7 are built on reading real sensor
+/// pathology — quantization steps, asymmetric tails, genuine outliers —
+/// out of data that actually has it. Generating a plausible-looking file
+/// and labelling it RECORDED would fabricate the exact evidence those
+/// lessons ask a learner to weigh, in a course whose subject is not
+/// trusting numbers whose origin you cannot check. Those four lessons
+/// therefore remain unseeded, and the capstone says so in its own text.
+const DATASETS: DatasetInput[] = [
+  {
+    slug: "uniform-targets-synthetic",
+    title: "Synthetic uniform targets, 2.5 m x 2.5 m workspace",
+    summary:
+      "800 exploration targets drawn from two independent uniform distributions over a 2.5 m square workspace. Mathematically generated, not measured — the target coordinates a generator would emit, with no robot, no sensor and no motion involved.",
+    level: "SYNTHETIC",
+    sourceUri: "/datasets/statistics-robotics/uniform-targets-synthetic.csv",
+    format: "CSV",
+    sampleCount: 800,
+    checksumSha256:
+      "66baadd5da3d13bb36050a9239dd98b11aa16788ded8d3b057fcd94188c7ed5e",
+    columns: [
+      { key: "target_x", label: "Target x", unit: "m", kind: "NUMERIC" },
+      { key: "target_y", label: "Target y", unit: "m", kind: "NUMERIC" },
+    ],
+  },
+
+  /// M4.2's event log, and the capstone's WHEN input.
+  ///
+  /// Synthetic for the same reason the uniform targets are: M4.2 teaches a
+  /// DATA TRANSFORMATION — timestamps into the differences between them —
+  /// and that arithmetic is right or wrong independently of where the
+  /// timestamps came from. Nothing in the lesson asks a learner to judge
+  /// whether a real process is exponential; M4.7 does, and M4.7 is still
+  /// blocked on a real capture.
+  ///
+  /// Both columns ship deliberately. A log records `t`; the waiting time is
+  /// derived. Shipping only `gap_seconds` would hand the learner the
+  /// answer to the exercise the lesson is built around.
+  {
+    slug: "robot-event-timestamps-synthetic",
+    title: "Synthetic event log, 600 events over 40 minutes",
+    summary:
+      "600 event timestamps from a simulated Poisson process at 0.25 events per second, with the waiting time between consecutive events alongside. Mathematically generated — no robot, no sensor, no room. Reproducible from `pnpm generate:datasets`.",
+    level: "SYNTHETIC",
+    sourceUri: "/datasets/statistics-robotics/robot-event-timestamps-synthetic.csv",
+    format: "CSV",
+    sampleCount: 600,
+    checksumSha256:
+      "26a06ac0d771af6621b0082ade1604968e441c81ade4150b207a621daa0dceb8",
+    columns: [
+      { key: "t_seconds", label: "Event time", unit: "s", kind: "NUMERIC" },
+      { key: "gap_seconds", label: "Waiting time since previous event", unit: "s", kind: "NUMERIC" },
+    ],
+  },
+
+  /// The capstone's HOW input — and a PLACEHOLDER, which is a different
+  /// thing from the two rows above and is labelled as one everywhere a
+  /// learner can see.
+  ///
+  /// It stands in for `rplidar-wall-2m-5000`, which does not exist. A real
+  /// LiDAR staring at a wall produces quantization steps at the sensor's
+  /// range resolution, an asymmetric tail, and genuine outliers from
+  /// multipath and specular returns. This file has none of those: it is a
+  /// clean Gaussian, because inventing pathology would be inventing the
+  /// evidence M3.9-M3.11 exist to teach a learner to weigh.
+  ///
+  /// That is exactly why those three lessons are NOT seeded against it and
+  /// stay blocked. M6.1 may use it because the capstone asks a learner to
+  /// classify and justify from mechanism — a question a clean sample
+  /// answers honestly — and because M6.1's own CONTENT, not just this
+  /// comment, tells the learner the input is provisional and will be
+  /// replaced.
+  {
+    slug: "lidar-wall-readings-synthetic",
+    title: "Placeholder wall readings, 5,000 samples (synthetic stand-in)",
+    summary:
+      "5,000 range readings of a stationary wall at 2 m, mathematically generated from a Gaussian — NOT a recording. It stands in for the real LiDAR capture that has not been collected yet, and it lacks the quantization, tail asymmetry and outliers real sensor data has. Reproducible from `pnpm generate:datasets`.",
+    level: "SYNTHETIC",
+    sourceUri: "/datasets/statistics-robotics/lidar-wall-readings-synthetic.csv",
+    format: "CSV",
+    sampleCount: 5000,
+    checksumSha256:
+      "ed6d6b8f0b8d3c3d7e1ce75da6a465a5ce8469cd035d13f918e3e9c2994aa411",
+    columns: [{ key: "distance_m", label: "Measured distance", unit: "m", kind: "NUMERIC" }],
   },
 ];
 
@@ -9731,6 +9886,1385 @@ const CURRICULA: Record<string, SeedSection[]> = {
       ],
     },
   ],
+
+  /// Statistical Distributions with Robotics
+  /// (docs/statistics-robotics/PHASE_1B_CURRICULUM_BLUEPRINT.md).
+  ///
+  /// 35 of the blueprint's 42 lessons. The other seven are NOT omitted for
+  /// effort — each is blocked on something that does not exist, and the
+  /// blocking thing is named in the lesson that would have preceded it
+  /// rather than left as a silent gap:
+  ///
+  ///   M3.9, M3.10, M3.11    dataset `rplidar-wall-2m-5000`
+  ///   M4.2, M4.7            dataset `robot-event-timestamps`
+  ///   M5.3, M6.1            unlabelled datasets (one, then three)
+  ///
+  /// M2.6, M3.8 and M4.6 came off that list in Phase 1F, which added the
+  /// `LAB_PROTOCOL` block type. All three ship
+  /// `validationStatus: THEORETICALLY_DESIGNED` — written and reviewed,
+  /// never run on hardware — which is what that field exists to say out
+  /// loud rather than leave to be assumed.
+  ///
+  /// M2.6 is seeded with one documented gap. The blueprint gives it a
+  /// `DATA` block over `uniform-targets-workspace-2x2`, a RECORDED
+  /// target+odometry dataset that does not exist (risk 1). Rather than
+  /// substitute the synthetic file for it, the lesson uses the synthetic
+  /// file for what it honestly is — the COMMANDED half, uniform by
+  /// construction — and says in prose that the achieved half is the
+  /// learner's own to collect. The commanded/achieved comparison is the
+  /// lesson's whole point, so pretending to supply both halves would have
+  /// been worse than supplying one and naming the other.
+  ///
+  /// M2.6 also carries an unowned hardware prerequisite, flagged in the
+  /// blueprint and resolved here by naming it rather than by teaching it:
+  /// base motion, `/cmd_vel` and `/odom` appear in no course on this
+  /// platform. LAB 1 states the prerequisite the way LAB 2 states a
+  /// working `/scan`, and the gap is recorded rather than hidden. Teaching
+  /// `/cmd_vel` inside a statistics lab would import a robotics course
+  /// into it; citing `meet-turtlesim` would make a physical lab simulated.
+  ///
+  /// All five datasets are PHASE_1A_ARCHITECTURE.md risk 1: a physical
+  /// capture task, recorded there as "None exist". Generating plausible
+  /// substitutes would fabricate the exact evidence those lessons ask a
+  /// learner to weigh, in a course whose subject is refusing to trust
+  /// numbers whose origin cannot be checked. So the gaps stay, and the
+  /// closing callout of each affected module says what is missing and why.
+  ///
+  /// The count above stayed at 32 when M3.2 was added, and that is not a
+  /// typo. It was WRONG before: it read 32 while only 31 lessons were
+  /// seeded, because M3.2 was excluded from the ten named below (it was
+  /// blocked on a registry entry rather than a dataset) and then silently
+  /// counted among the seeded ones. Seeding M3.2 made the stated figure
+  /// true. Verified against the database, not the arithmetic: 3 + 7 + 6 +
+  /// 8 + 5 + 2 + 1 = 32 lessons across the seven sections.
+  ///
+  /// M3.2 `gaussian-mechanism` used to be a fourth kind of blocked, and no
+  /// longer is. It needed a "sum of k uniform errors" slider — an
+  /// Irwin-Hall distribution, which was a registry entry rather than a
+  /// dataset or a block type, and unlike the datasets above it was code
+  /// this repository could write. `DISTRIBUTIONS.IRWIN_HALL` now provides
+  /// it and the lesson is seeded below.
+  ///
+  /// The reason it was held back rather than substituted is worth keeping,
+  /// because it is the standard the rest of this list is held to: seeding
+  /// it with a GAUSSIAN generator would have assumed the conclusion the
+  /// lesson exists to demonstrate. The learner would have watched a bell
+  /// appear because `sample` drew from a bell. The Irwin-Hall entry's
+  /// `sample` literally adds k uniform draws together, and every other
+  /// function on it is the exact consequence of that sum, so the shape the
+  /// learner produces is produced by the mechanism being taught. The
+  /// Gaussian appears in the lesson only as a separately generated
+  /// comparison figure on a matched axis.
+  ///
+  /// TWO DELIBERATE DEVIATIONS from the blueprint's block lists, both
+  /// because the asset a block needs does not exist:
+  ///
+  ///   * IMAGE blocks appear only where the diagram is CONCEPTUAL (a
+  ///     taxonomy, a number line, a timeline). The blueprint also calls
+  ///     for DATA figures — a shaded-area plot, three sigmas overlaid, an
+  ///     annotated formula. Those must be rendered numerically from the
+  ///     same registry the simulator uses (`figures.py`, Phase 1F);
+  ///     drawing them by hand would put a picture of a distribution in
+  ///     front of a learner that no code produced. Omitted, not faked.
+  ///   * CODE and FILE blocks use plain NumPy and matplotlib. The
+  ///     blueprint specifies `statsrobotics.figures`, which is Phase 1F
+  ///     and does not exist — importing it would ship a lesson whose code
+  ///     cannot run. Every number these lessons quote was produced by
+  ///     actually running the scripts in public/courses/statistics-robotics.
+  ///
+  /// NUMERIC quiz questions (blueprint M1.7, M2.7, M3.12, M4.8) are
+  /// SHORT_ANSWER with exact accepted answers: `QuestionType` has no
+  /// NUMERIC member yet (Phase 1K).
+  "statistical-distributions-in-robotics": [
+    {
+      title: "Foundations",
+      summary:
+        "Why a still sensor gives moving numbers, what a random variable is, and the two statistics that summarise a pile of readings.",
+      lessons: [
+        {
+          slug: "why-statistics-matters",
+          title: "Why statistics matters in robotics",
+          durationMinutes: 10,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "The wall has not moved. So why have the numbers?",
+                body: "A robot sits still, half a metre from a wall. Nothing in the room moves for two minutes. The LiDAR reports 2.01 m, then 1.98 m, then 2.03 m, then 2.00 m, and it keeps going.\n\nThe wall did not move. The robot did not move. So what changed?",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Nothing changed. The reading is not the distance.\n\nEvery measurement is the real quantity plus something else — a little electrical noise in the photodiode, a little timing jitter in the clock that counts the laser's flight, a little rounding when a continuous voltage becomes a digital number. None of those is a fault. They are what it costs to turn a physical thing into a number, and they are present in every sensor you will ever use.\n\nThe useful part is that the extra bit is not arbitrary. Collect enough readings and they pile up in a shape. The shape is stable, it can be described with two or three numbers, and once you can describe it you can say things like \"a reading 8 cm off is worth investigating and a reading 2 cm off is not\" — which is the difference between a robot that reacts to noise and one that does not.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Three shapes cover most of the randomness a robot meets, and this course is one lesson on each.\n\nWHERE can a value occur? When something is spread evenly across a range because you chose it that way — random exploration targets, a randomised retry delay — that is the uniform distribution.\n\nHOW does a measurement vary around its true value? When many small independent effects add together, as in sensor noise, the result is the Gaussian, the bell shape.\n\nWHEN will the next event happen? When events arrive at a steady average rate but at unpredictable moments — obstacles crossing a corridor, messages landing on a topic — the gaps between them follow the exponential.\n\nEach lesson from here on has the same four parts: the question, the formula, a simulator you can drive, and how to get the same numbers off a real robot.",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "GAUSSIAN",
+                title: "Five thousand readings of a wall that did not move",
+                prompt:
+                  "Every bar is a count of readings that landed in that range. Nothing here moved except the last two digits of the number. Notice that the pile has a centre and a width, and that both are stable even though no individual reading is.",
+                controls: [
+                  { key: "mu", label: "True distance", min: 1.5, max: 2.5, step: 0.01, default: 2.0, unit: "m", locked: true },
+                  { key: "sigma", label: "Spread", min: 0.005, max: 0.05, step: 0.001, default: 0.02, unit: "m", locked: true },
+                ],
+                views: ["PDF", "HISTOGRAM"],
+                seed: 42,
+                maxSamples: 5000,
+                binCount: 40,
+                interactive: false,
+                allowResample: false,
+                unit: "m",
+                xLabel: "Measured distance",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "On the robot, this is the shortest experiment in the course.\n\nThe sensor is a LiDAR and the topic is /scan, published as a sensor_msgs/msg/LaserScan. The message carries a whole sweep at once — several hundred range values, one per angle — so a single beam is one entry in the ranges array. Beam zero points straight ahead on most drivers.\n\nPut the robot in front of a wall, leave it alone, and watch one beam.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "bash",
+                filename: "watch_one_beam.sh",
+                code: "# Is the sensor publishing at all?\nros2 topic hz /scan\n\n# Watch a single beam. --field pulls one value out of the sweep so you\n# see a number changing rather than several hundred lines scrolling past.\nros2 topic echo /scan --field ranges[0]\n",
+                caption: "Two commands, no code to write. The first confirms data is arriving; the second shows you one beam at a time.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What to expect: the first two digits hold and the last two move.\n\nAt two metres on a typical indoor LiDAR you should see values wandering within a few centimetres of each other — 2.01, 1.99, 2.02 — with no drift in either direction over a minute. That steadiness is the point. If the numbers walk steadily up or down, something physical is changing: the mount is slipping, the sensor is warming up, or the target is not what you think it is.\n\nIf every reading is identical to the last, your driver is probably rounding or caching. If you see 0.0 or inf, the beam is missing the wall entirely — those are the driver's way of saying \"no return\", not a distance of zero.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Watch one beam for sixty seconds",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Point a LiDAR at a flat wall about two metres away, leave everything still, and record the value of one beam for a minute. If you have no robot, run the same observation against the simulator above.\n\nWrite down three things: the largest value you saw, the smallest, and whether the numbers drifted in one direction over the minute or simply wobbled.",
+                  },
+                  successCriteria: [
+                    "A largest and a smallest value are recorded, and the difference between them is stated in centimetres.",
+                    "The answer distinguishes wobble (no trend) from drift (a trend), and says which one was observed.",
+                    "If a drift was observed, the answer names a physical cause worth checking rather than concluding the sensor is broken.",
+                  ],
+                  hints: [
+                    "A minute at 10 Hz is about 600 readings. You do not need to write them all down — watching the range of values is enough.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "A simulation is never validation",
+                body: "Every lesson in this course has a simulator, and every simulator is generating numbers from a formula that was chosen in advance. It shows you what the model looks like. It cannot tell you whether the model describes your robot.\n\nWhen you put the simulator's picture next to your own readings and they look alike, that is a starting point, not a result. Deciding whether a distribution genuinely describes a physical process takes work this course does not cover — goodness-of-fit testing, tail analysis, and a lot of care about what your data cannot show you.\n\nSo take everything here as \"this is the model, and this is how to collect the matching numbers from your robot\". Not as \"your LiDAR noise is Gaussian\".",
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Why the numbers move",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt: "A stationary LiDAR facing a fixed wall reports 2.01, 1.98, 2.03, 2.00. What is the most likely explanation?",
+                    options: [
+                      { id: "a", label: "The sensor is faulty and should be replaced" },
+                      { id: "b", label: "Every measurement is the true value plus noise, and the noise has a stable shape" },
+                      { id: "c", label: "The wall is vibrating" },
+                      { id: "d", label: "The driver is misconfigured" },
+                    ],
+                    correctOptionIds: ["b"],
+                    explanation:
+                      "Variation of a couple of centimetres on a fixed target is ordinary sensor noise, not a defect. A faulty sensor would more likely drift, stick at one value, or drop out entirely.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "random-variables-and-densities",
+          title: "Random variables and densities",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "What is the X in all these formulas?",
+                body: "Statistics books are full of sentences like \"let X be the measured distance\". Then two lines later they write x and mean something slightly different.\n\nThe distinction is small and it is the reason the rest of the notation makes sense.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "X is the measurement before you take it. x is the number you got.\n\nBefore you read the LiDAR, the value is not yet determined — it could be 2.01 or 1.99 or 2.02, with some values more likely than others. That whole bundle of possibilities is the random variable, written with a capital letter. After you read it, you have one actual number, written lowercase.\n\nSo \"X is the range reported by beam zero\" describes the sensor. \"x = 2.01\" describes one reading from it. When a formula says E[X] it is asking about the sensor's behaviour in general; when it says x it is talking about a number you have in hand.\n\nOn a robot, almost anything worth logging is a random variable: the range on a beam, the time between two obstacle detections, the x-coordinate a planner picks for its next target, the voltage on the battery monitor.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "A density says where the values pile up.\n\nDraw a few thousand readings, sort them into bins, and you get a shape: tall where readings are common, short where they are rare. Smooth that shape and you have a density function, usually written f(x).\n\nTwo facts about it are worth holding on to. First, the total area under the curve is exactly 1 — the reading has to land somewhere, so all the possibilities together account for everything. Second, the height of the curve is not a probability. f(2.00) = 20 does not mean anything is 20 likely; densities are per-metre, and you only get a probability by taking an area — a width times a height. That is why a narrow, tall density is perfectly normal: squeeze the same total area into a smaller range and it has to get taller.\n\n(The running total of that area, from the left edge up to some value, is called the cumulative distribution function. This course does not use it.)",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "GAUSSIAN",
+                title: "Watch draws pile up into a density",
+                prompt:
+                  "Drag the sample count from its minimum up to five thousand. At small counts the bars are ragged and jump around every time. As the count grows they settle onto the smooth curve underneath. The curve was never changing — only how well the samples reveal it.",
+                controls: [
+                  { key: "mu", label: "Centre", min: 1.5, max: 2.5, step: 0.01, default: 2.0, unit: "m", locked: true },
+                  { key: "sigma", label: "Spread", min: 0.005, max: 0.05, step: 0.001, default: 0.02, unit: "m", locked: true },
+                  { key: "n", label: "Samples", min: 20, max: 5000, step: 20, default: 200, locked: false },
+                ],
+                views: ["PDF", "HISTOGRAM"],
+                seed: 42,
+                maxSamples: 5000,
+                binCount: 40,
+                interactive: true,
+                allowResample: true,
+                unit: "m",
+                xLabel: "Measured distance",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "On the robot: one topic, many readings.\n\nEverything above needs a pile of numbers, and getting one off a ROS 2 robot is a subscriber that keeps a list. The node below listens to /scan, takes beam zero out of each message, and stops once it has collected however many you asked for.\n\nThe only detail worth care is the invalid readings. A LaserScan uses inf or nan to mean \"no return on this beam\", and those are not distances — averaging them in gives you inf for a mean. They get filtered out on the way in.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "collect_beam.py",
+                code: "import math\n\nimport rclpy\nfrom rclpy.node import Node\nfrom sensor_msgs.msg import LaserScan\n\n\nclass BeamCollector(Node):\n    \"\"\"Collect N valid readings from one LiDAR beam, then stop.\"\"\"\n\n    def __init__(self, beam=0, wanted=500):\n        super().__init__(\"beam_collector\")\n        self.beam = beam\n        self.wanted = wanted\n        self.readings = []\n        self.create_subscription(LaserScan, \"/scan\", self.on_scan, 10)\n\n    def on_scan(self, msg):\n        if len(self.readings) >= self.wanted:\n            return\n\n        value = msg.ranges[self.beam]\n\n        # inf/nan mean \"no return on this beam\", not a distance. Keeping\n        # them turns every statistic you compute later into inf or nan.\n        if math.isfinite(value):\n            self.readings.append(value)\n\n        if len(self.readings) == self.wanted:\n            self.get_logger().info(f\"collected {self.wanted} readings\")\n\n\ndef main():\n    rclpy.init()\n    node = BeamCollector()\n\n    while rclpy.ok() and len(node.readings) < node.wanted:\n        rclpy.spin_once(node)\n\n    with open(\"readings.csv\", \"w\") as handle:\n        handle.write(\"range_m\\n\")\n        for value in node.readings:\n            handle.write(f\"{value:.4f}\\n\")\n\n    print(f\"wrote {len(node.readings)} readings to readings.csv\")\n    node.destroy_node()\n    rclpy.shutdown()\n\n\nif __name__ == \"__main__\":\n    main()\n",
+                caption: "Run it with `python3 collect_beam.py` while the LiDAR is publishing. It writes one column of numbers, which is all the next lesson needs.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What to expect: a column of floats that are close but not equal.\n\nAt 10 Hz, 500 readings take under a minute. Open readings.csv and you should see values agreeing to the first two digits and disagreeing after that. That file is your random variable made concrete — 500 realisations of the same X.\n\nIf you collected far fewer than you asked for, the beam is probably hitting something out of range and getting filtered. Try a different beam index, or move closer to the wall.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Collect five hundred readings and bin them by hand",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Run collect_beam.py against your robot, or generate an equivalent file from the simulator above if you have no hardware.\n\nThen, without plotting anything, sort the readings into five bins of equal width between the smallest and largest value, and count how many land in each. Write the five counts down in order.",
+                  },
+                  successCriteria: [
+                    "Five counts are recorded and they sum to the number of readings collected.",
+                    "The middle bins hold more readings than the outer ones.",
+                    "The answer states, in one sentence, what the counts would look like if the same beam were pointed at nothing at all.",
+                  ],
+                  hints: [
+                    "Bin width is (largest minus smallest) divided by five. A reading exactly on a boundary can go in either bin as long as you are consistent.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Variables and densities",
+                questions: [
+                  {
+                    type: "TRUE_FALSE",
+                    prompt: "If a density function has the value 20 at x = 2.00 m, then a reading of exactly 2.00 m has probability 20.",
+                    correctAnswer: false,
+                    explanation:
+                      "A density is per-metre, not a probability. You get a probability by multiplying a height by a width — an area. A density can exceed 1 whenever the range it covers is narrow.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "mean-variance-and-sampling",
+          title: "Mean, variance, and how many readings you need",
+          durationMinutes: 18,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Which two numbers summarise five hundred readings?",
+                body: "You have a file with 500 range readings in it. Nobody wants to look at 500 numbers.\n\nTwo numbers will do: where the pile sits, and how wide it is.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Where it sits is the mean. How wide it is, is the standard deviation.\n\nThe mean is the ordinary average — add the readings up, divide by how many there are. It is your best single guess at the quantity being measured. Write it x-bar.\n\nThe width is slightly less obvious, because deviations above and below the mean cancel if you just add them. So each deviation is squared first, then averaged. That average of squared deviations is the variance. Take its square root and you have the standard deviation, written sigma.\n\nThe square root is not cosmetic. Your readings are in metres, so squared deviations are in metres squared — an area, which is a strange thing to quote about a distance. Taking the root puts the number back in metres, where you can compare it directly against the reading itself. That is why every sensor datasheet quotes sigma and none of them quote variance.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Two practical notes and then the simulator.\n\nWhen you compute the variance from a sample rather than from the whole population, you divide by one fewer than the number of readings. Every statistics library does this by default. It makes a visible difference at twenty readings and essentially none at five hundred, and you do not need to know why to use it correctly.\n\nAnd both numbers are estimates. Collect 500 readings today and 500 tomorrow and you will get slightly different answers from the same sensor. More readings give steadier numbers, which is the entire reason the labs later in this course ask for thousands rather than dozens.",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "GAUSSIAN",
+                title: "Watch both numbers settle as the sample grows",
+                prompt:
+                  "Set the sample count to its minimum and press Draw again a few times. The mean and standard deviation in the panel jump around noticeably. Now raise the count to five thousand and repeat. The same two numbers barely move. Nothing about the sensor changed — only how much evidence you gave yourself.",
+                controls: [
+                  { key: "mu", label: "Centre", min: 1.5, max: 2.5, step: 0.01, default: 2.0, unit: "m", locked: true },
+                  { key: "sigma", label: "Spread", min: 0.005, max: 0.05, step: 0.001, default: 0.02, unit: "m", locked: false },
+                  { key: "n", label: "Samples", min: 20, max: 5000, step: 20, default: 100, locked: false },
+                ],
+                views: ["PDF", "HISTOGRAM", "SUMMARY_STATS"],
+                seed: 42,
+                maxSamples: 5000,
+                binCount: 40,
+                interactive: true,
+                allowResample: true,
+                unit: "m",
+                xLabel: "Measured distance",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "On the robot: from a column of numbers to two numbers.\n\nThe file the previous lesson produced is all you need, and Python's standard library already has both functions — no NumPy required, which matters if you are working directly on a robot that has a minimal Python install.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "summarise_readings.py",
+                code: "import statistics\n\nwith open(\"readings.csv\") as handle:\n    next(handle)  # skip the header\n    readings = [float(line) for line in handle if line.strip()]\n\nmean = statistics.mean(readings)\nsigma = statistics.stdev(readings)  # sample standard deviation, n-1 divisor\n\nprint(f\"n      {len(readings)}\")\nprint(f\"mean   {mean:.4f} m\")\nprint(f\"sigma  {sigma:.4f} m   ({sigma * 100:.1f} cm)\")\nprint(f\"range  {min(readings):.4f} to {max(readings):.4f} m\")\n",
+                caption: "statistics.stdev already uses the n-1 divisor. statistics.pstdev is the other one; you want stdev here.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What to expect: a sigma of a few millimetres at two metres.\n\nOn a common indoor LiDAR, a stationary target at 2 m typically gives a sigma somewhere between two and twenty millimetres depending on the sensor and the surface. Compare yours against the noise figure on the sensor's datasheet — if they are in the same ballpark, your setup is behaving. If your sigma is several times larger, look at the surface first: a dark, glossy or angled target scatters far more than a matte white one.\n\nThe mean is worth a sanity check too. Measure the actual distance to the wall with a tape and compare. A mean that sits consistently a centimetre or two off the tape measurement is a bias, and bias is a different problem from noise — collecting more readings will not reduce it.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Compare thirty readings against five hundred",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Take your file of 500 readings. Compute the mean and sigma of the whole file. Then compute the mean and sigma of just the first thirty readings, then of just the last thirty.\n\nWrite down all three pairs of numbers, and answer: how much do the two thirty-reading answers disagree with each other, and how does that compare to how much either disagrees with the full-file answer?",
+                  },
+                  successCriteria: [
+                    "Three means and three sigmas are recorded.",
+                    "The two thirty-reading sigmas differ from each other noticeably more than the full-file numbers differ from either.",
+                    "The answer states what this implies about quoting a sensor's noise figure from a short recording.",
+                  ],
+                  hints: [
+                    "Sigma is the number that moves most between the two small samples. If both of yours came out nearly identical, check that you really used disjoint slices.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Summarising a pile of readings",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt: "A sensor's readings have a variance of 0.0004 m². What is its standard deviation, in metres?",
+                    acceptedAnswers: ["0.02", "0.02 m", "0.020", "0.020 m"],
+                    explanation:
+                      "The standard deviation is the square root of the variance: sqrt(0.0004) = 0.02 m, or 2 cm. Reading 0.0004 as the standard deviation would suggest a sensor accurate to a fraction of a millimetre, which is fifty times better than it actually is.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt: "Why do datasheets quote standard deviation rather than variance?",
+                    options: [
+                      { id: "a", label: "Variance is harder to compute" },
+                      { id: "b", label: "Standard deviation is in the same units as the measurement, so it can be compared against it directly" },
+                      { id: "c", label: "Variance is only valid for large samples" },
+                      { id: "d", label: "They are the same number" },
+                    ],
+                    correctOptionIds: ["b"],
+                    explanation:
+                      "Variance of a distance measurement is in metres squared, which is an area. The square root puts it back into metres, where '2 cm of noise on a 2 m reading' is a sentence that means something.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "The three distributions",
+      summary:
+        "Uniform for where a value can occur, Gaussian for how a measurement varies, exponential for when the next event happens — each with the formula, a simulator, and the ROS 2 procedure.",
+      lessons: [
+        {
+          slug: "uniform-where",
+          title: "Uniform — where can a value occur?",
+          durationMinutes: 22,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "A robot must explore a room it has no map of. Where does it go next?",
+                body: "There is no information to prefer one part of the room over another — that is what having no map means. Picking the same corner every time is clearly wrong, and so is picking wherever the robot happens to be facing.\n\nThe honest answer is to spread the choice evenly over the space and let the robot cover it.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Every position in the range equally likely, because you chose it that way.\n\nThat is the uniform distribution, and it is different in kind from the other two in this course. Gaussian sensor noise happens to you; nobody designed it. A uniform distribution over a workspace is something you wrote — it is in the code, on purpose, and if the targets stop being uniform it is because your generator changed, not because the world did.\n\nThat makes it the easiest of the three to reason about and the easiest to check. You know the bounds, because you typed them.\n\nRobot uses beyond exploration: randomised retry delays so a fleet of robots does not all retry at the same instant, random restarts in a planner that has got stuck, and dithering a sensor sweep so it does not always sample the same angles.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The formula, its parameters, and its two moments.\n\nA uniform distribution over the interval from a to b has density\n\n    f(x) = 1 / (b - a)   for a <= x <= b, and 0 everywhere else\n\nThe parameters are just the two endpoints, a and b. The density is a constant — a flat line across the interval — and its height is whatever it takes to make the total area equal 1. Over a range half a metre wide the density is 2 per metre; over a range two metres wide it is 0.5 per metre.\n\nThe mean is the midpoint:\n\n    mean = (a + b) / 2\n\nThe variance is the width squared over twelve:\n\n    variance = (b - a)² / 12\n\nso the standard deviation is (b - a) / sqrt(12), which is about 0.289 of the width. A workspace 2.5 m across therefore has a standard deviation of about 72 cm along each axis — worth knowing, because it tells you the spread you should expect to measure back from a set of generated targets.",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "UNIFORM",
+                title: "Bounds, sample count, and the shape that results",
+                prompt:
+                  "Move the two bounds and watch the density change height to keep its area at 1 — narrow the range and the flat line rises. Then set the sample count low and press Draw again a few times: the bars leap around even though the model is perfectly flat. A finite sample is never level, and that is sampling variability rather than a fault in the generator.",
+                controls: [
+                  { key: "a", label: "Workspace minimum", min: 0, max: 2, step: 0.1, default: 0, unit: "m", locked: false },
+                  { key: "b", label: "Workspace maximum", min: 0.5, max: 5, step: 0.1, default: 2.5, unit: "m", locked: false },
+                  { key: "n", label: "Samples", min: 20, max: 5000, step: 20, default: 800, locked: false },
+                ],
+                views: ["PDF", "HISTOGRAM", "SUMMARY_STATS"],
+                seed: 42,
+                maxSamples: 5000,
+                binCount: 30,
+                interactive: true,
+                allowResample: true,
+                unit: "m",
+                xLabel: "Target position",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "On the robot: generate targets and drive to them.\n\nThere is no sensor for this one. The uniform distribution enters a robot through code you write, so the ROS 2 side is a generator and a goal publisher rather than a topic to subscribe to. The lab below tapes out a workspace, generates a set of targets inside it, and sends the robot to each in turn.\n\nThe distribution being modelled here is the target generation. Where the robot actually ends up is a different question — it involves wheel slip, controller tuning and odometry drift, and nothing in this lab claims those are uniform.",
+              },
+            },
+            {
+              type: "LAB_PROTOCOL",
+              data: {
+                title: "LAB 1 — Random exploration targets in a taped workspace",
+                objective:
+                  "Generate a set of uniformly random targets over a rectangular floor area, drive the robot to each one, and confirm that the commanded targets cover the space evenly.",
+                requiredHardware: [
+                  { label: "A mobile base you can already drive from ROS 2", note: "Any base that accepts /cmd_vel or a navigation goal. The statistics do not depend on which." },
+                  { label: "A clear, flat floor area of at least 2 x 2 m" },
+                  { label: "Masking tape and a tape measure" },
+                  { label: "A second person", note: "Required. One drives, one watches the robot and the floor." },
+                ],
+                requiredSoftware: [
+                  { name: "ROS 2 Jazzy", version: "jazzy" },
+                  { name: "Python", version: "3.12" },
+                  { name: "numpy", version: ">=1.26" },
+                ],
+                workspaceSetup: [
+                  {
+                    title: "Tape out the rectangle",
+                    content: { body: "Mark a 2 x 2 m square on the floor with tape and mark one corner as the origin. Measure it rather than pacing it — every number you compute later is in these coordinates." },
+                    checkpoint: "Four taped edges, one corner labelled, both side lengths measured and written down.",
+                  },
+                  {
+                    title: "Clear the area",
+                    content: { body: "Nothing inside the square and nothing within half a metre of its edges. The robot will drive to points near the boundary." },
+                    checkpoint: "The square and its margin are empty.",
+                  },
+                ],
+                robotPreparation: [
+                  {
+                    title: "Battery and emergency stop",
+                    content: { body: "Charge the base and test the emergency stop before anything moves. Press it once with the robot powered and confirm the wheels are dead." },
+                    checkpoint: "Emergency stop tested and confirmed working this session.",
+                  },
+                  {
+                    title: "Cap the speed",
+                    content: { body: "Set the maximum linear speed to 0.2 m/s or lower for the whole lab. There is no reason to move faster and every reason not to." },
+                    checkpoint: "Speed limit set and verified by driving one short manual segment.",
+                  },
+                ],
+                ros2Commands: [
+                  {
+                    title: "Confirm the base is listening",
+                    content: { body: "Check that the topics you expect are present:\n\n    ros2 topic list | grep -E 'cmd_vel|odom'\n\nBoth should appear. If /odom is missing you can still run the lab, but you will not be able to read back where the robot stopped." },
+                    checkpoint: "/cmd_vel is present.",
+                  },
+                  {
+                    title: "Confirm odometry updates",
+                    content: { body: "    ros2 topic echo /odom --field pose.pose.position --once\n\nDrive the robot a short distance by hand or teleop, run it again, and check the numbers moved." },
+                    checkpoint: "The reported position changes when the robot moves.",
+                  },
+                ],
+                procedure: [
+                  {
+                    title: "Generate the targets",
+                    content: { body: "Run the generator with a fixed seed for 40 targets inside your measured bounds. Keep the CSV — it is the record of what you commanded." },
+                    checkpoint: "A CSV of 40 target coordinates exists on disk.",
+                  },
+                  {
+                    title: "Drive to each target in turn",
+                    content: { body: "Send the robot to each target using whatever method your base supports — a navigation goal, teleop, or hand-jogging. The statistics do not care how it got there.\n\nWork through the list in order and do not skip any. Skipping the awkward ones near the edges is exactly what makes a target set stop being uniform." },
+                    checkpoint: "All 40 targets visited.",
+                  },
+                ],
+                dataCollection: [
+                  {
+                    title: "Record where it stopped, before moving on",
+                    content: { body: "After each target, read back the achieved position:\n\n    ros2 topic echo /odom --field pose.pose.position --once\n\nWrite the commanded and achieved coordinates into your CSV on the same row, immediately. A pose you meant to write down later is a pose you have lost." },
+                    checkpoint: "Every row has both a commanded and an achieved coordinate pair.",
+                  },
+                ],
+                pythonAnalysis: [
+                  {
+                    title: "Mean and spread of the commanded targets",
+                    content: { body: "Compute the mean and standard deviation of the commanded x values and of the commanded y values.\n\nCompare each mean against the midpoint of your measured bounds, and each standard deviation against 0.289 times the width. They will not match exactly at 40 targets. That is the point." },
+                    checkpoint: "Four numbers computed and compared against the formulas from this lesson.",
+                  },
+                ],
+                expectedObservations: [
+                  "The commanded means sit near the centre of the workspace but not exactly on it — offsets of several centimetres are ordinary at 40 targets.",
+                  "The commanded standard deviations sit near 0.289 times the workspace width.",
+                  "Plotted on paper, the 40 targets look patchy rather than evenly spread, with visible clumps and gaps.",
+                  "The achieved positions differ from the commanded ones, usually by more than the generator's own variability.",
+                ],
+                interpretation: {
+                  body: "Two different things are visible in this data and they are worth keeping apart.\n\nThe commanded targets are uniform by construction — they came out of a generator you wrote. Their patchiness at n = 40 is sampling variability, the same effect the simulator shows when you drop the sample count.\n\nThe gap between commanded and achieved is not about the uniform distribution at all. It is the robot: wheel slip, controller tolerance, and odometry error. This lab does not model that, and you should not read the achieved positions as evidence about the generator.",
+                },
+                troubleshooting: [
+                  {
+                    symptom: "The robot consistently stops short of targets near one edge.",
+                    likelyCause: "A navigation goal tolerance, or an obstacle inflation radius pushing goals away from the boundary.",
+                    whatToCheck: "Look at the goal tolerance in your navigation config. Targets near an edge are the ones that expose it.",
+                  },
+                  {
+                    symptom: "Achieved positions drift further from commanded ones as the run goes on.",
+                    likelyCause: "Odometry drift accumulating over the session.",
+                    whatToCheck: "Drive a measured 1.000 m in a straight line by tape measure and compare against what /odom reports. A consistent ratio is a scale error.",
+                  },
+                ],
+                movesTheRobot: true,
+                safety: {
+                  preflight: [
+                    "Emergency stop tested this session.",
+                    "Speed capped at 0.2 m/s or lower.",
+                    "Workspace and its margin clear of obstacles and people.",
+                    "Second person present and watching the robot, not the screen.",
+                  ],
+                  emergencyStop: "Physical stop within reach of the person watching the robot for the entire run. Test it before the first target, not after.",
+                  supervision: "Two people, throughout. Nobody inside the taped rectangle while the base is powered.",
+                  speedLimits: "0.2 m/s linear maximum. There is no part of this lab that benefits from moving faster.",
+                },
+                cleanup: [
+                  "Power down the base before removing tape.",
+                  "Save the CSV somewhere other than the robot.",
+                  "Put the emergency stop back where the next person will find it.",
+                ],
+                reproducibility: {
+                  ros2Distro: "jazzy",
+                  pythonVersion: "3.12",
+                  packages: [{ name: "numpy", version: ">=1.26" }],
+                  samplingRate: "One reading per target, taken after the robot settles",
+                  sampleCount: "40 targets",
+                  duration: "About 45 minutes including setup",
+                  environment: "Indoor, hard flat floor, 2 x 2 m taped workspace, origin marked at one corner",
+                },
+                crossReferences: [],
+                validationStatus: "THEORETICALLY_DESIGNED",
+                simulationFallbackLessonSlug: "uniform-where",
+              },
+            },
+            {
+              type: "DATASET_EXPLORER",
+              datasetSlug: "uniform-targets-synthetic",
+              data: {
+                title: "What 800 uniform targets look like",
+                prompt:
+                  "Your own run has 40 targets. This is what the same generator produces at 800, so you can see what your 40 are a small sample of. The table is the raw coordinates; the histogram is one axis of them.",
+                valueColumn: "target_x",
+                views: ["TABLE_PREVIEW", "HISTOGRAM", "SUMMARY_STATS"],
+                binCount: 30,
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "WARNING",
+                title: "The target generation is uniform. The robot's motion is not.",
+                body: "This is the one claim worth being precise about in this lesson.\n\nWhat is uniform is the list of coordinates your generator produced. That is a mathematical fact about code you wrote.\n\nWhere the robot actually ends up is the result of wheel slip, controller tolerance, floor texture and odometry drift. Nothing in this lesson models that, and nothing here says it is uniform, Gaussian, or anything else.\n\nIf you take one thing from the lab, take the habit of saying which of the two you are talking about.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Generate targets and check the coverage",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Generate 40 uniform targets over a 2 x 2 m workspace with a fixed seed, and compute the mean and standard deviation of the x coordinates.\n\nThen generate 800 targets with the same bounds and compute them again.\n\nFinally, without running the robot: name one change to your generator that would make the targets stop being uniform, and say what you would see in the numbers if it happened.",
+                  },
+                  successCriteria: [
+                    "Both means are near 1.0 m, and the 800-target mean is closer to it than the 40-target mean.",
+                    "Both standard deviations are near 0.577 m, which is 0.289 times the 2 m width.",
+                    "The named change is a real mechanism — rejecting out-of-bounds samples, snapping to a grid, or masking obstacles — and the predicted effect on the numbers follows from it.",
+                  ],
+                  hints: [
+                    "If your standard deviation is far from 0.577 m at n = 800, check whether you generated over [0, 2] or over some other range.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "The uniform distribution",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt: "A generator draws uniformly over [0 m, 3 m]. What is the mean, in metres?",
+                    acceptedAnswers: ["1.5", "1.5 m", "1.50", "1.50 m"],
+                    explanation:
+                      "The mean of a uniform is the midpoint, (a + b) / 2 = 1.5 m. Note that no value is drawn towards this number — a target at 1.5 m is exactly as likely as one at 0.1 m.",
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt: "A uniform density over [0 m, 0.5 m] has a height of 2 per metre, which is greater than 1 — so something has gone wrong.",
+                    correctAnswer: false,
+                    explanation:
+                      "Nothing has gone wrong. The density must enclose a total area of 1, so over a range half a metre wide it has to stand 2 per metre tall. Densities are not probabilities and are not capped at 1.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "gaussian-how",
+          title: "Gaussian — how does a measurement vary?",
+          durationMinutes: 25,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "Why does a still sensor move?",
+                body: "Back to the wall from the first lesson. The robot is stationary, the wall is stationary, and the readings still disagree with each other by a couple of centimetres.\n\nThis lesson is the model for that, and the reason the model has the shape it does.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Because many small independent effects add up, and adding them up produces a bell.\n\nA single range reading is disturbed by a lot of tiny things at once: thermal noise in the photodiode, jitter in the clock timing the laser's flight, a fraction of a degree of mirror wobble, the surface texture where the beam happens to land, rounding in the analogue-to-digital conversion. No single one dominates. Each is as likely to push the reading up as down.\n\nWhen you add up many small independent disturbances like that, the total has a characteristic shape regardless of what the individual disturbances looked like: symmetric, humped in the middle, thinning out on both sides. That is the Gaussian, and the fact that it emerges from almost any collection of small independent contributions is why it turns up everywhere in measurement.\n\nThe mechanism also tells you when to be suspicious of it. If one error source dominates the rest, or if the errors multiply rather than add, or if the quantity has a hard floor or ceiling it cannot pass, the reasoning above does not apply and the shape may not either.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The formula, its parameters, and its two moments.\n\nThe Gaussian density is\n\n    f(x) = (1 / (sigma * sqrt(2*pi))) * exp( -(x - mu)² / (2 * sigma²) )\n\nIt looks worse than it is. The exponential term does all the work: it is largest when x equals mu and falls away as x moves in either direction, and how fast it falls is set by sigma. The fraction in front is a normalising constant whose only job is to make the total area come to 1.\n\nThe parameters are mu and sigma, and unusually they are exactly the two summary numbers from the foundations lesson:\n\n    mean     = mu\n    variance = sigma²\n\nThat is worth pausing on. For the uniform you had to compute the mean from the bounds. Here the parameters are the mean and the standard deviation. So when you compute x-bar and sigma from a pile of readings, you have directly estimated the parameters of the model — nothing further to convert.",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "GAUSSIAN",
+                title: "Centre, spread, and sample count",
+                prompt:
+                  "Move the centre and the whole shape slides without changing form. Move the spread and it widens and flattens, or narrows and rises — the area stays at 1 either way. Then drop the sample count and press Draw again: even a model that is Gaussian by construction produces ragged bars at small n.",
+                controls: [
+                  { key: "mu", label: "Centre", min: 1.5, max: 2.5, step: 0.01, default: 2.0, unit: "m", locked: false },
+                  { key: "sigma", label: "Spread", min: 0.005, max: 0.05, step: 0.001, default: 0.02, unit: "m", locked: false },
+                  { key: "n", label: "Samples", min: 20, max: 5000, step: 20, default: 5000, locked: false },
+                ],
+                views: ["PDF", "HISTOGRAM", "SUMMARY_STATS"],
+                seed: 42,
+                maxSamples: 5000,
+                binCount: 50,
+                interactive: true,
+                allowResample: true,
+                unit: "m",
+                xLabel: "Measured distance",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "On the robot: point a LiDAR at a wall and characterise it.\n\nThis is the most useful half hour you can spend with a new range sensor. The sensor is the LiDAR, the topic is /scan, and the procedure is the one from the foundations lesson scaled up: collect a few thousand readings from a single beam against a fixed target, then compute the mean and standard deviation.\n\nWhat you get out is a noise figure for your own sensor, on your own surface, at your own distance — which is more useful than the datasheet number, because the datasheet was measured against an ideal target.\n\nBring-up is not covered here. If the LiDAR is not yet publishing, the Robotics Hardware and Sensors course covers driver installation, udev rules and baud-rate debugging for the RPLIDAR A2. This lab starts from a working /scan.",
+              },
+            },
+            {
+              type: "LAB_PROTOCOL",
+              data: {
+                title: "LAB 2 — Characterise your LiDAR's range noise",
+                objective:
+                  "Collect at least 2,000 range readings of a stationary flat target from a single LiDAR beam, and compute the mean and standard deviation of your own sensor at a known distance.",
+                requiredHardware: [
+                  { label: "RPLIDAR A2", note: "Or any 2D LiDAR already publishing sensor_msgs/msg/LaserScan. The procedure does not depend on the model." },
+                  { label: "A flat matte target at least 30 cm square", note: "Matte white card is ideal. Avoid gloss, glass and dark surfaces — they change the answer substantially." },
+                  { label: "Tape measure" },
+                  { label: "A stable mount or flat surface for the sensor" },
+                ],
+                requiredSoftware: [
+                  { name: "ROS 2 Jazzy", version: "jazzy" },
+                  { name: "Python", version: "3.12" },
+                ],
+                workspaceSetup: [
+                  {
+                    title: "Place the target at a measured distance",
+                    content: { body: "Stand the target square to the sensor at about 2 m and measure the actual distance with the tape. Write it down — this is the number your mean gets compared against." },
+                    checkpoint: "Distance measured and recorded to the nearest centimetre.",
+                  },
+                  {
+                    title: "Fix the sensor so it cannot move",
+                    content: { body: "Mount or weight the LiDAR so nothing shifts during the recording. A sensor that creeps a millimetre during the run adds a drift you will mistake for noise." },
+                    checkpoint: "The sensor does not move when the table is nudged gently.",
+                  },
+                ],
+                robotPreparation: [
+                  {
+                    title: "Nothing moves in this lab",
+                    content: { body: "The robot stays stationary throughout. If the LiDAR is mounted on a mobile base, power the base down or disable its motors so it cannot be commanded by accident." },
+                    checkpoint: "The base cannot move, or there is no base.",
+                  },
+                ],
+                ros2Commands: [
+                  {
+                    title: "Confirm /scan is publishing",
+                    content: { body: "    ros2 topic hz /scan\n\nYou should see a steady rate — typically 5 to 15 Hz. If nothing appears, the driver is not running and this is a bring-up problem, not a statistics one." },
+                    checkpoint: "A steady publication rate is reported.",
+                  },
+                  {
+                    title: "Find the beam that hits your target",
+                    content: { body: "    ros2 topic echo /scan --field ranges[0] --once\n\nCompare against your tape measurement. If beam zero is not pointing at the target, try other indices until one reports roughly the right distance." },
+                    checkpoint: "A beam index is identified whose reading matches the tape measurement to within a few centimetres.",
+                  },
+                ],
+                procedure: [
+                  {
+                    title: "Record 2,000 readings without touching anything",
+                    content: { body: "Run the collector against your chosen beam with a target of 2,000 readings. At 10 Hz this takes a little over three minutes.\n\nDo not walk in front of the sensor and do not lean on the table. Both show up in the data." },
+                    checkpoint: "A CSV of 2,000 finite readings exists.",
+                  },
+                ],
+                dataCollection: [
+                  {
+                    title: "Record the conditions alongside the numbers",
+                    content: { body: "Write down, in the same place as the CSV: the measured distance, the target surface, the beam index, the sensor model, and the room lighting.\n\nA noise figure without those is not reproducible, and a noise figure you cannot reproduce is not worth quoting." },
+                    checkpoint: "Five conditions recorded next to the data file.",
+                  },
+                ],
+                pythonAnalysis: [
+                  {
+                    title: "Mean and standard deviation",
+                    content: { body: "Run the summarise script from the foundations lesson against your CSV.\n\nCompare the mean against your tape measurement, and the standard deviation against the sensor's datasheet noise figure." },
+                    checkpoint: "A mean and a standard deviation are computed and both comparisons are written down.",
+                  },
+                ],
+                expectedObservations: [
+                  "The standard deviation is a few millimetres to a couple of centimetres at 2 m, depending on the sensor and the surface.",
+                  "The mean is close to the tape measurement, but not identical — an offset of a centimetre or two is common.",
+                  "A histogram of the readings shows a single hump rather than several.",
+                  "Repeating the run against a dark or glossy target gives a noticeably larger standard deviation.",
+                ],
+                interpretation: {
+                  body: "Two numbers, two different meanings.\n\nThe standard deviation is noise: it is how much the sensor disagrees with itself, and collecting more readings measures it more precisely without reducing it.\n\nThe gap between the mean and your tape measurement is bias: a consistent offset. More readings will not shrink it, because every reading has it. Bias usually comes from the mounting reference point, a calibration constant, or measuring to the wrong part of the sensor housing.\n\nBoth are worth knowing and they are fixed by completely different things.",
+                },
+                troubleshooting: [
+                  {
+                    symptom: "The standard deviation is far larger than the datasheet figure.",
+                    likelyCause: "Target surface, or a beam that is clipping an edge.",
+                    whatToCheck: "Try a matte white target square to the beam. An angled or glossy surface scatters far more, and a beam grazing the target edge alternates between two distances.",
+                  },
+                  {
+                    symptom: "Many readings are inf or nan.",
+                    likelyCause: "The beam is missing the target, or the target is outside the sensor's range.",
+                    whatToCheck: "Confirm the beam index with a single echo before recording, and check the sensor's minimum and maximum range against your setup.",
+                  },
+                  {
+                    symptom: "The readings step between a few fixed values rather than varying smoothly.",
+                    likelyCause: "The sensor's range resolution is coarse relative to its noise.",
+                    whatToCheck: "This is normal on some sensors and is a property of the hardware, not a fault. Note it alongside your results.",
+                  },
+                ],
+                movesTheRobot: false,
+                safety: {
+                  preflight: [
+                    "The base, if there is one, is powered down or has motors disabled.",
+                    "The laser aperture is not pointed at anyone's eyes at close range.",
+                  ],
+                  emergencyStop: "Not applicable — nothing moves. If the LiDAR is mounted on a powered base, keep the base's stop within reach anyway.",
+                  supervision: "Can be run alone.",
+                },
+                cleanup: [
+                  "Copy the CSV and the recorded conditions off the robot.",
+                  "Power the sensor down before unmounting it.",
+                ],
+                reproducibility: {
+                  ros2Distro: "jazzy",
+                  pythonVersion: "3.12",
+                  packages: [{ name: "rclpy", version: "jazzy" }],
+                  samplingRate: "Whatever the driver publishes, typically 10 Hz",
+                  sampleCount: "2,000 readings from one beam",
+                  duration: "About 20 minutes including setup",
+                  environment: "Indoor, stationary sensor, flat matte target at a measured distance near 2 m",
+                },
+                crossReferences: [
+                  {
+                    courseSlug: "robotics-hardware-and-sensors",
+                    lessonSlug: "rplidar-a2-ros2-integration",
+                    label: "RPLIDAR A2 ROS 2 integration",
+                    reason: "This lab starts from a working /scan. If yours is not publishing yet, driver setup and topic verification are covered there rather than repeated here.",
+                  },
+                ],
+                validationStatus: "THEORETICALLY_DESIGNED",
+                simulationFallbackLessonSlug: "gaussian-how",
+              },
+            },
+            {
+              type: "DATASET_EXPLORER",
+              datasetSlug: "lidar-wall-readings-synthetic",
+              data: {
+                title: "What a few thousand wall readings look like",
+                prompt:
+                  "A reference picture for comparison with your own run: 5,000 readings of a wall at 2 m. Note that this file is mathematically generated rather than recorded, so treat it as an illustration of the shape and not as evidence about any real sensor.",
+                valueColumn: "distance_m",
+                views: ["TABLE_PREVIEW", "HISTOGRAM", "SUMMARY_STATS"],
+                binCount: 50,
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Characterise your sensor at two distances",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Run the collection procedure twice against the same target surface: once at about 1 m and once at about 3 m. Collect at least 1,000 readings each time.\n\nCompute the mean and standard deviation for each, and record the tape measurement for each.\n\nThen answer: did the standard deviation change with distance, and did the difference between the mean and the tape measurement change with distance? Those two answers mean different things.",
+                  },
+                  successCriteria: [
+                    "Two means, two standard deviations and two tape measurements are recorded.",
+                    "The answer says whether noise grew with distance, which it usually does on a time-of-flight sensor.",
+                    "The answer distinguishes a bias that stays constant with distance from one that grows with it, and says which was observed.",
+                    "If no hardware was available, the same two comparisons are made using the simulator with a justified choice of spread at each distance.",
+                  ],
+                  hints: [
+                    "Use the same beam index and the same target surface for both runs, or you will have changed two things at once.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "The Gaussian distribution",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt: "For a Gaussian, what is the relationship between its parameters and its mean and variance?",
+                    options: [
+                      { id: "a", label: "The mean is mu and the variance is sigma²" },
+                      { id: "b", label: "The mean is mu/2 and the variance is sigma" },
+                      { id: "c", label: "The mean must be computed from the bounds, as with the uniform" },
+                      { id: "d", label: "The mean is sigma and the variance is mu" },
+                    ],
+                    correctOptionIds: ["a"],
+                    explanation:
+                      "The Gaussian's parameters are its mean and its standard deviation directly, which is why computing x-bar and sigma from your readings estimates the model's parameters with no conversion step.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt: "Which situation most undermines the reasoning that produces a bell shape?",
+                    options: [
+                      { id: "a", label: "Many small independent effects, none dominant" },
+                      { id: "b", label: "One error source much larger than all the others combined" },
+                      { id: "c", label: "Effects that are as likely to push up as down" },
+                      { id: "d", label: "Collecting a large number of readings" },
+                    ],
+                    correctOptionIds: ["b"],
+                    explanation:
+                      "The mechanism depends on many comparable, independent contributions adding together. When one dominates, the total takes that source's shape rather than a bell.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          slug: "exponential-when",
+          title: "Exponential — when will the next event happen?",
+          durationMinutes: 25,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "When will the next event happen?",
+                body: "A delivery robot works a corridor. People cross in front of it and it stops for them — fourteen times in the last hour.\n\nIt has now gone four minutes without a stop, which feels like a long time. Is a crossing more likely in the next thirty seconds than it was thirty seconds after the last one?",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The quantity worth modelling is the gap, not the instant.\n\nThe first two distributions in this course described measurements — a range, a coordinate. This one describes timing. Events happen at instants: an obstacle appears, a message lands, a motor stalls, a goal is rejected.\n\nThe timestamps themselves are not worth modelling. They only ever increase, the next one is always larger than every one before it, and their average depends on how long you happened to record for rather than on anything about the process. Subtract consecutive timestamps and you get the gaps, and those do scatter around a typical value that belongs to the process itself.\n\nSo six timestamps give you five gaps, and the gaps are the random variable.\n\nOn the intuition question above: for a process with a genuinely constant rate, having already waited four minutes does not change what happens next — the distribution of the remaining wait is the same as it was at the start. That property is called memorylessness, it is what makes the exponential the model it is, and it is a strong assumption that is frequently false on real robots, where corridors get busy at lunchtime and sensors have dead time after each detection.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The formula, its parameter, and its two moments.\n\nFor a waiting time t, measured from one event to the next:\n\n    f(t) = lambda * exp(-lambda * t)   for t >= 0\n\nThere is exactly one parameter, lambda, the rate — events per second. It has to be positive, and the density is zero for negative t, because a waiting time cannot be negative. This is the first distribution in the course that is not symmetric.\n\n    mean     = 1 / lambda\n    variance = 1 / lambda²\n\nso the standard deviation is 1 / lambda as well, which is to say it equals the mean. That is unusual and it is a quick sanity check: if your waiting times have a standard deviation nothing like their mean, the exponential is probably not your model.\n\nOne consequence catches everyone. The density is highest at t = 0 and falls from there, so the most likely waiting times are the very short ones — yet the mean is 1/lambda. Both are true. Short waits are individually most common; a few long ones drag the average up.",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "EXPONENTIAL",
+                title: "Rate and sample count",
+                prompt:
+                  "Raise the rate and the whole shape compresses towards zero — more events per second means shorter typical gaps. Lower it and the tail stretches out. Watch the summary panel as you do: the mean tracks 1/lambda, and the standard deviation stays close to the mean at every setting.",
+                controls: [
+                  { key: "lambda", label: "Event rate", min: 0.05, max: 2, step: 0.05, default: 0.25, unit: "/s", locked: false },
+                  { key: "n", label: "Samples", min: 20, max: 5000, step: 20, default: 2000, locked: false },
+                ],
+                views: ["PDF", "HISTOGRAM", "SUMMARY_STATS"],
+                seed: 42,
+                maxSamples: 5000,
+                binCount: 40,
+                interactive: true,
+                allowResample: true,
+                unit: "s",
+                xLabel: "Waiting time",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "On the robot: log event times, then difference them.\n\nThe sensor is again the LiDAR, but you are not recording ranges — you are recording the moments when something crosses in front of it. The node watches the forward beams and logs a timestamp each time a close obstacle appears where there was not one before.\n\nThe conversion from timestamps to gaps is two lines and is where the mistakes live. Sort first, because a log merged from two sources is not guaranteed to be in order and unsorted timestamps produce negative waiting times that nothing will warn you about. And remember n events give n-1 gaps.",
+              },
+            },
+            {
+              type: "CODE",
+              data: {
+                language: "python",
+                filename: "event_gaps.py",
+                code: "import math\n\nimport rclpy\nfrom rclpy.node import Node\nfrom sensor_msgs.msg import LaserScan\n\nTRIGGER_M = 1.0        # something closer than this counts as an event\nFORWARD_BEAMS = 20     # beams either side of straight ahead to watch\n\n\nclass CrossingLogger(Node):\n    \"\"\"Log the time of each obstacle crossing in front of the robot.\"\"\"\n\n    def __init__(self):\n        super().__init__(\"crossing_logger\")\n        self.times = []\n        self.occupied = False   # edge detection: log the arrival, not every frame\n        self.create_subscription(LaserScan, \"/scan\", self.on_scan, 10)\n\n    def on_scan(self, msg):\n        forward = msg.ranges[:FORWARD_BEAMS] + msg.ranges[-FORWARD_BEAMS:]\n        close = [r for r in forward if math.isfinite(r) and r < TRIGGER_M]\n\n        if close and not self.occupied:\n            stamp = msg.header.stamp\n            self.times.append(stamp.sec + stamp.nanosec * 1e-9)\n            self.occupied = True\n            self.get_logger().info(f\"crossing {len(self.times)}\")\n        elif not close:\n            self.occupied = False\n\n\ndef gaps_from(times):\n    \"\"\"n timestamps give n-1 waiting times.\"\"\"\n    ordered = sorted(times)   # a merged or buffered log is not always in order\n    return [b - a for a, b in zip(ordered, ordered[1:])]\n\n\ndef main():\n    rclpy.init()\n    node = CrossingLogger()\n    try:\n        rclpy.spin(node)\n    except KeyboardInterrupt:\n        pass\n\n    gaps = gaps_from(node.times)\n    print(f\"{len(node.times)} events -> {len(gaps)} waiting times\")\n    if gaps:\n        mean = sum(gaps) / len(gaps)\n        print(f\"  mean gap  {mean:.2f} s\")\n        print(f\"  lambda    {1 / mean:.4f} /s\")\n\n    with open(\"gaps.csv\", \"w\") as handle:\n        handle.write(\"gap_seconds\\n\")\n        for gap in gaps:\n            handle.write(f\"{gap:.4f}\\n\")\n\n    node.destroy_node()\n    rclpy.shutdown()\n\n\nif __name__ == \"__main__\":\n    main()\n",
+                caption: "Stop it with Ctrl-C when you have enough events. The edge detection matters — without it you would log one event per frame for as long as somebody stands in front of the sensor.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "What to expect: mostly short gaps, a few long ones, and a rate you can sanity-check.\n\nIn a moderately busy corridor you might see a crossing every twenty to sixty seconds, so a lambda somewhere around 0.02 to 0.05 per second. Compute it as one over the mean gap and check it against your own sense of how often people actually walked past — if the number says one crossing every three seconds, your trigger distance is probably catching a wall.\n\nExpect the mean and standard deviation of your gaps to be roughly similar in size. Expect the shortest gap to be much shorter than the mean and the longest to be several times it.\n\nAnd expect the rate to be honestly non-constant. Corridors have quiet spells and busy spells, which is exactly the assumption the exponential makes and real buildings break.",
+              },
+            },
+            {
+              type: "LAB_PROTOCOL",
+              data: {
+                title: "LAB 3 — Record crossing times in a corridor",
+                objective:
+                  "Log at least 30 obstacle-crossing events in front of a stationary LiDAR, convert the timestamps to waiting times, and estimate the event rate.",
+                requiredHardware: [
+                  { label: "RPLIDAR A2", note: "Or any 2D LiDAR publishing sensor_msgs/msg/LaserScan. Same sensor as the previous lab." },
+                  { label: "A location where people or objects cross in front of the sensor on their own", note: "A corridor or doorway. Crossings you generate yourself are not a constant-rate process." },
+                  { label: "A stable mount for the sensor" },
+                ],
+                requiredSoftware: [
+                  { name: "ROS 2 Jazzy", version: "jazzy" },
+                  { name: "Python", version: "3.12" },
+                ],
+                workspaceSetup: [
+                  {
+                    title: "Place the sensor facing the traffic",
+                    content: { body: "Mount the LiDAR at the edge of a corridor so its forward beams cross the walking line at about a metre. Nothing fixed should sit inside that trigger distance, or every frame will register as an event." },
+                    checkpoint: "With nobody walking past, the logger reports no crossings for a full minute.",
+                  },
+                  {
+                    title: "Note the time and place",
+                    content: { body: "Write down where the sensor is and what time of day you started. Corridor traffic is not the same at 09:00 and 15:00, and that matters for what your rate means." },
+                    checkpoint: "Location and start time recorded.",
+                  },
+                ],
+                robotPreparation: [
+                  {
+                    title: "Nothing moves in this lab",
+                    content: { body: "The sensor stays put for the whole recording. If it is on a mobile base, power the base down." },
+                    checkpoint: "The sensor cannot move during the run.",
+                  },
+                ],
+                ros2Commands: [
+                  {
+                    title: "Confirm /scan is publishing",
+                    content: { body: "    ros2 topic hz /scan\n\nSame check as the previous lab. A steady rate means the driver is up." },
+                    checkpoint: "A steady publication rate is reported.",
+                  },
+                  {
+                    title: "Sanity-check the trigger",
+                    content: { body: "Start the crossing logger and walk past the sensor three times deliberately. It should log exactly three events, not thirty.\n\nIf it logs one event per frame, the edge detection is not working. If it logs nothing, your trigger distance is shorter than the walking line." },
+                    checkpoint: "Three deliberate walk-pasts produce exactly three logged events.",
+                  },
+                ],
+                procedure: [
+                  {
+                    title: "Record until you have at least thirty events",
+                    content: { body: "Leave the logger running and stay out of the sensor's view. Depending on the corridor this takes twenty minutes to an hour.\n\nDo not stand nearby watching it. You are part of the traffic if you do." },
+                    checkpoint: "At least 30 events logged.",
+                  },
+                ],
+                dataCollection: [
+                  {
+                    title: "Stop cleanly and keep both columns",
+                    content: { body: "Stop the logger with Ctrl-C so it writes its CSV. Keep the raw timestamps as well as the gaps — the timestamps are what you would need to re-do the conversion differently later." },
+                    checkpoint: "A CSV exists with one fewer gap than the number of events logged.",
+                  },
+                ],
+                pythonAnalysis: [
+                  {
+                    title: "Mean gap and rate",
+                    content: { body: "Compute the mean gap, then the rate as one over the mean. Compare that rate against your own sense of how busy the corridor was.\n\nThen split the recording in half and compute the mean gap of each half separately." },
+                    checkpoint: "A rate is computed, and the two half-recording means are compared.",
+                  },
+                ],
+                expectedObservations: [
+                  "Most gaps are short and a few are much longer than the mean.",
+                  "The standard deviation of the gaps is roughly the same size as their mean.",
+                  "The two halves of the recording often disagree noticeably — corridors have quiet and busy spells.",
+                  "The number of gaps is exactly one fewer than the number of events.",
+                ],
+                interpretation: {
+                  body: "The rate you computed describes the corridor during the window you recorded, and not much beyond it.\n\nIf the two halves of your recording gave similar mean gaps, a constant rate is a reasonable description of that window. If they disagreed substantially, the rate was changing while you watched — which is ordinary for a real building and is worth stating rather than averaging away.\n\nThis course stops here. Deciding whether the exponential genuinely describes your gaps needs goodness-of-fit work that is outside its scope.",
+                },
+                troubleshooting: [
+                  {
+                    symptom: "Thousands of events in the first minute.",
+                    likelyCause: "A fixed object inside the trigger distance, or the edge detection not resetting.",
+                    whatToCheck: "Echo the forward beams with nobody present and confirm every value is above the trigger distance.",
+                  },
+                  {
+                    symptom: "No events at all despite people walking past.",
+                    likelyCause: "The trigger distance is shorter than the walking line, or the forward beam indices are wrong for your sensor's mounting.",
+                    whatToCheck: "Echo the beams while someone stands in the walking line, and check which indices actually drop.",
+                  },
+                  {
+                    symptom: "Negative waiting times.",
+                    likelyCause: "Timestamps out of order, usually from a merged or buffered log.",
+                    whatToCheck: "Confirm the conversion sorts before differencing. This is the failure the sort in the code exists to prevent.",
+                  },
+                ],
+                movesTheRobot: false,
+                safety: {
+                  preflight: [
+                    "The base, if there is one, is powered down or has motors disabled.",
+                    "The sensor is mounted where it cannot be knocked into a walkway.",
+                  ],
+                  emergencyStop: "Not applicable — nothing moves. Keep the base's stop within reach if the sensor is mounted on one.",
+                  supervision: "Can be run alone. Tell anyone using the corridor that a sensor is recording.",
+                },
+                cleanup: [
+                  "Copy the CSV off the robot.",
+                  "Remove the sensor from the walkway so nobody trips over it.",
+                ],
+                reproducibility: {
+                  ros2Distro: "jazzy",
+                  pythonVersion: "3.12",
+                  packages: [{ name: "rclpy", version: "jazzy" }],
+                  samplingRate: "Event-driven, from a /scan stream at roughly 10 Hz",
+                  sampleCount: "At least 30 events",
+                  duration: "20 to 60 minutes depending on corridor traffic",
+                  environment: "Indoor corridor or doorway, stationary sensor, trigger distance about 1 m",
+                },
+                crossReferences: [
+                  {
+                    courseSlug: "robotics-hardware-and-sensors",
+                    lessonSlug: "rplidar-a2-ros2-integration",
+                    label: "RPLIDAR A2 ROS 2 integration",
+                    reason: "This lab starts from a working /scan, the same as the Gaussian lab. Driver setup is covered there.",
+                  },
+                ],
+                validationStatus: "THEORETICALLY_DESIGNED",
+                simulationFallbackLessonSlug: "exponential-when",
+              },
+            },
+            {
+              type: "DATASET_EXPLORER",
+              datasetSlug: "robot-event-timestamps-synthetic",
+              data: {
+                title: "What 600 event gaps look like",
+                prompt:
+                  "A reference picture: 600 events over about forty minutes from a simulated constant-rate process. The table shows the raw log — an absolute time per event with its gap alongside — and the histogram shows the gaps. Mathematically generated, so it shows you the shape rather than telling you anything about a real corridor.",
+                valueColumn: "gap_seconds",
+                secondaryColumn: "t_seconds",
+                views: ["TABLE_PREVIEW", "HISTOGRAM", "SUMMARY_STATS"],
+                binCount: 40,
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Log twenty crossings and estimate the rate",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Run the crossing logger somewhere people actually walk past, until you have at least twenty events. If you have no robot, use any event log you can get — timestamps from a system log file work identically.\n\nCompute the number of gaps, the mean gap, and the rate as one over the mean.\n\nThen do one check: split your gaps into the first half and the second half of the recording, and compute the mean of each. If the two halves disagree substantially, say what that tells you about the constant-rate assumption.",
+                  },
+                  successCriteria: [
+                    "The gap count is one fewer than the event count.",
+                    "A rate is computed as one over the mean gap and quoted in events per second.",
+                    "The two half-recording means are computed and compared.",
+                    "The answer states that a large disagreement between halves is evidence the rate is not constant, and names a plausible physical reason for it.",
+                  ],
+                  hints: [
+                    "If you get zero gaps, you logged one event — the edge detection may be stuck, or the trigger distance may be catching a fixed object.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "The exponential distribution",
+                questions: [
+                  {
+                    type: "SHORT_ANSWER",
+                    prompt: "Events arrive at a rate of 0.25 per second. What is the mean waiting time between them, in seconds?",
+                    acceptedAnswers: ["4", "4 s", "4.0", "4.0 s", "4 seconds"],
+                    explanation:
+                      "The mean of an exponential is 1/lambda = 1/0.25 = 4 s. Note that the most likely waiting times are still the very short ones — the mean is pulled up by a few long waits.",
+                  },
+                  {
+                    type: "TRUE_FALSE",
+                    prompt: "You record 200 event timestamps. This gives you 200 waiting times.",
+                    correctAnswer: false,
+                    explanation:
+                      "It gives 199. The first event has no previous event to subtract from. Assuming n gaps from n events shifts every waiting time by one position and quietly changes the rate you estimate.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Putting it together",
+      summary:
+        "The three distributions side by side on shared axes, and a map from robot task to model to topic.",
+      lessons: [
+        {
+          slug: "three-ways-in-my-robot",
+          title: "Three ways to be random in my robot",
+          durationMinutes: 20,
+          contentBlocks: [
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "INFO",
+                title: "You have three models. Which one does this quantity need?",
+                body: "Someone hands you a column of numbers off a robot and asks which distribution describes it.\n\nThe tempting move is to plot a histogram and match it against the three shapes you have learned. There is a better first question.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "Ask what produced the number, not what the histogram looks like.\n\nThree questions get you most of the way, and all three are about the process rather than the data.\n\nIs this a measurement of something that exists, or the timing of something that happened? That one question separates the exponential from the other two, and you answer it from what the quantity is.\n\nDid somebody choose the range? If a value is confined to an interval because a person or a program confined it, start from the uniform — and you will usually know, because you wrote the code that did it.\n\nHow many things contribute to the variation? One dominant source is rarely a bell. Many small independent ones usually are.\n\nWhat makes this worth doing before looking at a picture is that shapes are genuinely ambiguous at the sample sizes robots produce. A few hundred readings from quite different processes can look much the same. The mechanism does not go blurry with a small sample.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "The three side by side.\n\nUniform: support is a hard interval from a to b, and nothing outside it is possible. Parameters a and b. Mean (a+b)/2, variance (b-a)²/12. Flat.\n\nGaussian: support is everything from minus infinity to plus infinity, so it always assigns some probability to values you may consider impossible. Parameters mu and sigma. Mean mu, variance sigma². Symmetric, humped.\n\nExponential: support is zero upwards, never negative. One parameter, lambda. Mean 1/lambda, variance 1/lambda², so the standard deviation equals the mean. Strongly asymmetric, highest at zero.\n\nThe supports are the most practically useful row in that list. A uniform says a value beyond its bounds cannot happen. A Gaussian assigns a small probability to a negative distance, which is physically nonsense but usually harmless if zero is many standard deviations away. An exponential cannot produce a negative waiting time at all, which is exactly right for a gap and exactly wrong for a temperature reading.",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "UNIFORM",
+                title: "Uniform on shared axes",
+                prompt:
+                  "All three figures below run over the same horizontal range so their shapes can be compared directly. This one is flat between its bounds and exactly zero outside them.",
+                controls: [
+                  { key: "a", label: "Lower bound", min: 0, max: 3, step: 0.1, default: 0, unit: "", locked: false },
+                  { key: "b", label: "Upper bound", min: 1, max: 6, step: 0.1, default: 4, unit: "", locked: false },
+                ],
+                views: ["PDF"],
+                seed: 42,
+                maxSamples: 4000,
+                binCount: 36,
+                xDomain: [0, 6],
+                interactive: false,
+                allowResample: false,
+                xLabel: "Value",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "GAUSSIAN",
+                title: "Gaussian on the same axes",
+                prompt:
+                  "Same horizontal range. Note that the curve is still above zero at the far left and right of the frame — a Gaussian never actually reaches zero, which is what it means for its support to be unbounded.",
+                controls: [
+                  { key: "mu", label: "Centre", min: 0, max: 6, step: 0.1, default: 2, unit: "", locked: false },
+                  { key: "sigma", label: "Spread", min: 0.2, max: 2, step: 0.1, default: 0.7, unit: "", locked: false },
+                ],
+                views: ["PDF"],
+                seed: 42,
+                maxSamples: 4000,
+                binCount: 36,
+                xDomain: [0, 6],
+                interactive: false,
+                allowResample: false,
+                xLabel: "Value",
+              },
+            },
+            {
+              type: "DISTRIBUTION_SIM",
+              data: {
+                distribution: "EXPONENTIAL",
+                title: "Exponential on the same axes",
+                prompt:
+                  "Same horizontal range again. This one is highest at the left edge and decays to the right. Its mean is 2 — the same as the Gaussian above — which is worth staring at for a moment, because the two shapes could hardly be less alike.",
+                controls: [{ key: "lambda", label: "Rate", min: 0.1, max: 2, step: 0.05, default: 0.5, unit: "", locked: false }],
+                views: ["PDF"],
+                seed: 42,
+                maxSamples: 4000,
+                binCount: 36,
+                xDomain: [0, 6],
+                interactive: false,
+                allowResample: false,
+                xLabel: "Value",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "All three of those have a mean of 2. Handed only that number you could not tell them apart, and as models of a robot process they could hardly be more different — one says values above 4 are impossible, one says they are rare but possible, and one says they are ordinary.\n\nThat disagreement is the whole practical stake in choosing correctly.",
+              },
+            },
+            {
+              type: "TEXT",
+              data: {
+                body: "On the robot: the map from task to model to topic.\n\nExploration target coordinates. Uniform, because your planner drew them from a range you specified. Nothing to subscribe to — the numbers are in your own generator. Log what you commanded.\n\nLiDAR range noise on a fixed target. Gaussian, because many small independent effects add. Subscribe to /scan, take one beam, collect a few thousand readings while nothing moves.\n\nTime between obstacle crossings. Exponential, if the rate is genuinely steady. Subscribe to /scan, detect the edge where something close appears, log the timestamps and difference them.\n\nRandomised retry delay before re-attempting a failed goal. Uniform, again because you wrote it — usually to stop a fleet of robots retrying in lockstep.\n\nMessage inter-arrival time on a topic published by a fixed-rate timer. None of the three. A 20 Hz timer produces gaps clustered tightly at 50 ms, which is not exponential at all — the process is a scheduler, not a random arrival. Worth including precisely because the phrase \"time between\" invites the wrong answer.\n\nOdometry error after driving a fixed distance. Approximately Gaussian, by the same summing argument as sensor noise — wheel slip, encoder quantisation, timing jitter and floor texture all contribute. Subscribe to /odom and compare against a tape measurement over repeated runs.",
+              },
+            },
+            {
+              type: "EXERCISE",
+              exercise: {
+                title: "Map three quantities from your own robot",
+                config: {
+                  type: "INDEPENDENT",
+                  goal: {
+                    body: "Pick three quantities from a robot you actually have access to — or from one you have worked on before. At least one must be a timing and at least one must be a measurement.\n\nFor each, write down four things: what the quantity physically is, which of the three distributions you would start from, the mechanism reason for that choice, and the ROS 2 topic or code location where you would collect it.\n\nThen pick the one you are least sure about and say what you would collect to become more sure.",
+                  },
+                  successCriteria: [
+                    "Three quantities, with at least one timing and one measurement among them.",
+                    "Each distribution choice is justified by what produces the number, not by what its histogram looks like.",
+                    "Each has a concrete collection point — a named topic, or a named place in code.",
+                    "The least-certain choice is identified and the proposed follow-up is a specific measurement rather than a general wish for more data.",
+                  ],
+                  hints: [
+                    "If all three of your quantities came out Gaussian, look for a timing — gaps between events are the most common thing people mis-model.",
+                    "A quantity produced by a fixed-rate timer belongs to none of the three, and saying so is a correct answer.",
+                  ],
+                },
+              },
+            },
+            {
+              type: "CALLOUT",
+              data: {
+                variant: "TIP",
+                title: "What you have, and what this course did not cover",
+                body: "You can now name three distributions, state each one's formula, parameters, mean and variance, drive a simulator for each, and collect the matching numbers off a real robot with ROS 2.\n\nWhat this course deliberately did not cover is how to decide whether a model actually fits your data. Goodness-of-fit testing, reading the tails, spotting outliers and judging whether a distribution is defensible for a given process are all real skills and none of them are here.\n\nSo the honest description of what you have is a starting point and a procedure, not a verdict. When you collect a few thousand LiDAR readings and they look like the bell in the simulator, the right sentence is \"this is consistent with the Gaussian model I was shown\" — not \"my sensor noise is Gaussian\".",
+              },
+            },
+            {
+              type: "QUIZ",
+              quiz: {
+                title: "Three ways to be random",
+                questions: [
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt: "A node publishes on a topic using a 20 Hz timer. Which distribution best describes the time between consecutive messages?",
+                    options: [
+                      { id: "a", label: "Exponential, because it is a time between events" },
+                      { id: "b", label: "None of the three — a fixed-rate timer produces gaps clustered near 50 ms, not random arrivals" },
+                      { id: "c", label: "Uniform, because the timer is evenly spaced" },
+                      { id: "d", label: "Gaussian, because of scheduling jitter" },
+                    ],
+                    correctOptionIds: ["b"],
+                    explanation:
+                      "The phrase 'time between' invites the exponential, but the mechanism here is a scheduler firing at a fixed interval, not events arriving independently at a constant average rate. The gaps cluster tightly around 50 ms.",
+                  },
+                  {
+                    type: "MULTIPLE_CHOICE",
+                    prompt: "Which of these are true of the exponential distribution?",
+                    options: [
+                      { id: "a", label: "Its support starts at zero and never goes negative" },
+                      { id: "b", label: "Its standard deviation equals its mean" },
+                      { id: "c", label: "It is symmetric about its mean" },
+                      { id: "d", label: "Its density is highest at zero" },
+                    ],
+                    correctOptionIds: ["a", "b", "d"],
+                    explanation:
+                      "The exponential is strongly asymmetric — that is one of its defining features — so it is not symmetric about its mean. The other three are all true, and the standard-deviation-equals-mean property is a quick check on whether the model is plausible for your data.",
+                  },
+                  {
+                    type: "SINGLE_CHOICE",
+                    prompt: "What is the first question to ask when choosing a distribution for a robot quantity?",
+                    options: [
+                      { id: "a", label: "What does its histogram look like?" },
+                      { id: "b", label: "What physical process produced the number?" },
+                      { id: "c", label: "What is its mean?" },
+                      { id: "d", label: "How many samples do I have?" },
+                    ],
+                    correctOptionIds: ["b"],
+                    explanation:
+                      "Shapes are ambiguous at the sample sizes robots typically produce, and quite different processes can look alike in a few hundred readings. The mechanism does not become ambiguous with a small sample.",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 interface SeedCourse {
@@ -9864,6 +11398,20 @@ const COURSES: SeedCourse[] = [
 
   // --- Must never appear in the public catalogue -------------------------
 
+  {
+    slug: "statistical-distributions-in-robotics",
+    title: "Statistical Distributions with Robotics: Uncertainty You Can Reason About",
+    subtitle:
+      "Uniform, Gaussian and exponential — taught through the sensors, timings and target generators where a robot actually meets them.",
+    description:
+      "A statistics course for roboticists that treats a distribution as a claim about a physical process rather than a formula to memorise. Every model is introduced with the question it answers (WHERE, HOW, WHEN), simulated interactively, then tested against data — and the course's central skill is deciding whether a model is defensible, not asserting that it fits.",
+    // DRAFT: only the M2 module's target-generation lesson is seeded so
+    // far, and the analysis modules (M3, M4) depend on recorded datasets
+    // that do not exist yet — PHASE_1A_ARCHITECTURE.md risk 1. Publishing
+    // a course whose flagship module is empty would misrepresent it.
+    status: "DRAFT",
+    visibility: "PUBLIC",
+  },
   {
     slug: "unreleased-course-draft",
     title: "Draft: Distributed Systems",
@@ -10000,6 +11548,7 @@ async function seed(prisma: PrismaClient): Promise<void> {
   const draftCoursesNeedingTestEnrollment = [
     "robotics-hardware-and-sensors",
     "hands-on-robotics-projects",
+    "statistical-distributions-in-robotics",
   ];
 
   for (const slug of draftCoursesNeedingTestEnrollment) {
@@ -10027,7 +11576,13 @@ async function seed(prisma: PrismaClient): Promise<void> {
   // pass afterward, since the section a device lives in doesn't exist
   // until seedCurricula creates it.
   await seedHardwareDevices(prisma);
+  // Same ordering rule as devices: DATASET_EXPLORER blocks reference a
+  // dataset by slug, so the rows must exist before any block is written.
+  await seedDatasets(prisma);
   await seedCurricula(prisma);
+  // After the curricula, never before: a retired dataset can only be
+  // deleted once the lessons that cited it have themselves been pruned.
+  await pruneDatasets(prisma);
   await seedHardwareDeviceHomeSections(prisma);
 
   const listed = COURSES.filter(
@@ -10039,6 +11594,82 @@ async function seed(prisma: PrismaClient): Promise<void> {
       `${COURSES.length - listed} intentionally hidden) for ${INSTRUCTOR_EMAIL}, ` +
       `curricula for ${Object.keys(CURRICULA).length}, and ${STUDENT_EMAIL}.`
   );
+}
+
+/**
+ * `Dataset` rows (Statistical Distributions course, Phase 1E).
+ *
+ * Validated through `datasetInputSchema` before the write, not after: the
+ * schema is where "RECORDED and PHYSICAL require provenance" lives, and a
+ * seed that writes past it would put a row in the database that
+ * `toDatasetDetail` later refuses, turning every block referencing it into
+ * an `INVALID` notice a learner sees. Failing here instead makes it a
+ * broken seed run, which is the cheap place to find out (§9).
+ *
+ * Deliberately does NOT verify the checksum against the file — that is
+ * `scripts/verify-datasets.ts`, which runs in CI over whatever is actually
+ * in the database. Re-implementing it here would mean the seed passes its
+ * own copy of a check while the real one has drifted.
+ */
+async function seedDatasets(prisma: PrismaClient): Promise<void> {
+  for (const input of DATASETS) {
+    const dataset = datasetInputSchema.parse(input);
+
+    const row = {
+      title: dataset.title,
+      summary: dataset.summary,
+      level: dataset.level,
+      sourceUri: dataset.sourceUri,
+      format: dataset.format,
+      sampleCount: dataset.sampleCount,
+      checksumSha256: dataset.checksumSha256,
+      columns: dataset.columns as Prisma.InputJsonValue,
+      provenance: (dataset.provenance ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+    };
+
+    await prisma.dataset.upsert({
+      where: { slug: dataset.slug },
+      update: row,
+      create: { slug: dataset.slug, ...row },
+    });
+  }
+}
+
+/**
+ * Delete `Dataset` rows this file no longer declares.
+ *
+ * Retiring a dataset is not just deleting an array entry: `verify:datasets`
+ * walks the DATASET TABLE, not this array, so a row left behind after its
+ * file is deleted turns the verification script red for a dataset nobody
+ * ships any more. The row and the file have to go together, and this is the
+ * half that a reseed can do for you.
+ *
+ * `LessonContentBlock.datasetId` is `onDelete: Restrict`, deliberately (§10,
+ * §41) — deleting a dataset a published lesson still cites should fail
+ * loudly. So this runs AFTER `seedCurricula` has pruned the lessons that
+ * referenced it, and a genuine dangling reference still throws rather than
+ * silently cascading a block away.
+ */
+async function pruneDatasets(prisma: PrismaClient): Promise<void> {
+  const declared = DATASETS.map((dataset) => dataset.slug);
+  const stale = await prisma.dataset.findMany({
+    where: { slug: { notIn: declared } },
+    select: { slug: true, _count: { select: { contentBlocks: true } } },
+  });
+
+  for (const dataset of stale) {
+    if (dataset._count.contentBlocks > 0) {
+      throw new Error(
+        `seedDatasets: dataset "${dataset.slug}" is no longer declared in ` +
+          `DATASETS but ${dataset._count.contentBlocks} content block(s) still ` +
+          `reference it. Remove those blocks first — a lesson citing a deleted ` +
+          `dataset is worse than a stale row.`
+      );
+    }
+
+    await prisma.dataset.delete({ where: { slug: dataset.slug } });
+    console.log(`  retired dataset no longer in DATASETS: ${dataset.slug}`);
+  }
 }
 
 /**
@@ -10222,8 +11853,136 @@ async function seedCurricula(prisma: PrismaClient): Promise<void> {
             await seedContentBlock(prisma, lessonId, position, block);
           }
         }
+
+        // Blocks are keyed by (lessonId, position), so shortening a lesson
+        // leaves the removed tail behind. Before Phase 1G that never came
+        // up — lessons only ever grew. The 4-part template shortens every
+        // lesson in the statistics course at once, and a lesson that
+        // silently kept its old blocks 7..11 would render the previous
+        // curriculum underneath the new one.
+        await pruneContentBlocks(prisma, lessonId, lesson.contentBlocks?.length ?? 0);
       }
     }
+
+    await pruneCurriculum(prisma, course.id, sections);
+  }
+}
+
+/**
+ * Delete the `Quiz` / `Exercise` rows a set of doomed blocks owns.
+ *
+ * `LessonContentBlock.quiz` is `onDelete: Cascade` in the direction
+ * quiz -> block: deleting a QUIZ removes the block pointing at it, but
+ * deleting the block leaves the quiz behind as an orphan with no route to
+ * it. So the owned row is deleted first and the cascade removes the block,
+ * rather than the other way round.
+ */
+async function deleteBlocksAndOwnedRows(
+  prisma: PrismaClient,
+  where: Prisma.LessonContentBlockWhereInput
+): Promise<void> {
+  const doomed = await prisma.lessonContentBlock.findMany({
+    where,
+    select: { id: true, quizId: true, exerciseId: true },
+  });
+
+  if (doomed.length === 0) {
+    return;
+  }
+
+  const quizIds = doomed.flatMap((block) => (block.quizId ? [block.quizId] : []));
+  const exerciseIds = doomed.flatMap((block) =>
+    block.exerciseId ? [block.exerciseId] : []
+  );
+
+  if (quizIds.length > 0) {
+    await prisma.quiz.deleteMany({ where: { id: { in: quizIds } } });
+  }
+  if (exerciseIds.length > 0) {
+    await prisma.exercise.deleteMany({ where: { id: { in: exerciseIds } } });
+  }
+
+  // Anything not already removed by those cascades.
+  await prisma.lessonContentBlock.deleteMany({
+    where: { id: { in: doomed.map((block) => block.id) } },
+  });
+}
+
+/** Drop blocks past the end of a lesson that got shorter. */
+async function pruneContentBlocks(
+  prisma: PrismaClient,
+  lessonId: string,
+  keptCount: number
+): Promise<void> {
+  await deleteBlocksAndOwnedRows(prisma, {
+    lessonId,
+    position: { gte: keptCount },
+  });
+}
+
+/**
+ * Remove lessons and sections that CURRICULA no longer declares.
+ *
+ * WHY THIS EXISTS, AND WHY IT DID NOT BEFORE
+ *
+ * The comment on `seedCurricula` says "a seed script must never be the
+ * reason data disappears", and that principle is why sections are matched
+ * rather than recreated. It was written when curricula only ever gained
+ * entries, so "declared" and "present" could not diverge.
+ *
+ * Revision 3 of the statistics blueprint collapses 38 lessons into 7. With
+ * upsert-only seeding the result is not 7 lessons — it is 45, the 7 new
+ * ones sitting alongside 38 the curriculum no longer mentions, still
+ * reachable, still listed in the outline, still counted in the
+ * denominator of every progress figure. Declining to prune would not be
+ * caution; it would be shipping the old course and the new one at once.
+ *
+ * The principle survives intact because the scope is narrow: only inside a
+ * course that CURRICULA declares, and only for rows CURRICULA does not
+ * mention. A course absent from CURRICULA is never touched, so hand-authored
+ * curricula and anything created through the app are unaffected.
+ *
+ * `LessonProgress` is `onDelete: Cascade` from `Lesson`, so a learner's
+ * completion of a deleted lesson goes with it. That is correct — a
+ * completion record for a lesson that no longer exists is not data worth
+ * keeping — and enrollment status self-corrects, because
+ * `deriveEnrollmentStatus` recomputes from live counts rather than
+ * latching, and `postdb:seed` runs the reconciliation pass immediately
+ * after this.
+ */
+async function pruneCurriculum(
+  prisma: PrismaClient,
+  courseId: string,
+  sections: SeedSection[]
+): Promise<void> {
+  const declaredLessonSlugs = sections.flatMap((section) =>
+    section.lessons.map((lesson) => lesson.slug)
+  );
+  const declaredSectionTitles = sections.map((section) => section.title);
+
+  const staleLessons = await prisma.lesson.findMany({
+    where: { courseId, slug: { notIn: declaredLessonSlugs } },
+    select: { id: true, slug: true },
+  });
+
+  if (staleLessons.length > 0) {
+    const staleIds = staleLessons.map((lesson) => lesson.id);
+    await deleteBlocksAndOwnedRows(prisma, { lessonId: { in: staleIds } });
+    await prisma.lesson.deleteMany({ where: { id: { in: staleIds } } });
+    console.log(
+      `  pruned ${staleLessons.length} lesson(s) no longer in CURRICULA: ` +
+        staleLessons.map((lesson) => lesson.slug).join(", ")
+    );
+  }
+
+  // Sections last: a stale section may still have held a lesson that moved
+  // to a surviving section, and that relocation happens in the loop above.
+  const staleSections = await prisma.section.deleteMany({
+    where: { courseId, title: { notIn: declaredSectionTitles } },
+  });
+
+  if (staleSections.count > 0) {
+    console.log(`  pruned ${staleSections.count} section(s) no longer in CURRICULA`);
   }
 }
 
@@ -10331,14 +12090,143 @@ async function seedContentBlock(
     return;
   }
 
+  if (block.type === "DATASET_EXPLORER") {
+    const dataset = await prisma.dataset.findUnique({
+      where: { slug: block.datasetSlug },
+      select: { id: true },
+    });
+    if (!dataset) {
+      throw new Error(
+        `seedContentBlock: no Dataset with slug "${block.datasetSlug}" — ` +
+          `seedDatasets must run before seedCurricula.`
+      );
+    }
+
+    const data = datasetExplorerBlockSchema.parse(block.data) as Prisma.InputJsonValue;
+
+    if (existing) {
+      await prisma.lessonContentBlock.update({
+        where: { id: existing.id },
+        data: { type: "DATASET_EXPLORER", datasetId: dataset.id, data },
+      });
+    } else {
+      await prisma.lessonContentBlock.create({
+        data: { lessonId, position, type: "DATASET_EXPLORER", datasetId: dataset.id, data },
+      });
+    }
+    return;
+  }
+
+  if (block.type === "LAB_PROTOCOL") {
+    // Parsed, like the statistics payloads: `labProtocolBlockSchema`
+    // enforces that a lab whose safety section describes motion states a
+    // speed limit, which TypeScript cannot.
+    const lab = labProtocolBlockSchema.parse(block.data);
+
+    // THE CHECKS A FOREIGN KEY WOULD HAVE DONE.
+    //
+    // A lab carries two kinds of slug and neither is an FK — most lab
+    // hardware (a tape measure, a matte target board) will never be in the
+    // catalog, and a nullable column per item would be shape invented ahead
+    // of need. But a dead link inside a safety document is not a cosmetic
+    // defect, and Zod cannot see the other side of the link. Seed time is
+    // the one moment both sides are in scope, so the checks live here.
+    for (const item of lab.requiredHardware) {
+      if (!item.deviceSlug) continue;
+
+      // The predicate is PUBLIC VISIBILITY, not mere existence.
+      // `LabProtocolBlock` turns a `deviceSlug` into a link to
+      // `/hardware/<slug>`, and that route resolves through
+      // `getHardwareDeviceBySlug`, which only returns a device whose home
+      // section belongs to a PUBLISHED + PUBLIC course. Checking that the
+      // row exists is the weaker question and passing it is how a lab
+      // ships a 404 — which is exactly what happened on the first
+      // real-route load of LAB 2, where `rplidar-a2` exists but its course
+      // is still DRAFT. Same filter object as the route, imported rather
+      // than copied, so the two cannot drift.
+      const device = await prisma.hardwareDevice.findFirst({
+        where: { slug: item.deviceSlug, ...PUBLIC_HOME_SECTION_FILTER },
+        select: { id: true },
+      });
+      if (!device) {
+        const exists = await prisma.hardwareDevice.findUnique({
+          where: { slug: item.deviceSlug },
+          select: { id: true },
+        });
+        throw new Error(
+          `seedContentBlock: lab "${lab.title}" links required hardware ` +
+            `"${item.deviceSlug}", but ` +
+            (exists
+              ? `that device is not publicly visible — its home section's ` +
+                `course is not PUBLISHED + PUBLIC, so /hardware/${item.deviceSlug} ` +
+                `returns 404. Drop deviceSlug and describe the device in ` +
+                `label/note until the course is published.`
+              : `there is no such device in the HardwareDevice catalog.`)
+        );
+      }
+    }
+
+    const fallback = await prisma.lesson.findFirst({
+      where: { slug: lab.simulationFallbackLessonSlug },
+      select: { id: true },
+    });
+    if (!fallback) {
+      throw new Error(
+        `seedContentBlock: lab "${lab.title}" names simulation fallback ` +
+          `"${lab.simulationFallbackLessonSlug}", which is not a lesson. ` +
+          `The simulation-first escape hatch has to lead somewhere.`
+      );
+    }
+
+    for (const reference of lab.crossReferences) {
+      const target = await prisma.lesson.findFirst({
+        where: {
+          slug: reference.lessonSlug,
+          section: { course: { slug: reference.courseSlug } },
+        },
+        select: { id: true },
+      });
+      if (!target) {
+        throw new Error(
+          `seedContentBlock: lab "${lab.title}" cross-references ` +
+            `"${reference.courseSlug}/${reference.lessonSlug}", which does not exist.`
+        );
+      }
+    }
+
+    const labData = lab as unknown as Prisma.InputJsonValue;
+    if (existing) {
+      await prisma.lessonContentBlock.update({
+        where: { id: existing.id },
+        data: { type: "LAB_PROTOCOL", data: labData },
+      });
+    } else {
+      await prisma.lessonContentBlock.create({
+        data: { lessonId, position, type: "LAB_PROTOCOL", data: labData },
+      });
+    }
+    return;
+  }
+
+  // The two statistics payloads are parsed rather than trusted, unlike
+  // TEXT or CALLOUT below. Their schemas do cross-validation TypeScript
+  // cannot: `distributionSimBlockSchema` checks the declared controls
+  // against `DISTRIBUTIONS[kind].parameters`, so a block shipping a sigma
+  // slider for a uniform typechecks and fails only at render. Parsing here
+  // turns that into a failed seed run.
+  const data: Prisma.InputJsonValue =
+    block.type === "DISTRIBUTION_SIM"
+      ? (distributionSimBlockSchema.parse(block.data) as Prisma.InputJsonValue)
+      : block.data;
+
   if (existing) {
     await prisma.lessonContentBlock.update({
       where: { id: existing.id },
-      data: { type: block.type, data: block.data },
+      data: { type: block.type, data },
     });
   } else {
     await prisma.lessonContentBlock.create({
-      data: { lessonId, position, type: block.type, data: block.data },
+      data: { lessonId, position, type: block.type, data },
     });
   }
 }

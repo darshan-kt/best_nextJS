@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="560" fill="#ffffff"/>
+  <text x="64" y="62" font-size="34" font-weight="800" fill="#134e4a">Timestamps are not the random variable</text>
+  <text x="64" y="94" font-size="19" fill="#64748b">The gaps between them are.</text>
+
+  <g transform="translate(90,190)">
+    <line x1="0" y1="0" x2="1090" y2="0" stroke="#0f172a" stroke-width="2.5"/>
+    <text x="1100" y="6" font-size="17" fill="#64748b">t</text>
+
+    <g fill="#be185d">
+      <circle cx="70" cy="0" r="9"/><circle cx="215" cy="0" r="9"/><circle cx="270" cy="0" r="9"/>
+      <circle cx="520" cy="0" r="9"/><circle cx="600" cy="0" r="9"/><circle cx="880" cy="0" r="9"/>
+    </g>
+    <g font-size="15" fill="#0f172a" text-anchor="middle" font-variant-numeric="tabular-nums">
+      <text x="70" y="-24">4.2</text><text x="215" y="-24">11.6</text><text x="270" y="-24">14.4</text>
+      <text x="520" y="-24">27.1</text><text x="600" y="-24">31.2</text><text x="880" y="-24">45.5</text>
+    </g>
+    <text x="0" y="-58" font-size="17" font-weight="700" fill="#be185d">Events, at the times they happened (s)</text>
+
+    <g stroke="#0f766e" stroke-width="2" fill="none">
+      <path d="M 70 46 L 215 46"/><path d="M 215 62 L 270 62"/><path d="M 270 46 L 520 46"/>
+      <path d="M 520 62 L 600 62"/><path d="M 600 46 L 880 46"/>
+      <g stroke-width="1.5" stroke-dasharray="3 3" stroke="#94a3b8">
+        <path d="M 70 8 L 70 46"/><path d="M 215 8 L 215 62"/><path d="M 270 8 L 270 62"/>
+        <path d="M 520 8 L 520 62"/><path d="M 600 8 L 600 62"/><path d="M 880 8 L 880 46"/>
+      </g>
+    </g>
+    <g font-size="15" font-weight="600" fill="#0f766e" text-anchor="middle" font-variant-numeric="tabular-nums">
+      <text x="142" y="38">7.4</text><text x="242" y="82">2.8</text><text x="395" y="38">12.7</text>
+      <text x="560" y="82">4.1</text><text x="740" y="38">14.3</text>
+    </g>
+    <text x="0" y="122" font-size="17" font-weight="700" fill="#0f766e">Δt — the waiting times between them (s)</text>
+  </g>
+
+  <g transform="translate(90,380)">
+    <rect x="0" y="0" width="530" height="140" rx="12" fill="#fef2f2" stroke="#b91c1c" stroke-width="2"/>
+    <text x="24" y="38" font-size="18" font-weight="700" fill="#b91c1c">The timestamps drift upward forever</text>
+    <text x="24" y="70" font-size="15" fill="#475569">4.2, 11.6, 14.4, 27.1 … they only ever increase.</text>
+    <text x="24" y="94" font-size="15" fill="#475569">There is no distribution to fit: the next value</text>
+    <text x="24" y="118" font-size="15" fill="#475569">is always larger than every value so far.</text>
+  </g>
+
+  <g transform="translate(660,380)">
+    <rect x="0" y="0" width="520" height="140" rx="12" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/>
+    <text x="24" y="38" font-size="18" font-weight="700" fill="#0f766e">The gaps do not</text>
+    <text x="24" y="70" font-size="15" fill="#475569">7.4, 2.8, 12.7, 4.1, 14.3 … they scatter around a</text>
+    <text x="24" y="94" font-size="15" fill="#475569">typical value and do not trend. That is a quantity</text>
+    <text x="24" y="118" font-size="15" fill="#475569">a distribution can describe.</text>
+  </g>
+</svg>

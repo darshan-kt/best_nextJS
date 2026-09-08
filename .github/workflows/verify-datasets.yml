@@ -1,0 +1,130 @@
+name: Dataset row/file verification
+
+# A `Dataset` row lives in Postgres; its numbers live in a static file under
+# `public/`. PHASE_1A_ARCHITECTURE.md §10 chose that split deliberately, and
+# accepted the drift it makes possible on the condition that drift is
+# "detectable rather than silent" — naming `scripts/verify-datasets.ts` as
+# what detects it. This workflow is that promise being kept (risk 9).
+#
+# `DatasetExplorer` also re-checksums on render and shows a warning banner.
+# That is a last line of defence for a learner, not the control: by the time
+# it fires, a lesson is live and quoting numbers nobody reviewed.
+#
+# WHY A SEPARATE WORKFLOW AND NOT A STEP IN ci.yml
+#
+# ci.yml documents a deliberate decision to keep every check that needs live
+# infrastructure out of itself — the integration tests are excluded on the
+# same grounds. Adding a Postgres service container there would make every
+# PR, including pure-frontend ones, pay to stand up a database. Following
+# the `ros2-terminal-verification.yml` precedent instead keeps ci.yml's rule
+# intact and keeps this job's failure legible: a red run here means one
+# thing, and the log says which dataset.
+#
+# WHY PATHS AND NOT A SCHEDULE
+#
+# Unlike the ROS 2 job, the thing being watched is NOT the outside world —
+# it is this repository. A checksum cannot go stale on its own; it can only
+# disagree with a commit. So the trigger is the commit, narrowed to the only
+# two things that can cause disagreement: the dataset files themselves, and
+# the seed that declares what they are supposed to be. The script and its
+# own dependencies are included so a change to the checker is checked too.
+
+# The two path lists below are duplicated rather than shared through a YAML
+# anchor: GitHub Actions' workflow parser does not resolve aliases, so an
+# anchor here would not fail loudly — it would silently produce a filter
+# that matches nothing, and the job would simply never run.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "public/datasets/**"
+      - "prisma/seed.ts"
+      - "prisma/schema.prisma"
+      - "scripts/verify-datasets.ts"
+      - "src/features/datasets/**"
+      - ".github/workflows/verify-datasets.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "public/datasets/**"
+      - "prisma/seed.ts"
+      - "prisma/schema.prisma"
+      - "scripts/verify-datasets.ts"
+      - "src/features/datasets/**"
+      - ".github/workflows/verify-datasets.yml"
+  # The button for verifying after a change this workflow's own paths filter
+  # would not have caught — a dataset file restored out of band, say.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-datasets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Every Dataset row against its file
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        # Pinned to the same major the project runs locally (docker-compose
+        # uses postgres:16-alpine). The check does not exercise anything
+        # version-specific, but a seed that fails only in CI because of a
+        # server-version difference would be a confusing way to find out.
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: lms_verify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # A throwaway database created fresh for this run, never the dev or
+      # test one. The integration-test incident that motivated `lms_test`
+      # (see MEMORY) is the same hazard: a verification job must not be one
+      # environment variable away from touching real data.
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/lms_verify"
+      # env.ts validates the whole environment at import, and the seed
+      # imports it. These are never used — nothing here calls Auth.js,
+      # Redis or Gemini — but they must parse. Same placeholders ci.yml
+      # already documents.
+      AUTH_SECRET: "ci-only-secret-value-at-least-32-characters"
+      AUTH_URL: "https://ci.example.com"
+      GEMINI_API_KEY: "ci-only-placeholder-key"
+      REDIS_URL: "redis://ci:6379"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        run: pnpm exec prisma migrate deploy
+
+      - name: Seed
+        # The seed is what declares each row's `checksumSha256` and
+        # `sampleCount`, so it is half of the comparison. Running it here
+        # means the job verifies the checked-in declaration against the
+        # checked-in file — which is exactly the pair that can drift.
+        run: pnpm exec tsx prisma/seed.ts
+
+      - name: Verify datasets
+        run: pnpm verify:datasets
